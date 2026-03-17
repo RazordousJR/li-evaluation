@@ -7,6 +7,30 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <h2>Sistem Penilaian Latihan Industri</h2>
+      <p>Universiti Teknikal Malaysia Melaka (UTeM)</p>
+      <p>Fakulti Teknologi Maklumat dan Komunikasi</p>
+    </div>
+    <div class="login-body">
+      <div class="field">
+        <label>Nama Pengguna</label>
+        <input type="text" id="login-username" placeholder="Nama pengguna" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="field">
+        <label>Kata Laluan</label>
+        <input type="password" id="login-password" placeholder="Kata laluan" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-error" id="login-error">Nama pengguna atau kata laluan tidak sah.</div>
+      <button class="btn-primary login-submit-btn" onclick="doLogin()">Log Masuk</button>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 <div class="header">
   <div>
@@ -17,6 +41,11 @@
       <span class="badge badge-green">BITU3946</span>
       <span class="badge badge-gray">v2.4</span>
     </div>
+  </div>
+  <div class="user-info" id="user-info">
+    <span class="user-display-name" id="user-name-display"></span>
+    <span class="role-badge" id="role-badge-display"></span>
+    <button class="btn-logout" onclick="doLogout()">Log Keluar</button>
   </div>
 </div>
 
