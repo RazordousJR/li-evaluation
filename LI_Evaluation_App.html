@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Penilaian Latihan Industri — UTeM FKIK</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f8f9fa;--bg3:#f1f3f5;
+  --text:#1a1a1a;--text2:#6b7280;--text3:#9ca3af;
+  --border:1px solid #e5e7eb;--border2:1px solid #d1d5db;
+  --blue:#1a56db;--blue-bg:#e8f0fe;--blue-text:#1a56db;
+  --green:#0a7c4e;--green-bg:#e6f4ef;--green-text:#0a7c4e;
+  --amber:#b45309;--amber-bg:#fef3c7;--amber-text:#b45309;
+  --red:#c0392b;--red-bg:#fde8e8;--red-text:#c0392b;
+  --gray-bg:#f3f4f6;--gray-text:#6b7280;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;--border:1px solid #3a3a3c;--border2:1px solid #48484a;--blue-bg:#1c2d5e;--blue-text:#82b0f5;--green-bg:#0d3326;--green-text:#4ade80;--amber-bg:#3d2a00;--amber-text:#fbbf24;--red-bg:#3d1515;--red-text:#f87171;--gray-bg:#2c2c2e;--gray-text:#aeaeb2;}}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
+.app{max-width:960px;margin:0 auto;padding:1.5rem 1rem}
+.header{background:var(--bg);border:var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1rem;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header h1{font-size:20px;font-weight:600;margin-bottom:2px}
+.header p{font-size:13px;color:var(--text2)}
+.header-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:999px}
+.badge-blue{background:var(--blue-bg);color:var(--blue-text)}
+.badge-green{background:var(--green-bg);color:var(--green-text)}
+.badge-gray{background:var(--gray-bg);color:var(--gray-text)}
+.tabs{display:flex;gap:4px;margin-bottom:1rem;flex-wrap:wrap;background:var(--bg);border:var(--border);border-radius:var(--radius-lg);padding:6px}
+.tab{padding:7px 14px;font-size:13px;border-radius:var(--radius);cursor:pointer;color:var(--text2);border:none;background:none;font-family:inherit;transition:all .15s}
+.tab:hover{background:var(--bg3);color:var(--text)}
+.tab.active{background:var(--blue-bg);color:var(--blue-text);font-weight:500}
+.section{background:var(--bg);border:var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem}
+.section-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.875rem;display:flex;align-items:center;gap:8px}
+.badge-max{font-size:11px;font-weight:500;background:var(--gray-bg);color:var(--gray-text);padding:2px 8px;border-radius:999px;text-transform:none;letter-spacing:0}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:.875rem}
+.field-row.three{grid-template-columns:1fr 1fr 1fr}
+.field-row.full{grid-template-columns:1fr}
+@media(max-width:600px){.field-row,.field-row.three{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;font-weight:500;color:var(--text2)}
+input[type=text],select,textarea{font-size:14px;padding:8px 10px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);width:100%;font-family:inherit}
+textarea{resize:vertical;min-height:70px}
+.score-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:var(--border)}
+.score-row:last-of-type{border-bottom:none}
+.score-label{flex:1;font-size:13.5px;line-height:1.4}
+.score-label small{display:block;font-size:11.5px;color:var(--text3);margin-top:3px}
+.score-input-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.score-input-wrap input[type=number]{width:68px;text-align:center;font-size:15px;font-weight:500;padding:6px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit}
+.score-max{font-size:12px;color:var(--text3);min-width:30px}
+.subtotal-wrap{margin-top:.75rem;padding-top:.75rem;border-top:var(--border2)}
+.subtotal{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.subtotal-label{font-size:12px;color:var(--text2);font-weight:500}
+.subtotal-val{font-size:17px;font-weight:600}
+.progress-bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .4s;background:var(--blue)}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1rem}
+.stat-card{background:var(--bg2);border-radius:var(--radius);padding:.875rem 1rem}
+.stat-label{font-size:11.5px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.stat-val{font-size:24px;font-weight:600;line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.result-row{background:var(--bg2);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.result-label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:4px}
+.result-score{font-size:28px;font-weight:700;line-height:1}
+.grade-pill{border-radius:var(--radius);padding:.5rem 1.25rem;font-size:30px;font-weight:700;text-align:center;min-width:90px}
+.grade-A{background:var(--green-bg);color:var(--green-text)}
+.grade-B{background:var(--blue-bg);color:var(--blue-text)}
+.grade-C{background:var(--amber-bg);color:var(--amber-text)}
+.grade-D{background:var(--gray-bg);color:var(--gray-text)}
+.grade-E{background:var(--red-bg);color:var(--red-text)}
+.btn-row{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
+.btn-primary{background:var(--blue);color:#fff;border:none;padding:9px 22px;border-radius:var(--radius);font-size:13.5px;cursor:pointer;font-weight:500;font-family:inherit}
+.btn-primary:hover{opacity:.88}
+.btn-secondary{background:var(--bg);color:var(--text);border:var(--border2);padding:9px 16px;border-radius:var(--radius);font-size:13.5px;cursor:pointer;font-family:inherit}
+.btn-secondary:hover{background:var(--bg2)}
+.btn-danger{background:var(--red-bg);color:var(--red-text);border:none;padding:9px 16px;border-radius:var(--radius);font-size:13.5px;cursor:pointer;font-family:inherit}
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:.75rem}
+.alert-info{background:var(--blue-bg);color:var(--blue-text)}
+.radio-group{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.radio-opt{display:flex;align-items:center;gap:5px;padding:6px 12px;border:var(--border2);border-radius:var(--radius);cursor:pointer;font-size:13px;transition:all .15s;user-select:none}
+.radio-opt:hover{background:var(--bg2)}
+.radio-opt.selected{background:var(--blue-bg);color:var(--blue-text);border-color:transparent;font-weight:500}
+.note-box{background:var(--bg2);padding:8px 12px;border-radius:var(--radius);margin:8px 0;font-size:12px;color:var(--text2);border-left:3px solid var(--blue)}
+.print-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:.5rem}
+.print-table th{background:var(--bg2);padding:7px 12px;text-align:left;font-weight:600;font-size:11.5px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.print-table td{padding:7px 12px;border-bottom:var(--border)}
+.print-table tr:last-child td{border-bottom:none}
+.divider{border:none;border-top:var(--border);margin:.875rem 0}
+.page{display:none}.page.active{display:block}
+@media print{body{background:white}.tabs,.btn-row{display:none!important}.page{display:block!important}.app{padding:0}.section{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <div>
+    <h1>Sistem Penilaian Latihan Industri</h1>
+    <p>Universiti Teknikal Malaysia Melaka (UTeM) &mdash; Fakulti Teknologi Maklumat dan Komunikasi</p>
+    <div class="header-badges">
+      <span class="badge badge-blue">BITU3926</span>
+      <span class="badge badge-green">BITU3946</span>
+      <span class="badge badge-gray">v2.4</span>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('info')">Maklumat Pelajar</button>
+  <button class="tab" onclick="showTab('svi')">Penyelia Industri</button>
+  <button class="tab" onclick="showTab('svf')">Penyelia Fakulti</button>
+  <button class="tab" onclick="showTab('logbook')">e-Logbook</button>
+  <button class="tab" onclick="showTab('presentation')">Pembentangan</button>
+  <button class="tab" onclick="showTab('report')">Laporan LI</button>
+  <button class="tab" onclick="showTab('summary')">Ringkasan &amp; Gred</button>
+</div>
+
+<!-- INFO -->
+<div class="page active" id="page-info">
+  <div class="alert alert-info">Lengkapkan maklumat pelajar terlebih dahulu sebelum memasukkan markah penilaian.</div>
+  <div class="section">
+    <div class="section-title">Maklumat Pelajar</div>
+    <div class="field-row">
+      <div class="field"><label>Nama Pelajar</label><input type="text" id="nama_pelajar" placeholder="Nama penuh pelajar"></div>
+      <div class="field"><label>No. Matrik</label><input type="text" id="no_matrik" placeholder="cth: B022310001"></div>
+    </div>
+    <div class="field-row three">
+      <div class="field"><label>Kursus</label>
+        <select id="kursus">
+          <option value="">-- Pilih Kursus --</option>
+          <option>BITC - Kejuruteraan Komputer</option>
+          <option>BITD - Keselamatan Digital</option>
+          <option>BITM - Multimedia</option>
+          <option>BITI - Teknologi Maklumat</option>
+          <option>BITS - Sains Komputer</option>
+          <option>BITE - Kejuruteraan Perisian</option>
+          <option>BITZ - Rangkaian Komputer</option>
+        </select></div>
+      <div class="field"><label>Semester</label><select id="semester"><option value="1">Semester 1</option><option value="2">Semester 2</option></select></div>
+      <div class="field"><label>Sesi Akademik</label>
+        <select id="sesi">
+          <option>2024/2025</option><option>2025/2026</option><option>2026/2027</option><option>2027/2028</option>
+        </select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Nama Penyelia Fakulti (SVF)</label>
+        <select id="svf_name">
+          <option value="">-- Pilih Pensyarah --</option>
+          <option>ABDUL AZIM BIN ABDUL RASHID</option>
+          <option>ABDUL KARIM BIN MOHAMAD, Ts. DR</option>
+          <option>ABDUL RAZAK BIN HUSSAIN, Ts.</option>
+          <option>AHMAD FADZLI NIZAM BIN ABDUL RAHMAN, Ts.</option>
+          <option>AHMAD NAIM BIN CHE PEE @ CHE HANAPI, Ts. DR, PM</option>
+          <option>AHMAD SHAARIZAN BIN SHAARANI, Ts. DR</option>
+          <option>AISYAH BINTI MOHD RAHIMI</option>
+          <option>AMIR SYARIFUDDIN BIN KASIM</option>
+          <option>AMIRUL RAMZANI BIN RADZID</option>
+          <option>ANIZA BINTI OTHMAN, DR</option>
+          <option>ARIFF BIN IDRIS, Ts.</option>
+          <option>ASLINDA BINTI HASSAN, Ts. DR</option>
+          <option>AZLIANOR BINTI ABDUL AZIZ, Ts.</option>
+          <option>CHE KU NURAINI BINTI CHE KU MOHD, TS. DR</option>
+          <option>EMALIANA BINTI KASMURI, DR</option>
+          <option>ERMAN BIN HAMID, Ts.</option>
+          <option>FAAIZAH BINTI SHAHBODIN, Ts. DR, PROFESOR</option>
+          <option>FARAH NADIA BINTI AZMAN, Ts. DR</option>
+          <option>FATHIN NABILA BINTI MD LEZA</option>
+          <option>FATIN ALIAH BINTI YAHYA</option>
+          <option>HAMZAH ASYRANI BIN SULAIMAN, Ts. DR</option>
+          <option>HANIZA BINTI NAHAR, Ts.</option>
+          <option>HIDAYAH BINTI RAHMALAN, Ts.</option>
+          <option>IBRAHIM BIN AHMAD, Ts. DR</option>
+          <option>IKMAL FAIQ ALBAKRI BIN MUSTAFA ALBAKRI</option>
+          <option>INTAN ERMAHANI BINTI A.JALIL, Ts. DR</option>
+          <option>IRDA BINTI ROSLAN, Ts.</option>
+          <option>KASTURI KANCHYMALAY, Ts. DR</option>
+          <option>KHADIJAH BINTI WAN MOHD. GHAZALI</option>
+          <option>LIZAWATI BINTI SALAHUDDIN, Ts. DR</option>
+          <option>MAILASAN A/L JAYAKRISHNAN</option>
+          <option>MARLIZA BINTI RAMLY, Ts.</option>
+          <option>MASHANUM BINTI OSMAN, Ts.</option>
+          <option>MASLITA BINTI ABDUL AZIZ, Ts.</option>
+          <option>MASSILA BINTI KAMALRUDIN, Ts. DR, PROFESOR DATUK</option>
+          <option>MOHAMAD LUTFI BIN DOLHALIT, DR</option>
+          <option>MOHAMMAD RADZI BIN MOTSIDI</option>
+          <option>MOHD ADILI BIN NORASIKIN, DR</option>
+          <option>MOHD FAIRUZ ISKANDAR BIN OTHMAN, Ts. DR</option>
+          <option>MOHD HAFIZ BIN ZAKARIA, Ts. DR, PM</option>
+          <option>MOHD HARIZ BIN NAIM @ MOHAYAT</option>
+          <option>MOHD KHALID BIN MOKHTAR</option>
+          <option>MOHD KHANAPI BIN ABD. GHANI, DR, PROFESOR</option>
+          <option>MOHD NAJWAN BIN MD. KHAMBARI, Ts. DR</option>
+          <option>MOHD RIZUAN BIN BAHARON, Ts. DR</option>
+          <option>MOHD SANUSI BIN AZMI, Ts. DR, PROFESOR</option>
+          <option>MUHAMMAD FAHEEM BIN MOHD EZANI</option>
+          <option>MUHAMMAD FAIZ BIN SUPIAN</option>
+          <option>MUHAMMAD FUAD BIN ABDULLAH</option>
+          <option>MUHAMMAD HAZIQ LIM BIN ABDULLAH, Ts. DR. PM</option>
+          <option>MUHAMMAD HELMY BIN EMRAN, Ts.</option>
+          <option>MUHAMMAD SHAHKHIR BIN MOZAMIR</option>
+          <option>MUHAMMAD SHARILAZLAN BIN SALLEH</option>
+          <option>MUHAMMAD SUHAIZAN BIN SULONG, Ts.</option>
+          <option>MUHAMMAD SYAHRUL AZHAR BIN SANI, Ts.</option>
+          <option>NAJMA IMTIAZ ALI</option>
+          <option>NAZREEN BIN ABDULLASIM</option>
+          <option>NAZRIEN BIN ZARAINI, Ts.</option>
+          <option>NAZRULAZHAR BIN HJ BAHAMAN, Ts. DR</option>
+          <option>NOOR AZILAH BINTI DRAMAN @ MUDA</option>
+          <option>NOORREZAM BIN YUSOP, Ts. DR.</option>
+          <option>NOR AIZA BINTI MOKETAR, Ts. DR</option>
+          <option>NOR AZMAN BIN MAT ARIFF, Ts.</option>
+          <option>NOR FARAH NAQUIAH BINTI MOHAMAD DAUD</option>
+          <option>NOR HAFEIZAH BINTI HASSAN, DR</option>
+          <option>NOR HASLINDA BINTI ISMAIL, Ts.</option>
+          <option>NOR MAS AINA BINTI MD BOHARI, Ts.</option>
+          <option>NORANIZA BINTI MD JANI</option>
+          <option>NORASHIKIN BINTI AHMAD, Ts. DR</option>
+          <option>NORASWALIZA BINTI ABDULLAH, Ts. DR</option>
+          <option>NORAZLIN BINTI MOHAMMED, Ts.</option>
+          <option>NORHARYATI BINTI HARUM, Ts. DR</option>
+          <option>NUR ATIKAH BINTI ARBAIN, DR.</option>
+          <option>NUR RAIDAH BINTI RAHIM, DR</option>
+          <option>NURIDAWATI BINTI MUSTAFA, Ts. DR</option>
+          <option>NURUL AKMAR BINTI EMRAN, Ts. DR, PM</option>
+          <option>NURUL AZMA BINTI ZAKARIA, DR</option>
+          <option>NURUL IZRIN BINTI MD SALEH</option>
+          <option>OTHMAN BIN MOHD, GS. DR, PM</option>
+          <option>PANG KOK AN</option>
+          <option>RAJA RINA BINTI RAJA IKRAM, Ts. DR</option>
+          <option>ROSLEEN BINTI ABDUL SAMAD, Ts.</option>
+          <option>ROSMIZA WAHIDA BT ABDULLAH</option>
+          <option>SABRINA BINTI AHMAD, Ts. DR, PM</option>
+          <option>SAFIZA SUHANA BINTI KAMAL BAHARIN, GS. Ts. DR.</option>
+          <option>SAFWAN BIN ABD RAZAK</option>
+          <option>SARNI SUHAILA BINTI RAHIM, Ts. DR</option>
+          <option>SHAFINA BINTI ABD KARIM ISHIGAKI</option>
+          <option>SHAHRIL BIN PARUMO</option>
+          <option>SITI NURUL MAHFUZAH BINTI MOHAMAD, Ts. DR</option>
+          <option>SYAHIDA BINTI MOHTAR, DR</option>
+          <option>SYARIFFANOR BINTI HISHAM, Ts.</option>
+          <option>SYARULNAZIAH BINTI ANAWAR, DR</option>
+          <option>UMMI RABAAH BINTI HASHIM, Ts. DR</option>
+          <option>WAHIDAH BINTI MD. SHAH, Ts. DR</option>
+          <option>YAHYA BIN IBRAHIM</option>
+          <option>ZAHRIAH BT. OTHMAN, DR</option>
+          <option>ZAKIAH BINTI AYOP, Ts.</option>
+          <option>ZULISMAN BIN MAKSOM, DR</option>
+          <option>ZURAINI BINTI OTHMAN, DR.</option>
+          <option>ZURINA BINTI SAAYA, DR</option>
+        </select>
+      </div>
+      <div class="field"><label>Nama Penyelia Industri (SVI)</label><input type="text" id="svi_name" placeholder="Nama penyelia industri"></div>
+    </div>
+    <div class="field-row full">
+      <div class="field"><label>Nama Organisasi / Syarikat</label><input type="text" id="organisasi" placeholder="Nama syarikat tempat LI"></div>
+    </div>
+    <hr class="divider">
+    <div class="field-row">
+      <div class="field"><label>Jenis Tugasan (Laporan LI)</label>
+        <div class="radio-group">
+          <div class="radio-opt selected" id="opt-p1" onclick="selectPilihan(1)">Pilihan 1 &mdash; Teknikal 80%</div>
+          <div class="radio-opt" id="opt-p2" onclick="selectPilihan(2)">Pilihan 2 &mdash; Teknikal 60%</div>
+        </div>
+      </div>
+      <div class="field"><label>Amalan Kejuruteraan</label>
+        <div class="radio-group">
+          <div class="radio-opt selected" id="opt-hadir" onclick="selectHadir(1)">Hadir (+10 markah)</div>
+          <div class="radio-opt" id="opt-thadir" onclick="selectHadir(0)">Tidak Hadir</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row"><button class="btn-primary" onclick="showTab('svi')">Seterusnya: Penilaian SVI &rarr;</button></div>
+</div>
+
+<!-- SVI -->
+<div class="page" id="page-svi">
+  <div class="section">
+    <div class="section-title">Bahagian A: Pengetahuan, Kemahiran &amp; Prestasi Kerja <span class="badge-max">/ 50 markah</span></div>
+    <div class="score-row"><div class="score-label">1. Pengetahuan &amp; Kemahiran &mdash; Bidang Pentadbiran &amp; Pengurusan<small>Menyediakan bahan, menghadiri mesyuarat/kursus/latihan/pembentangan serta kerja-kerja pentadbiran</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svi_a1" oninput="clamp(this,10);calcSVI()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">2. Pengetahuan &amp; Kemahiran &mdash; Bidang Teknikal<small>Menganalisa, merekabentuk, membangun, melaksana dan mendokumentasi sistem ICT</small></div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="svi_a2" oninput="clamp(this,20);calcSVI()"><span class="score-max">/20</span></div></div>
+    <div class="score-row"><div class="score-label">3. Kuantiti Hasil Kerja<small>Berjaya menyempurnakan kuantiti hasil kerja yang ditetapkan</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svi_a3" oninput="clamp(this,10);calcSVI()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">4. Kualiti Hasil Kerja<small>Berjaya menyempurnakan kerja mengikut sasaran kualiti yang ditetapkan</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svi_a4" oninput="clamp(this,10);calcSVI()"><span class="score-max">/10</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian A</span><span class="subtotal-val" id="svi_a_total">0 / 50</span></div><div class="progress-bar"><div class="progress-fill" id="svi_a_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian B: Sahsiah Pelatih <span class="badge-max">/ 50 markah</span></div>
+    <div class="score-row"><div class="score-label">1. Pengurusan Masa</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b1" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">2. Kebolehan Menyelesai Masalah</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b2" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">3. Kebolehan Mengelola</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b3" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">4. Keberkesanan Komunikasi</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b4" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">5. Pergaulan dan Hubungan Kerjasama</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b5" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">6. Disiplin</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b6" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">7. Kebolehan Menghadapi Cabaran</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b7" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">8. Kepimpinan</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b8" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">9. Iltizam</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b9" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">10. Proaktif, Kreatif dan Inovatif</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="svi_b10" oninput="clamp(this,5);calcSVI()"><span class="score-max">/5</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian B</span><span class="subtotal-val" id="svi_b_total">0 / 50</span></div><div class="progress-bar"><div class="progress-fill" id="svi_b_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian C: Ulasan Keseluruhan</div>
+    <div class="field-row full"><div class="field"><label>a) Ulasan prestasi kerja, sahsiah &amp; potensi pelatih</label><textarea id="svi_ulasan" placeholder="Masukkan ulasan..."></textarea></div></div>
+    <div class="field-row"><div class="field"><label>b) Penilaian keseluruhan pelajar</label>
+      <div class="radio-group">
+        <div class="radio-opt" onclick="selectR('svi_rating','Sangat Baik',this)">Sangat Baik</div>
+        <div class="radio-opt" onclick="selectR('svi_rating','Baik',this)">Baik</div>
+        <div class="radio-opt" onclick="selectR('svi_rating','Memuaskan',this)">Memuaskan</div>
+        <div class="radio-opt" onclick="selectR('svi_rating','Kurang Memuaskan',this)">Kurang Memuaskan</div>
+        <div class="radio-opt" onclick="selectR('svi_rating','Lemah',this)">Lemah</div>
+      </div><input type="hidden" id="svi_rating">
+    </div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVI (A + B)</span><span class="subtotal-val" id="svi_total">0 / 100</span></div></div>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('info')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('svf')">Seterusnya: SVF &rarr;</button></div>
+</div>
+
+<!-- SVF -->
+<div class="page" id="page-svf">
+  <div class="section">
+    <div class="section-title">Bahagian A: Pengetahuan, Kemahiran &amp; Prestasi Kerja <span class="badge-max">/ 90 markah</span></div>
+    <div class="score-row"><div class="score-label">1. Pengetahuan &amp; Kemahiran &mdash; Pentadbiran &amp; Pengurusan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_a1" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">2. Pengetahuan &amp; Kemahiran &mdash; Bidang Teknikal</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="svf_a2" oninput="clamp(this,20);calcSVF()"><span class="score-max">/20</span></div></div>
+    <div class="score-row"><div class="score-label">3. Kuantiti Hasil Kerja &mdash; Pentadbiran &amp; Pengurusan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_a3" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">4. Kuantiti Hasil Kerja &mdash; Bidang Teknikal</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="svf_a4" oninput="clamp(this,20);calcSVF()"><span class="score-max">/20</span></div></div>
+    <div class="score-row"><div class="score-label">5. Mutu Hasil Kerja</div><div class="score-input-wrap"><input type="number" min="0" max="30" value="0" id="svf_a5" oninput="clamp(this,30);calcSVF()"><span class="score-max">/30</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian A</span><span class="subtotal-val" id="svf_a_total">0 / 90</span></div><div class="progress-bar"><div class="progress-fill" id="svf_a_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian B: Sahsiah Pelatih <span class="badge-max">/ 10 markah</span></div>
+    <div class="score-row"><div class="score-label">Dedikasi, kerjasama, disiplin, daya saing, kepimpinan, pergaulan &amp; komunikasi</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_b1" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah A + B</span><span class="subtotal-val" id="svf_ab_total">0 / 100</span></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian C: Komitmen <span class="badge-max">/ 10 markah</span></div>
+    <div class="score-row"><div class="score-label">Kehadiran taklimat, kerjasama lawatan, persediaan lawatan 2, penghantaran dokumen<small>Kehadiran taklimat 2x | Maklumbalas lawatan 1 | Persediaan lawatan 2 | Hantar semua dokumen</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_c1" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVF (A + B + C)</span><span class="subtotal-val" id="svf_total">0 / 110</span></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian D: Ulasan Keseluruhan</div>
+    <div class="field-row full"><div class="field"><label>a) Ulasan keseluruhan prestasi kerja, sahsiah &amp; potensi pelatih</label><textarea id="svf_ulasan" placeholder="Masukkan ulasan..."></textarea></div></div>
+    <div class="field-row">
+      <div class="field"><label>b) Penilaian keseluruhan pelajar</label>
+        <div class="radio-group">
+          <div class="radio-opt" onclick="selectR('svf_rating','Sangat Baik',this)">Sangat Baik</div>
+          <div class="radio-opt" onclick="selectR('svf_rating','Baik',this)">Baik</div>
+          <div class="radio-opt" onclick="selectR('svf_rating','Memuaskan',this)">Memuaskan</div>
+          <div class="radio-opt" onclick="selectR('svf_rating','Kurang Memuaskan',this)">Kurang Memuaskan</div>
+          <div class="radio-opt" onclick="selectR('svf_rating','Lemah',this)">Lemah</div>
+        </div><input type="hidden" id="svf_rating">
+      </div>
+      <div class="field"><label>c) Cadangan status pelajar</label>
+        <div class="radio-group">
+          <div class="radio-opt" onclick="selectR('svf_status','Lulus',this)">Lulus</div>
+          <div class="radio-opt" onclick="selectR('svf_status','Gagal',this)">Gagal</div>
+        </div><input type="hidden" id="svf_status">
+      </div>
+    </div>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svi')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('logbook')">Seterusnya: e-Logbook &rarr;</button></div>
+</div>
+
+<!-- LOGBOOK -->
+<div class="page" id="page-logbook">
+  <div class="section">
+    <div class="section-title">Bahagian A: Kandungan <span class="badge-max">/ 40 markah</span></div>
+    <div class="score-row"><div class="score-label">Catatan kerja harian, kaedah pendekatan, hasil kemajuan, masalah &amp; pengalaman<small>Jelas, terperinci dan konsisten sepanjang tempoh LI</small></div><div class="score-input-wrap"><input type="number" min="0" max="40" value="0" id="log_a1" oninput="clamp(this,40);calcLog()"><span class="score-max">/40</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah A</span><span class="subtotal-val" id="log_a_total">0 / 40</span></div><div class="progress-bar"><div class="progress-fill" id="log_a_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian B: Persembahan <span class="badge-max">/ 20 markah</span></div>
+    <div class="score-row"><div class="score-label">Kekemasan, Bahasa Inggeris, susunan ayat, disemak penyelia industri</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="log_b1" oninput="clamp(this,20);calcLog()"><span class="score-max">/20</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah B</span><span class="subtotal-val" id="log_b_total">0 / 20</span></div><div class="progress-bar"><div class="progress-fill" id="log_b_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian C: Penghantaran Buku Log <span class="badge-max">/ 10 markah</span></div>
+    <div class="score-row"><div class="score-label">Muat naik buku log, dokumen pengesahan, format betul, disemak penyelia<small>Mengikut masa ditetapkan, bertandatangan, mengikut format panduan</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="log_c1" oninput="clamp(this,10);calcLog()"><span class="score-max">/10</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah e-Logbook (A + B + C)</span><span class="subtotal-val" id="log_total">0 / 70</span></div></div>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svf')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('presentation')">Seterusnya: Pembentangan &rarr;</button></div>
+</div>
+
+<!-- PRESENTATION -->
+<div class="page" id="page-presentation">
+  <div class="section">
+    <div class="section-title">Pembentangan &mdash; Penyelia Fakulti (SVF) <span class="badge-max">/ 100 markah</span></div>
+    <div class="score-row"><div class="score-label">A. Persediaan</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="psvf_a" oninput="clamp(this,5);calcPres()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">B1. Gaya persembahan yang baik</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvf_b1" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B2. Berkeyakinan dan bersemangat</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvf_b2" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B3. Tersusun dan berkesinambungan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvf_b3" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B4. Persembahan yang lancar</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvf_b4" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B5. Jelas dan mudah difahami</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvf_b5" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">C1. Kandungan: Pengenalan</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="psvf_c1" oninput="clamp(this,5);calcPres()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">C2. Kandungan: Deskripsi tugasan/projek</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="psvf_c2" oninput="clamp(this,20);calcPres()"><span class="score-max">/20</span></div></div>
+    <div class="score-row"><div class="score-label">C3. Kandungan: Kesimpulan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvf_c3" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">D1. Soal Jawab: memahami soalan</div><div class="score-input-wrap"><input type="number" min="0" max="3" value="0" id="psvf_d1" oninput="clamp(this,3);calcPres()"><span class="score-max">/3</span></div></div>
+    <div class="score-row"><div class="score-label">D2. Soal Jawab: memberi perhatian</div><div class="score-input-wrap"><input type="number" min="0" max="2" value="0" id="psvf_d2" oninput="clamp(this,2);calcPres()"><span class="score-max">/2</span></div></div>
+    <div class="score-row"><div class="score-label">D3. Soal Jawab: menjawab dengan tenang</div><div class="score-input-wrap"><input type="number" min="0" max="2" value="0" id="psvf_d3" oninput="clamp(this,2);calcPres()"><span class="score-max">/2</span></div></div>
+    <div class="score-row"><div class="score-label">D4. Soal Jawab: jawapan memuaskan</div><div class="score-input-wrap"><input type="number" min="0" max="3" value="0" id="psvf_d4" oninput="clamp(this,3);calcPres()"><span class="score-max">/3</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVF</span><span class="subtotal-val" id="psvf_total">0 / 100</span></div><div class="progress-bar"><div class="progress-fill" id="psvf_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Pembentangan &mdash; Penyelia Industri (SVI) <span class="badge-max">/ 100 markah</span></div>
+    <div class="score-row"><div class="score-label">A. Persediaan</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="psvi_a" oninput="clamp(this,5);calcPres()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">B1. Gaya persembahan yang baik</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvi_b1" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B2. Berkeyakinan dan bersemangat</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvi_b2" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B3. Tersusun dan berkesinambungan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvi_b3" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B4. Persembahan yang lancar</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvi_b4" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">B5. Jelas dan mudah difahami</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvi_b5" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">C1. Kandungan: Pengenalan</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="psvi_c1" oninput="clamp(this,5);calcPres()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">C2. Kandungan: Deskripsi tugasan/projek</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="psvi_c2" oninput="clamp(this,20);calcPres()"><span class="score-max">/20</span></div></div>
+    <div class="score-row"><div class="score-label">C3. Kandungan: Kesimpulan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="psvi_c3" oninput="clamp(this,10);calcPres()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">D1. Soal Jawab: memahami soalan</div><div class="score-input-wrap"><input type="number" min="0" max="3" value="0" id="psvi_d1" oninput="clamp(this,3);calcPres()"><span class="score-max">/3</span></div></div>
+    <div class="score-row"><div class="score-label">D2. Soal Jawab: memberi perhatian</div><div class="score-input-wrap"><input type="number" min="0" max="2" value="0" id="psvi_d2" oninput="clamp(this,2);calcPres()"><span class="score-max">/2</span></div></div>
+    <div class="score-row"><div class="score-label">D3. Soal Jawab: menjawab dengan tenang</div><div class="score-input-wrap"><input type="number" min="0" max="2" value="0" id="psvi_d3" oninput="clamp(this,2);calcPres()"><span class="score-max">/2</span></div></div>
+    <div class="score-row"><div class="score-label">D4. Soal Jawab: jawapan memuaskan</div><div class="score-input-wrap"><input type="number" min="0" max="3" value="0" id="psvi_d4" oninput="clamp(this,3);calcPres()"><span class="score-max">/3</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVI</span><span class="subtotal-val" id="psvi_total">0 / 100</span></div><div class="progress-bar"><div class="progress-fill" id="psvi_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('logbook')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('report')">Seterusnya: Laporan LI &rarr;</button></div>
+</div>
+
+<!-- REPORT -->
+<div class="page" id="page-report">
+  <div class="section">
+    <div class="section-title">Bahagian A: Kandungan Laporan <span class="badge-max">/ 60 markah</span></div>
+    <div class="score-row"><div class="score-label">A1. Abstrak<small>Ringkasan eksekutif: tempat, kerja, hasil &amp; kesimpulan umum</small></div><div class="score-input-wrap"><input type="number" min="0" max="3" value="0" id="rep_a1" oninput="clamp(this,3);calcReport()"><span class="score-max">/3</span></div></div>
+    <div class="score-row"><div class="score-label">A2. Pengenalan<small>Tempat LI &amp; objektif LI</small></div><div class="score-input-wrap"><input type="number" min="0" max="2" value="0" id="rep_a2" oninput="clamp(this,2);calcReport()"><span class="score-max">/2</span></div></div>
+    <div class="score-row"><div class="score-label">A3. Latar Belakang Organisasi<small>Sejarah, orientasi perniagaan, carta organisasi &amp; fungsi jabatan</small></div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="rep_a3" oninput="clamp(this,5);calcReport()"><span class="score-max">/5</span></div></div>
+    <div class="note-box" id="pilihan-note">Menggunakan <strong>Pilihan 1</strong> &mdash; Tugasan Teknikal 80% (max 40m) + Pentadbiran 20% (max 10m)</div>
+    <div id="rep_p1_wrap">
+      <div class="score-row"><div class="score-label">A4. Deskripsi Projek &mdash; Tugasan Teknikal (80%)</div><div class="score-input-wrap"><input type="number" min="0" max="40" value="0" id="rep_a4_tech_p1" oninput="clamp(this,40);calcReport()"><span class="score-max">/40</span></div></div>
+      <div class="score-row"><div class="score-label">A4. Deskripsi Projek &mdash; Tugasan Pentadbiran (20%)</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_a4_admin_p1" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
+    </div>
+    <div id="rep_p2_wrap" style="display:none">
+      <div class="score-row"><div class="score-label">A4. Deskripsi Projek &mdash; Tugasan Teknikal (60%)</div><div class="score-input-wrap"><input type="number" min="0" max="30" value="0" id="rep_a4_tech_p2" oninput="clamp(this,30);calcReport()"><span class="score-max">/30</span></div></div>
+      <div class="score-row"><div class="score-label">A4. Deskripsi Projek &mdash; Tugasan Pentadbiran (40%)</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="rep_a4_admin_p2" oninput="clamp(this,20);calcReport()"><span class="score-max">/20</span></div></div>
+    </div>
+    <div class="score-row"><div class="score-label">A5. Kesimpulan<small>Sumbangan kepada organisasi &amp; pencapaian objektif LI</small></div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="rep_a5" oninput="clamp(this,5);calcReport()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">A6. Lampiran</div><div class="score-input-wrap"><input type="number" min="0" max="5" value="0" id="rep_a6" oninput="clamp(this,5);calcReport()"><span class="score-max">/5</span></div></div>
+    <div class="score-row"><div class="score-label">A7. Kualiti Kandungan<small>Konsisten dengan logbook, disokong dokumen (DFD/ERD/carta alir)</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_a7" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian A</span><span class="subtotal-val" id="rep_a_total">0 / 60</span></div><div class="progress-bar"><div class="progress-fill" id="rep_a_bar" style="width:0%"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian B: Persembahan Laporan <span class="badge-max">/ 10 markah</span></div>
+    <div class="score-row"><div class="score-label">Kualiti bahasa, persembahan visual, kekemasan, menepati format laporan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_b1" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Laporan LI (A + B)</span><span class="subtotal-val" id="rep_total">0 / 70</span></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Bahagian C: Ulasan</div>
+    <div class="field-row full"><div class="field"><label>Ulasan keseluruhan laporan LI</label><textarea id="rep_ulasan" placeholder="Masukkan ulasan..."></textarea></div></div>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
+</div>
+
+<!-- SUMMARY -->
+<div class="page" id="page-summary">
+  <div class="section">
+    <div class="section-title">Maklumat Pelajar</div>
+    <table class="print-table">
+      <tr><td style="width:38%;color:var(--text2);font-weight:500">Nama Pelajar</td><td id="s_nama">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">No. Matrik</td><td id="s_matrik">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">Kursus</td><td id="s_kursus">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">Sesi / Semester</td><td id="s_sesi">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">Penyelia Fakulti (SVF)</td><td id="s_svf">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">Penyelia Industri (SVI)</td><td id="s_svi">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">Organisasi</td><td id="s_org">&mdash;</td></tr>
+    </table>
+  </div>
+  <div class="section">
+    <div class="section-title">BITU3926 &mdash; Latihan Industri</div>
+    <div class="summary-grid">
+      <div class="stat-card"><div class="stat-label">SVI Bah. A</div><div class="stat-val" id="sum_svi_a">0</div><div class="stat-sub">/ 50</div></div>
+      <div class="stat-card"><div class="stat-label">SVI Bah. B</div><div class="stat-val" id="sum_svi_b">0</div><div class="stat-sub">/ 50</div></div>
+      <div class="stat-card"><div class="stat-label">SVF Bah. A</div><div class="stat-val" id="sum_svf_a">0</div><div class="stat-sub">/ 90</div></div>
+      <div class="stat-card"><div class="stat-label">e-Logbook</div><div class="stat-val" id="sum_log">0</div><div class="stat-sub">/ 70</div></div>
+    </div>
+    <div class="result-row">
+      <div><div class="result-label">Jumlah Markah BITU3926 (termasuk amalan kejuruteraan)</div><div class="result-score" id="sum_3926_total">0</div></div>
+      <div class="grade-pill grade-E" id="sum_3926_grade">&mdash;</div>
+    </div>
+    <table class="print-table">
+      <thead><tr><th>Komponen OBE</th><th>Markah Mentah</th><th>Wajaran</th><th>Markah Wajaran</th></tr></thead>
+      <tbody>
+        <tr><td>PRJ-1 (SVI A1)</td><td id="r_prj1r">0</td><td>15%</td><td id="r_prj1">0</td></tr>
+        <tr><td>PRJ-2 (SVI A2+A3+A4)</td><td id="r_prj2r">0</td><td>15%</td><td id="r_prj2">0</td></tr>
+        <tr><td>PRJ-3 (SVF A1)</td><td id="r_prj3r">0</td><td>15%</td><td id="r_prj3">0</td></tr>
+        <tr><td>PRJ-4 (SVF A2+A3+A4+A5)</td><td id="r_prj4r">0</td><td>15%</td><td id="r_prj4">0</td></tr>
+        <tr><td>LR1 (e-Logbook)</td><td id="r_lr1r">0</td><td>20%</td><td id="r_lr1">0</td></tr>
+        <tr><td>PR1-1 (SVI Bah. B)</td><td id="r_pr11r">0</td><td>20%</td><td id="r_pr11">0</td></tr>
+        <tr><td>Amalan Kejuruteraan</td><td id="r_hadir_s">0</td><td id="r_hadir_pct">Hadir</td><td id="r_hadir">0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section">
+    <div class="section-title">BITU3946 &mdash; Laporan Latihan Industri</div>
+    <div class="summary-grid">
+      <div class="stat-card"><div class="stat-label">Laporan LI</div><div class="stat-val" id="sum_rep">0</div><div class="stat-sub">/ 70</div></div>
+      <div class="stat-card"><div class="stat-label">Pbtangan SVF</div><div class="stat-val" id="sum_psvf">0</div><div class="stat-sub">/ 100</div></div>
+      <div class="stat-card"><div class="stat-label">Pbtangan SVI</div><div class="stat-val" id="sum_psvi">0</div><div class="stat-sub">/ 100</div></div>
+      <div class="stat-card"><div class="stat-label">Soft Skills</div><div class="stat-val" id="sum_soft">0</div><div class="stat-sub">/ 50</div></div>
+    </div>
+    <div class="result-row">
+      <div><div class="result-label">Jumlah Markah BITU3946</div><div class="result-score" id="sum_3946_total">0</div></div>
+      <div class="grade-pill grade-E" id="sum_3946_grade">&mdash;</div>
+    </div>
+    <table class="print-table">
+      <thead><tr><th>Komponen OBE</th><th>Markah Mentah</th><th>Wajaran</th><th>Markah Wajaran</th></tr></thead>
+      <tbody>
+        <tr><td>TR1 (Laporan LI)</td><td id="r2_tr1r">0</td><td>70%</td><td id="r2_tr1">0</td></tr>
+        <tr><td>PR1-1 (Pembentangan SVF)</td><td id="r2_svfr">0</td><td>10%</td><td id="r2_svf">0</td></tr>
+        <tr><td>PR1-1 (Pembentangan SVI)</td><td id="r2_svir">0</td><td>10%</td><td id="r2_svi">0</td></tr>
+        <tr><td>PR1-2 (Soft Skills / SVI Bah. B)</td><td id="r2_pr12r">0</td><td>10%</td><td id="r2_pr12">0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section">
+    <div class="section-title">Ulasan &amp; Cadangan</div>
+    <table class="print-table">
+      <tr><td style="width:38%;color:var(--text2);font-weight:500">Penilaian SVI</td><td id="s_svi_rating">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">Penilaian SVF</td><td id="s_svf_rating">&mdash;</td></tr>
+      <tr><td style="color:var(--text2);font-weight:500">Cadangan Status SVF</td><td id="s_svf_status">&mdash;</td></tr>
+    </table>
+  </div>
+  <div class="btn-row">
+    <button class="btn-primary" onclick="calcSummary()">Kira Semula</button>
+    <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+    <button class="btn-secondary" onclick="window.print()">Cetak / PDF</button>
+    <button class="btn-danger" onclick="resetAll()">Reset Semua</button>
+  </div>
+</div>
+</div>
+
+<script>
+var pilihan=1,hadir=1;
+function showTab(t){var tabs=["info","svi","svf","logbook","presentation","report","summary"];document.querySelectorAll(".tab").forEach(function(el,i){el.classList.toggle("active",tabs[i]===t);});document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});document.getElementById("page-"+t).classList.add("active");if(t==="summary")calcSummary();window.scrollTo(0,0);}
+function clamp(el,max){var vv=parseInt(el.value);if(isNaN(vv)||vv<0)el.value=0;else if(vv>max)el.value=max;}
+function selectPilihan(n){pilihan=n;document.getElementById("opt-p1").classList.toggle("selected",n===1);document.getElementById("opt-p2").classList.toggle("selected",n===2);document.getElementById("rep_p1_wrap").style.display=n===1?"":"none";document.getElementById("rep_p2_wrap").style.display=n===2?"":"none";document.getElementById("pilihan-note").innerHTML="Menggunakan <strong>Pilihan "+n+"</strong> &mdash; "+(n===1?"Tugasan Teknikal 80% (max 40m) + Pentadbiran 20% (max 10m)":"Tugasan Teknikal 60% (max 30m) + Pentadbiran 40% (max 20m)");calcReport();}
+function selectHadir(n){hadir=n;document.getElementById("opt-hadir").classList.toggle("selected",n===1);document.getElementById("opt-thadir").classList.toggle("selected",n===0);}
+function selectR(id,val,el){document.getElementById(id).value=val;el.closest(".radio-group").querySelectorAll(".radio-opt").forEach(function(r){r.classList.remove("selected");});el.classList.add("selected");}
+function v(id){return Math.max(0,parseInt(document.getElementById(id).value)||0);}
+function setBar(id,val,max){document.getElementById(id).style.width=Math.min(100,Math.round(val/max*100))+"%";}
+function fmt(n){return parseFloat(n.toFixed(1));}
+function calcSVI(){var a=v("svi_a1")+v("svi_a2")+v("svi_a3")+v("svi_a4");var b=v("svi_b1")+v("svi_b2")+v("svi_b3")+v("svi_b4")+v("svi_b5")+v("svi_b6")+v("svi_b7")+v("svi_b8")+v("svi_b9")+v("svi_b10");document.getElementById("svi_a_total").textContent=a+" / 50";document.getElementById("svi_b_total").textContent=b+" / 50";document.getElementById("svi_total").textContent=(a+b)+" / 100";setBar("svi_a_bar",a,50);setBar("svi_b_bar",b,50);}
+function calcSVF(){var a=v("svf_a1")+v("svf_a2")+v("svf_a3")+v("svf_a4")+v("svf_a5");var b=v("svf_b1"),c=v("svf_c1");document.getElementById("svf_a_total").textContent=a+" / 90";document.getElementById("svf_ab_total").textContent=(a+b)+" / 100";document.getElementById("svf_total").textContent=(a+b+c)+" / 110";setBar("svf_a_bar",a,90);}
+function calcLog(){var a=v("log_a1"),b=v("log_b1"),c=v("log_c1");document.getElementById("log_a_total").textContent=a+" / 40";document.getElementById("log_b_total").textContent=b+" / 20";document.getElementById("log_total").textContent=(a+b+c)+" / 70";setBar("log_a_bar",a,40);setBar("log_b_bar",b,20);}
+function calcPres(){var svf=v("psvf_a")+v("psvf_b1")+v("psvf_b2")+v("psvf_b3")+v("psvf_b4")+v("psvf_b5")+v("psvf_c1")+v("psvf_c2")+v("psvf_c3")+v("psvf_d1")+v("psvf_d2")+v("psvf_d3")+v("psvf_d4");var svi=v("psvi_a")+v("psvi_b1")+v("psvi_b2")+v("psvi_b3")+v("psvi_b4")+v("psvi_b5")+v("psvi_c1")+v("psvi_c2")+v("psvi_c3")+v("psvi_d1")+v("psvi_d2")+v("psvi_d3")+v("psvi_d4");document.getElementById("psvf_total").textContent=svf+" / 100";document.getElementById("psvi_total").textContent=svi+" / 100";setBar("psvf_bar",svf,100);setBar("psvi_bar",svi,100);}
+function calcReport(){var a4=pilihan===1?(v("rep_a4_tech_p1")+v("rep_a4_admin_p1")):(v("rep_a4_tech_p2")+v("rep_a4_admin_p2"));var a=v("rep_a1")+v("rep_a2")+v("rep_a3")+a4+v("rep_a5")+v("rep_a6")+v("rep_a7");var b=v("rep_b1");document.getElementById("rep_a_total").textContent=a+" / 60";document.getElementById("rep_b_total").textContent=b+" / 10";document.getElementById("rep_total").textContent=(a+b)+" / 70";setBar("rep_a_bar",a,60);}
+function getGrade(m){if(m>=80)return{g:"A",cls:"grade-A"};if(m>=75)return{g:"A-",cls:"grade-A"};if(m>=70)return{g:"B+",cls:"grade-B"};if(m>=65)return{g:"B",cls:"grade-B"};if(m>=60)return{g:"B-",cls:"grade-B"};if(m>=55)return{g:"C+",cls:"grade-C"};if(m>=50)return{g:"C",cls:"grade-C"};if(m>=47)return{g:"C-",cls:"grade-C"};if(m>=44)return{g:"D+",cls:"grade-D"};if(m>=40)return{g:"D",cls:"grade-D"};return{g:"E",cls:"grade-E"};}
+function calcSummary(){document.getElementById("s_nama").textContent=document.getElementById("nama_pelajar").value||"\u2014";document.getElementById("s_matrik").textContent=document.getElementById("no_matrik").value||"\u2014";document.getElementById("s_kursus").textContent=document.getElementById("kursus").value||"\u2014";document.getElementById("s_sesi").textContent=document.getElementById("sesi").value+" Sem "+document.getElementById("semester").value;document.getElementById("s_svf").textContent=document.getElementById("svf_name").value||"\u2014";document.getElementById("s_svi").textContent=document.getElementById("svi_name").value||"\u2014";document.getElementById("s_org").textContent=document.getElementById("organisasi").value||"\u2014";document.getElementById("s_svi_rating").textContent=document.getElementById("svi_rating").value||"\u2014";document.getElementById("s_svf_rating").textContent=document.getElementById("svf_rating").value||"\u2014";document.getElementById("s_svf_status").textContent=document.getElementById("svf_status").value||"\u2014";var sviA=v("svi_a1")+v("svi_a2")+v("svi_a3")+v("svi_a4");var sviB=v("svi_b1")+v("svi_b2")+v("svi_b3")+v("svi_b4")+v("svi_b5")+v("svi_b6")+v("svi_b7")+v("svi_b8")+v("svi_b9")+v("svi_b10");var svfA=v("svf_a1")+v("svf_a2")+v("svf_a3")+v("svf_a4")+v("svf_a5");var logT=v("log_a1")+v("log_b1")+v("log_c1");var psvfT=v("psvf_a")+v("psvf_b1")+v("psvf_b2")+v("psvf_b3")+v("psvf_b4")+v("psvf_b5")+v("psvf_c1")+v("psvf_c2")+v("psvf_c3")+v("psvf_d1")+v("psvf_d2")+v("psvf_d3")+v("psvf_d4");var psviT=v("psvi_a")+v("psvi_b1")+v("psvi_b2")+v("psvi_b3")+v("psvi_b4")+v("psvi_b5")+v("psvi_c1")+v("psvi_c2")+v("psvi_c3")+v("psvi_d1")+v("psvi_d2")+v("psvi_d3")+v("psvi_d4");var a4rep=pilihan===1?(v("rep_a4_tech_p1")+v("rep_a4_admin_p1")):(v("rep_a4_tech_p2")+v("rep_a4_admin_p2"));var repT=v("rep_a1")+v("rep_a2")+v("rep_a3")+a4rep+v("rep_a5")+v("rep_a6")+v("rep_a7")+v("rep_b1");document.getElementById("sum_svi_a").textContent=sviA;document.getElementById("sum_svi_b").textContent=sviB;document.getElementById("sum_svf_a").textContent=svfA;document.getElementById("sum_log").textContent=logT;document.getElementById("sum_rep").textContent=repT;document.getElementById("sum_psvf").textContent=psvfT;document.getElementById("sum_psvi").textContent=psviT;document.getElementById("sum_soft").textContent=sviB;var sviA1=v("svi_a1");var sviA23=v("svi_a2")+v("svi_a3")+v("svi_a4");var svfA1=v("svf_a1");var svfA23=v("svf_a2")+v("svf_a3")+v("svf_a4")+v("svf_a5");var prj1=fmt(sviA1/10*15);var prj2=fmt(sviA23/40*15);var prj3=fmt(svfA1/10*15);var prj4=fmt(svfA23/80*15);var lr1=fmt(logT/70*20);var pr11=fmt(sviB/50*20);var hm=hadir?10:0;var b3926=fmt(prj1+prj2+prj3+prj4+lr1+pr11+hm);document.getElementById("r_prj1r").textContent=sviA1;document.getElementById("r_prj1").textContent=prj1;document.getElementById("r_prj2r").textContent=sviA23;document.getElementById("r_prj2").textContent=prj2;document.getElementById("r_prj3r").textContent=svfA1;document.getElementById("r_prj3").textContent=prj3;document.getElementById("r_prj4r").textContent=svfA23;document.getElementById("r_prj4").textContent=prj4;document.getElementById("r_lr1r").textContent=logT;document.getElementById("r_lr1").textContent=lr1;document.getElementById("r_pr11r").textContent=sviB;document.getElementById("r_pr11").textContent=pr11;document.getElementById("r_hadir_s").textContent=hm;document.getElementById("r_hadir_pct").textContent=hadir?"Hadir":"Tidak Hadir";document.getElementById("r_hadir").textContent=hm;document.getElementById("sum_3926_total").textContent=b3926;var g1=getGrade(b3926);var gb1=document.getElementById("sum_3926_grade");gb1.textContent=g1.g;gb1.className="grade-pill "+g1.cls;var tr1=fmt(repT/70*70);var p11svf=fmt(psvfT/100*10);var p11svi=fmt(psviT/100*10);var pr12=fmt(sviB/50*10);var b3946=fmt(tr1+p11svf+p11svi+pr12);document.getElementById("r2_tr1r").textContent=repT;document.getElementById("r2_tr1").textContent=tr1;document.getElementById("r2_svfr").textContent=psvfT;document.getElementById("r2_svf").textContent=p11svf;document.getElementById("r2_svir").textContent=psviT;document.getElementById("r2_svi").textContent=p11svi;document.getElementById("r2_pr12r").textContent=sviB;document.getElementById("r2_pr12").textContent=pr12;document.getElementById("sum_3946_total").textContent=b3946;var g2=getGrade(b3946);var gb2=document.getElementById("sum_3946_grade");gb2.textContent=g2.g;gb2.className="grade-pill "+g2.cls;}
+function exportCSV(){var nama=document.getElementById("nama_pelajar").value||"";var matrik=document.getElementById("no_matrik").value||"";var sviA=v("svi_a1")+v("svi_a2")+v("svi_a3")+v("svi_a4");var sviB=v("svi_b1")+v("svi_b2")+v("svi_b3")+v("svi_b4")+v("svi_b5")+v("svi_b6")+v("svi_b7")+v("svi_b8")+v("svi_b9")+v("svi_b10");var logT=v("log_a1")+v("log_b1")+v("log_c1");var psvfT=v("psvf_a")+v("psvf_b1")+v("psvf_b2")+v("psvf_b3")+v("psvf_b4")+v("psvf_b5")+v("psvf_c1")+v("psvf_c2")+v("psvf_c3")+v("psvf_d1")+v("psvf_d2")+v("psvf_d3")+v("psvf_d4");var psviT=v("psvi_a")+v("psvi_b1")+v("psvi_b2")+v("psvi_b3")+v("psvi_b4")+v("psvi_b5")+v("psvi_c1")+v("psvi_c2")+v("psvi_c3")+v("psvi_d1")+v("psvi_d2")+v("psvi_d3")+v("psvi_d4");var a4rep=pilihan===1?(v("rep_a4_tech_p1")+v("rep_a4_admin_p1")):(v("rep_a4_tech_p2")+v("rep_a4_admin_p2"));var repT=v("rep_a1")+v("rep_a2")+v("rep_a3")+a4rep+v("rep_a5")+v("rep_a6")+v("rep_a7")+v("rep_b1");var rows=[["Field","Value"],["Nama Pelajar",nama],["No Matrik",matrik],["Kursus",document.getElementById("kursus").value],["Semester",document.getElementById("semester").value],["Sesi",document.getElementById("sesi").value],["SVF",document.getElementById("svf_name").value],["SVI",document.getElementById("svi_name").value],["Organisasi",document.getElementById("organisasi").value],["Pilihan Tugasan","Pilihan "+pilihan],["Amalan Kejuruteraan",hadir?"Hadir":"Tidak Hadir"],["---","--- SVI ---"],["SVI A1",v("svi_a1")],["SVI A2",v("svi_a2")],["SVI A3",v("svi_a3")],["SVI A4",v("svi_a4")],["SVI Bah A",sviA],["SVI Bah B",sviB],["SVI Total",sviA+sviB],["SVI Penilaian",document.getElementById("svi_rating").value],["---","--- SVF ---"],["SVF A1",v("svf_a1")],["SVF A2",v("svf_a2")],["SVF A3",v("svf_a3")],["SVF A4",v("svf_a4")],["SVF A5",v("svf_a5")],["SVF B",v("svf_b1")],["SVF Komitmen",v("svf_c1")],["SVF Penilaian",document.getElementById("svf_rating").value],["SVF Status",document.getElementById("svf_status").value],["---","--- Logbook ---"],["Logbook Kandungan",v("log_a1")],["Logbook Persembahan",v("log_b1")],["Logbook Penghantaran",v("log_c1")],["Logbook Total",logT],["---","--- Pembentangan ---"],["Pembentangan SVF",psvfT],["Pembentangan SVI",psviT],["---","--- Laporan LI ---"],["Laporan LI Total",repT],["---","--- Gred Akhir ---"],["BITU3926 Markah",document.getElementById("sum_3926_total").textContent],["BITU3926 Gred",document.getElementById("sum_3926_grade").textContent],["BITU3946 Markah",document.getElementById("sum_3946_total").textContent],["BITU3946 Gred",document.getElementById("sum_3946_grade").textContent]];var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");var blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="LI_"+(matrik||"pelajar")+"_"+new Date().toISOString().slice(0,10)+".csv";a.click();}
+function resetAll(){if(!confirm("Reset semua data? Tindakan ini tidak boleh diundo."))return;document.querySelectorAll("input[type=number]").forEach(function(i){i.value=0;});document.querySelectorAll("input[type=text]").forEach(function(i){i.value="";});document.querySelectorAll("textarea").forEach(function(i){i.value="";});document.querySelectorAll("select").forEach(function(i){i.selectedIndex=0;});document.querySelectorAll("input[type=hidden]").forEach(function(i){i.value="";});document.querySelectorAll(".radio-opt").forEach(function(i){i.classList.remove("selected");});pilihan=1;hadir=1;document.getElementById("opt-p1").classList.add("selected");document.getElementById("opt-hadir").classList.add("selected");document.getElementById("rep_p1_wrap").style.display="";document.getElementById("rep_p2_wrap").style.display="none";calcSVI();calcSVF();calcLog();calcPres();calcReport();showTab("info");}
+</script>
+</body>
+</html>
