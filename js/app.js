@@ -43,6 +43,7 @@ function doLogout() {
 
 function showApp(user) {
   document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
   var nameEl = document.getElementById('user-name-display');
   nameEl.textContent = user.displayName || user.username;
   var badgeEl = document.getElementById('role-badge-display');
