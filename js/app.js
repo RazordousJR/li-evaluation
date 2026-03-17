@@ -1,4 +1,6 @@
 // ===== AUTH =====
+var APP_LS_VERSION = 'v3'; // bump this whenever localStorage schema changes
+
 var DEFAULT_USERS = [
   {email:'admin@utem.edu.my',      password:'admin123',      roles:['ADMIN'],     displayName:'Administrator'},
   {email:'ajkli@utem.edu.my',      password:'ajkli123',      roles:['AJK_LI'],    displayName:'AJK Latihan Industri'},
@@ -14,22 +16,16 @@ function getEffectiveRole(roles) {
 }
 
 function initAuth() {
-  // Re-seed if missing or old format (old format used 'username' not 'email')
-  var stored = localStorage.getItem('li_users');
-  var needReseed = !stored;
-  if (!needReseed) {
-    try { var u = JSON.parse(stored); if (!u[0] || !u[0].email) needReseed = true; } catch(e) { needReseed = true; }
-  }
-  if (needReseed) {
-    localStorage.setItem('li_users', JSON.stringify(DEFAULT_USERS));
+  // If schema version changed, wipe stale localStorage so nothing breaks
+  if (localStorage.getItem('li_version') !== APP_LS_VERSION) {
+    localStorage.removeItem('li_users');
     localStorage.removeItem('li_session');
+    localStorage.setItem('li_version', APP_LS_VERSION);
+  }
+  if (!localStorage.getItem('li_users')) {
+    localStorage.setItem('li_users', JSON.stringify(DEFAULT_USERS));
   }
   var session = getSession();
-  // Discard sessions from old format (had 'username'/'role' instead of 'email'/'roles')
-  if (session && (!session.email || !session.roles)) {
-    localStorage.removeItem('li_session');
-    session = null;
-  }
   if (session) { showApp(session); }
 }
 
@@ -38,14 +34,17 @@ function getSession() {
 }
 
 function doLogin() {
-  var email = document.getElementById('login-email').value.trim().toLowerCase();
-  var pass  = document.getElementById('login-password').value;
+  var emailEl = document.getElementById('login-email');
+  var passEl  = document.getElementById('login-password');
+  var errEl   = document.getElementById('login-error');
+  if (!emailEl || !passEl || !errEl) return; // guard against DOM mismatch
+  var email = emailEl.value.trim().toLowerCase();
+  var pass  = passEl.value;
   var users = JSON.parse(localStorage.getItem('li_users') || '[]');
   var user  = null;
   for (var i = 0; i < users.length; i++) {
     if (users[i].email.toLowerCase() === email && users[i].password === pass) { user = users[i]; break; }
   }
-  var errEl = document.getElementById('login-error');
   if (!user) { errEl.style.display = 'block'; return; }
   errEl.style.display = 'none';
   var sess = {email: user.email, roles: user.roles, displayName: user.displayName};
@@ -73,16 +72,12 @@ function showApp(user) {
 
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
-  // ADMIN — no restrictions
   if (eff === 'ADMIN') return;
-  // AJK_LI — can key in marks and view/print; no user management (not yet implemented)
   if (eff === 'AJK_LI') return;
-  // PENSYARAH — can key in marks; Ringkasan & Gred is view-only (hide Reset)
-  if (eff === 'PENSYARAH') {
-    document.querySelectorAll('.btn-danger').forEach(function(btn) {
-      btn.classList.add('hidden-by-role');
-    });
-  }
+  // PENSYARAH — Ringkasan & Gred is view-only: hide Reset button
+  document.querySelectorAll('.btn-danger').forEach(function(btn) {
+    btn.classList.add('hidden-by-role');
+  });
 }
 // ===== END AUTH =====
 
