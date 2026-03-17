@@ -1,19 +1,36 @@
 // ===== AUTH =====
 var DEFAULT_USERS = [
-  {username:'admin',      password:'admin123',      role:'ADMIN',     displayName:'Administrator'},
-  {username:'ajkli',      password:'ajkli123',      role:'AJK_LI',    displayName:'AJK LI'},
-  {username:'pensyarah',  password:'pensyarah123',  role:'PENSYARAH', displayName:'Pensyarah'}
+  {email:'admin@utem.edu.my',      password:'admin123',      roles:['ADMIN'],     displayName:'Administrator'},
+  {email:'ajkli@utem.edu.my',      password:'ajkli123',      roles:['AJK_LI'],    displayName:'AJK Latihan Industri'},
+  {email:'pensyarah@utem.edu.my',  password:'pensyarah123',  roles:['PENSYARAH'], displayName:'Pensyarah'}
 ];
 
+// Returns 'ADMIN', 'AJK_LI', or 'PENSYARAH' based on highest privilege in the roles array
+function getEffectiveRole(roles) {
+  if (!roles || roles.length === 0) return 'PENSYARAH';
+  if (roles.indexOf('ADMIN') !== -1) return 'ADMIN';
+  if (roles.indexOf('AJK_LI') !== -1) return 'AJK_LI';
+  return 'PENSYARAH';
+}
+
 function initAuth() {
-  if (!localStorage.getItem('li_users')) {
+  // Re-seed if missing or old format (old format used 'username' not 'email')
+  var stored = localStorage.getItem('li_users');
+  var needReseed = !stored;
+  if (!needReseed) {
+    try { var u = JSON.parse(stored); if (!u[0] || !u[0].email) needReseed = true; } catch(e) { needReseed = true; }
+  }
+  if (needReseed) {
     localStorage.setItem('li_users', JSON.stringify(DEFAULT_USERS));
+    localStorage.removeItem('li_session');
   }
   var session = getSession();
-  if (session) {
-    showApp(session);
+  // Discard sessions from old format (had 'username'/'role' instead of 'email'/'roles')
+  if (session && (!session.email || !session.roles)) {
+    localStorage.removeItem('li_session');
+    session = null;
   }
-  // if no session, login overlay stays visible (it's display:flex by default in CSS)
+  if (session) { showApp(session); }
 }
 
 function getSession() {
@@ -21,17 +38,17 @@ function getSession() {
 }
 
 function doLogin() {
-  var uname = document.getElementById('login-username').value.trim();
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
   var pass  = document.getElementById('login-password').value;
   var users = JSON.parse(localStorage.getItem('li_users') || '[]');
   var user  = null;
   for (var i = 0; i < users.length; i++) {
-    if (users[i].username === uname && users[i].password === pass) { user = users[i]; break; }
+    if (users[i].email.toLowerCase() === email && users[i].password === pass) { user = users[i]; break; }
   }
   var errEl = document.getElementById('login-error');
   if (!user) { errEl.style.display = 'block'; return; }
   errEl.style.display = 'none';
-  var sess = {username: user.username, role: user.role, displayName: user.displayName};
+  var sess = {email: user.email, roles: user.roles, displayName: user.displayName};
   localStorage.setItem('li_session', JSON.stringify(sess));
   showApp(sess);
 }
@@ -44,40 +61,27 @@ function doLogout() {
 function showApp(user) {
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('main-app').style.display = 'block';
-  var nameEl = document.getElementById('user-name-display');
-  nameEl.textContent = user.displayName || user.username;
+  document.getElementById('user-name-display').textContent = user.displayName || user.email;
+  var effectiveRole = getEffectiveRole(user.roles);
   var badgeEl = document.getElementById('role-badge-display');
-  badgeEl.className = 'role-badge role-' + user.role;
-  badgeEl.textContent = user.role.replace('_', ' ');
+  badgeEl.className = 'role-badge role-' + effectiveRole;
+  var roleLabels = {ADMIN:'Admin', AJK_LI:'AJK LI', PENSYARAH:'Pensyarah'};
+  badgeEl.textContent = roleLabels[effectiveRole] || effectiveRole;
   document.getElementById('user-info').style.display = 'flex';
-  applyRoleRestrictions(user.role);
+  applyRoleRestrictions(user.roles);
 }
 
-function applyRoleRestrictions(role) {
-  if (role === 'ADMIN') return;
-
-  if (role === 'AJK_LI') {
-    // Disable all form inputs — view only
-    document.querySelectorAll('input[type=number], input[type=text], select, textarea').forEach(function(el) {
-      el.classList.add('input-disabled');
-      el.disabled = true;
-    });
-    document.querySelectorAll('.radio-opt').forEach(function(el) {
-      el.classList.add('radio-disabled');
-    });
-    // Hide destructive/edit action buttons; keep Cetak, Export, Kira Semula, navigation
+function applyRoleRestrictions(roles) {
+  var eff = getEffectiveRole(roles);
+  // ADMIN — no restrictions
+  if (eff === 'ADMIN') return;
+  // AJK_LI — can key in marks and view/print; no user management (not yet implemented)
+  if (eff === 'AJK_LI') return;
+  // PENSYARAH — can key in marks; Ringkasan & Gred is view-only (hide Reset)
+  if (eff === 'PENSYARAH') {
     document.querySelectorAll('.btn-danger').forEach(function(btn) {
       btn.classList.add('hidden-by-role');
     });
-    return;
-  }
-
-  if (role === 'PENSYARAH') {
-    // Ringkasan & Gred is read-only: hide Reset button only
-    document.querySelectorAll('.btn-danger').forEach(function(btn) {
-      btn.classList.add('hidden-by-role');
-    });
-    return;
   }
 }
 // ===== END AUTH =====

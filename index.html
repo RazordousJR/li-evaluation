@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistem Penilaian Latihan Industri — UTeM FKIK</title>
+<title>Sistem Penilaian Latihan Industri — UTeM FTMK</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -12,20 +12,21 @@
 <div class="login-overlay" id="login-overlay">
   <div class="login-card">
     <div class="login-logo">
+      <div class="utem-logo-circle">UTeM</div>
       <h2>Sistem Penilaian Latihan Industri</h2>
-      <p>Universiti Teknikal Malaysia Melaka (UTeM)</p>
-      <p>Fakulti Teknologi Maklumat dan Komunikasi</p>
+      <p class="login-faculty">Fakulti Teknologi Maklumat dan Komunikasi (FTMK)</p>
+      <p class="login-uni">Universiti Teknikal Malaysia Melaka</p>
     </div>
     <div class="login-body">
       <div class="field">
-        <label>Nama Pengguna</label>
-        <input type="text" id="login-username" placeholder="Nama pengguna" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+        <label>E-mel</label>
+        <input type="email" id="login-email" placeholder="email@utem.edu.my" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="field">
         <label>Kata Laluan</label>
         <input type="password" id="login-password" placeholder="Kata laluan" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
-      <div class="login-error" id="login-error">Nama pengguna atau kata laluan tidak sah.</div>
+      <div class="login-error" id="login-error">E-mel atau kata laluan tidak sah.</div>
       <button class="btn-primary login-submit-btn" onclick="doLogin()">Log Masuk</button>
     </div>
   </div>
