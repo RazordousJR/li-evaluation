@@ -24,9 +24,10 @@ Covers two courses: BITU3926 (Latihan Industri) and BITU3946 (Laporan Latihan In
 - Login page (overlay) is the first thing the user sees on load
 - Login identifier is **email** (type=email input)
 - Sessions stored in `li_session` (localStorage); users list stored in `li_users` (localStorage)
+- Schema version stored in `li_version` (currently `'v3'`); bump `APP_LS_VERSION` in app.js whenever localStorage format changes — this auto-wipes stale data on load
 - User object format: `{email, password, roles:[], displayName}`
 - Session object format: `{email, roles:[], displayName}`
-- Default accounts seeded automatically on first load (re-seeds if old username-based format detected):
+- Default accounts seeded automatically on first load (re-seeds if `li_version` mismatch):
   - admin@utem.edu.my / admin123 (ADMIN)
   - ajkli@utem.edu.my / ajkli123 (AJK_LI)
   - pensyarah@utem.edu.my / pensyarah123 (PENSYARAH)
@@ -37,6 +38,7 @@ Covers two courses: BITU3926 (Latihan Industri) and BITU3946 (Laporan Latihan In
   - ADMIN: no restrictions
   - AJK_LI: no restrictions (full mark entry + view/print)
   - PENSYARAH: Reset button hidden; all inputs remain editable
+- `doLogin()` guards against DOM element mismatch (null-checks before `.value` access)
 - User management (add/delete users, reset passwords) — not yet implemented (ADMIN only future feature)
 ## Tech Stack
 - Vanilla HTML, CSS, JavaScript only
