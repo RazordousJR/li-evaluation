@@ -539,7 +539,6 @@
         <div class="check-group">
           <label class="check-opt"><input type="checkbox" id="um-add-r-admin" value="ADMIN"> ADMIN</label>
           <label class="check-opt"><input type="checkbox" id="um-add-r-ajk" value="AJK_LI"> AJK_LI</label>
-          <label class="check-opt"><input type="checkbox" id="um-add-r-psy" value="PENSYARAH" checked> PENSYARAH</label>
         </div>
       </div>
     </div>
@@ -554,7 +553,8 @@
   <div class="section">
     <div class="section-title" style="justify-content:space-between;align-items:center">
       <span>Upload Pensyarah</span>
-      <div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-secondary" onclick="openAddPensyarahModal()">+ Tambah Pensyarah</button>
         <button class="btn-primary" onclick="document.getElementById('up-pensyarah-file').click()">&#8679; Upload Pensyarah (.xlsx/.csv)</button>
         <input type="file" id="up-pensyarah-file" accept=".xlsx,.csv" style="display:none" onchange="handleUploadPensyarah(this)">
       </div>
@@ -594,7 +594,8 @@
   <div class="section">
     <div class="section-title" style="justify-content:space-between;align-items:center">
       <span>Upload Senarai Pelajar</span>
-      <div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-secondary" onclick="openAddPelajarModal()">+ Tambah Pelajar</button>
         <button class="btn-primary" onclick="document.getElementById('up-pelajar-file').click()">&#8679; Upload Pelajar (.xlsx/.csv)</button>
         <input type="file" id="up-pelajar-file" accept=".xlsx,.csv" style="display:none" onchange="handleUploadPelajar(this)">
       </div>
@@ -622,10 +623,11 @@
             <th>Program</th>
             <th>SVF Ditetapkan</th>
             <th>Tukar SVF</th>
+            <th>Tindakan</th>
           </tr>
         </thead>
         <tbody id="pelajar-tbody">
-          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>
+          <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>
         </tbody>
       </table>
     </div>
@@ -782,6 +784,63 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeEpModal()">Batal</button>
       <button class="btn-primary" onclick="saveEpModal()">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAMBAH PENSYARAH MODAL -->
+<div class="modal-overlay" id="add-pensyarah-modal" style="display:none">
+  <div class="modal-card" style="max-width:480px">
+    <div class="modal-header">
+      <span>Tambah Pensyarah</span>
+      <button class="modal-close" onclick="closeAddPensyarahModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nama Penuh <span style="color:red">*</span></label><input type="text" id="ap-name" placeholder="Nama penuh pensyarah"></div>
+      <div class="field-row">
+        <div class="field"><label>No Staf <span style="color:red">*</span></label><input type="text" id="ap-nostaf" placeholder="No staf"></div>
+        <div class="field"><label>Jabatan <span style="color:red">*</span></label><input type="text" id="ap-jabatan" placeholder="Jabatan / unit"></div>
+      </div>
+      <div class="field"><label>E-mel <span style="color:red">*</span></label><input type="email" id="ap-email" placeholder="nama@utem.edu.my"></div>
+      <div class="field"><label>Kata Laluan <span style="color:var(--text3);font-weight:400">(kosongkan untuk guna "utem1234")</span></label><input type="password" id="ap-pw" placeholder="Kata laluan (lalai: utem1234)"></div>
+      <div class="modal-msg modal-err" id="ap-error"></div>
+      <div class="modal-msg modal-suc" id="ap-success" style="color:var(--green);display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAddPensyarahModal()">Batal</button>
+      <button class="btn-primary" onclick="saveAddPensyarah()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAMBAH PELAJAR MODAL -->
+<div class="modal-overlay" id="add-pelajar-modal" style="display:none">
+  <div class="modal-card" style="max-width:440px">
+    <div class="modal-header">
+      <span>Tambah Pelajar</span>
+      <button class="modal-close" onclick="closeAddPelajarModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nama Pelajar <span style="color:red">*</span></label><input type="text" id="adp-name" placeholder="Nama penuh pelajar"></div>
+      <div class="field"><label>No Matrik <span style="color:red">*</span></label><input type="text" id="adp-matric" placeholder="cth: B022310001"></div>
+      <div class="field"><label>Nama Program / Kursus <span style="color:red">*</span></label>
+        <select id="adp-kursus">
+          <option value="">-- Pilih Program --</option>
+          <option value="BITC">BITC - Kejuruteraan Komputer</option>
+          <option value="BITD">BITD - Keselamatan Digital</option>
+          <option value="BITM">BITM - Multimedia</option>
+          <option value="BITI">BITI - Teknologi Maklumat</option>
+          <option value="BITS">BITS - Sains Komputer</option>
+          <option value="BITE">BITE - Kejuruteraan Perisian</option>
+          <option value="BITZ">BITZ - Rangkaian Komputer</option>
+        </select>
+      </div>
+      <div class="modal-msg modal-err" id="adp-error"></div>
+      <div class="modal-msg modal-suc" id="adp-success" style="color:var(--green);display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAddPelajarModal()">Batal</button>
+      <button class="btn-primary" onclick="saveAddPelajar()">Tambah</button>
     </div>
   </div>
 </div>

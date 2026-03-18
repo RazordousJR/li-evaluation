@@ -93,8 +93,8 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 ## User Management Panel (ADMIN only — IMPLEMENTED)
 - Accessible via "Pengurusan Pengguna" sidebar nav item (admin-only)
 - Page ID: `#page-usermgmt`
-- **Users table**: shows Nama Penuh, E-mel, Peranan (role badges), Status (Aktif/Tidak Aktif), Tindakan
-- **Add user form**: Nama Penuh, E-mel, Kata Laluan, Peranan checkboxes (ADMIN/AJK_LI/PENSYARAH)
+- **Users table**: shows only users with ADMIN or AJK_LI roles (PENSYARAH-only users excluded)
+- **Add user form**: Nama Penuh, E-mel, Kata Laluan, Peranan checkboxes (ADMIN/AJK_LI only — PENSYARAH removed)
 - **Tindakan per user** (keyed by email, not array index):
   - Edit — opens modal to change name, email, roles (async Supabase update)
   - Reset PW — opens modal to set new password, min 4 chars (async Supabase update)
@@ -113,9 +113,18 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
   - **Duplicate detection** (see below) before confirming
   - On confirm: upserts into `public.users` with `roles: ['PENSYARAH']`, `password_hash: 'utem1234'`
   - Reports success/skipped/error count via alert
+- **Tambah Pensyarah** button (manual entry):
+  - Opens `add-pensyarah-modal` with fields: Nama Penuh, No Staf, Jabatan, Email (must end with @utem.edu.my), Kata Laluan (optional, default 'utem1234')
+  - `openAddPensyarahModal()` / `closeAddPensyarahModal()` / `saveAddPensyarah()`
+  - Inserts into `public.users` with `roles: ['PENSYARAH']`
 - **Pensyarah table**: Nama Penuh, No Staf, Jabatan, Email, Status, Tindakan
-  - Tindakan: Edit (opens `ep-modal` with no_staf/jabatan/email/is_active) + Reset PW (reuses existing `um-pw-modal`)
+  - Tindakan: Edit (opens `ep-modal` with no_staf/jabatan/email/is_active) + Reset PW (reuses `um-pw-modal`) + Padam (ADMIN only)
   - `ep-modal` — edit pensyarah modal with fields: Nama Penuh, No Staf, Jabatan, E-mel, Status checkbox
+  - **Padam** (ADMIN only, hidden for own account): checks if pensyarah has assigned students
+    - If students exist: shows warning with count, offers "Padam & Auto-Unassign"
+    - If no students: shows simple confirmation
+    - On confirm: sets `svf_email = NULL` for assigned students, then deletes from `public.users`
+    - `deletePensyarah(email, name)` handles this flow
 - **Search/filter**: text input filters table client-side by Nama or Jabatan; `filterPensyarah()` + `renderPensyarahTable()`
 
 ## Urus Pelajar Panel (ADMIN + AJK_LI — IMPLEMENTED)
@@ -127,13 +136,20 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
   - **Duplicate detection** (see below) before confirming
   - On confirm: upserts into `public.students` (unique key: `matric_no`)
   - Reports success/skipped/error count via alert
-- **Students table**: No Matrik, Nama Pelajar, Program, SVF Ditetapkan, Tukar SVF
+- **Tambah Pelajar** button (manual entry):
+  - Opens `add-pelajar-modal` with fields: Nama Pelajar, No Matrik, Nama Program (dropdown: BITC/BITD/BITM/BITI/BITS/BITE/BITZ)
+  - `openAddPelajarModal()` / `closeAddPelajarModal()` / `saveAddPelajar()`
+  - Inserts into `public.students`
+- **Students table**: checkbox, No Matrik, Nama Pelajar, Program, SVF Ditetapkan, Tukar SVF, Tindakan (7 cols)
   - SVF Ditetapkan shows pensyarah full_name (green badge) or red "Belum Assign" badge if `svf_email` is null
   - Tukar SVF: dropdown per row populated from `public.users` where `'PENSYARAH' = ANY(roles)`; changing triggers immediate `assignSVF()` call
+  - **Padam** button (ADMIN & AJK_LI only): confirmation dialog lists student name + matric, warns about marks deletion
+    - On confirm: deletes from `public.marks` (by student_id), then from `public.students`
+    - `deleteStudent(matricNo, name)` handles this flow
 - **Bulk assign**: checkboxes per row + "Assign SVF Terpilih" button + bulk SVF dropdown
   - `toggleAllStudents()` selects/deselects all via header checkbox
   - `bulkAssignSVF()` updates all selected students' `svf_email` in parallel
-- **PENSYARAH role**: if a PENSYARAH accesses this page, only students where `svf_email = their email` are shown
+- **PENSYARAH role**: if a PENSYARAH accesses this page, only students where `svf_email = their email` are shown (no Padam button)
 
 ## Upload Duplicate Detection (Upload Pensyarah & Upload Pelajar)
 Both upload flows perform duplicate checking against Supabase before showing the preview modal:

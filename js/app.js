@@ -386,7 +386,11 @@ async function loadUserMgmt() {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:red;padding:1.5rem">Ralat memuatkan pengguna.</td></tr>';
     return;
   }
-  var users = resp.data;
+  // Only show ADMIN and AJK_LI users (exclude PENSYARAH-only users)
+  var users = (resp.data || []).filter(function(u) {
+    var r = u.roles || [];
+    return r.indexOf('ADMIN') !== -1 || r.indexOf('AJK_LI') !== -1;
+  });
   var session = getSession();
 
   if (!users.length) {
@@ -436,7 +440,6 @@ async function addUser() {
   var roles = [];
   if (document.getElementById('um-add-r-admin').checked) roles.push('ADMIN');
   if (document.getElementById('um-add-r-ajk').checked)   roles.push('AJK_LI');
-  if (document.getElementById('um-add-r-psy').checked)   roles.push('PENSYARAH');
   if (!roles.length) {
     errEl.textContent = 'Pilih sekurang-kurangnya satu peranan.'; errEl.style.display = 'block'; return;
   }
@@ -454,7 +457,6 @@ async function addUser() {
   document.getElementById('um-add-pw').value    = '';
   document.getElementById('um-add-r-admin').checked = false;
   document.getElementById('um-add-r-ajk').checked   = false;
-  document.getElementById('um-add-r-psy').checked   = true;
   sucEl.textContent = 'Pengguna ' + name + ' berjaya ditambah.';
   sucEl.style.display = 'block';
   loadUserMgmt();
@@ -859,7 +861,7 @@ var _pensyarahList = [];
 async function loadUruspelajar() {
   var tbody = document.getElementById('pelajar-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
 
   var prResp = await sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name');
   _pensyarahList = prResp.data || [];
@@ -883,16 +885,17 @@ async function loadUruspelajar() {
   }
   var stResp = await query;
   if (stResp.error) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;padding:1.5rem">Ralat memuatkan data.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red;padding:1.5rem">Ralat memuatkan data.</td></tr>';
     return;
   }
   var students = stResp.data || [];
 
   if (!students.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pelajar. Muat naik senarai pelajar terlebih dahulu.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pelajar. Muat naik senarai pelajar terlebih dahulu.</td></tr>';
     return;
   }
 
+  var showDelete = (eff === 'ADMIN' || eff === 'AJK_LI');
   var html = '';
   students.forEach(function(s) {
     var assignedName = s.svf_email ? (pensyarahMap[s.svf_email] || s.svf_email) : null;
@@ -908,13 +911,18 @@ async function loadUruspelajar() {
     });
 
     var mid = escHtml(s.matric_no);
+    var sname = escHtml(s.name || '');
+    var padamBtn = showDelete
+      ? '<button class="btn-sm btn-sm-del" onclick="deleteStudent(\'' + mid + '\',\'' + sname.replace(/'/g, "\\'") + '\')">Padam</button>'
+      : '';
     html += '<tr>' +
       '<td style="text-align:center"><input type="checkbox" class="student-checkbox" value="' + mid + '"></td>' +
       '<td>' + mid + '</td>' +
-      '<td>' + escHtml(s.name || '') + '</td>' +
+      '<td>' + sname + '</td>' +
       '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
       '<td>' + svfBadge + '</td>' +
       '<td><select class="svf-assign-select" onchange="assignSVF(\'' + mid + '\',this.value)" style="font-size:12px;padding:4px 6px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit;max-width:220px">' + opts + '</select></td>' +
+      '<td>' + padamBtn + '</td>' +
       '</tr>';
   });
   tbody.innerHTML = html;
@@ -979,6 +987,8 @@ function renderPensyarahTable(rows) {
   var tbody = document.getElementById('pensyarah-tbody');
   if (!tbody) return;
   var session = getSession();
+  var eff = getEffectiveRole(session ? session.roles : []);
+  var isAdmin = (eff === 'ADMIN');
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pensyarah.</td></tr>';
     return;
@@ -987,6 +997,10 @@ function renderPensyarahTable(rows) {
   rows.forEach(function(u) {
     var isActive = u.is_active !== false;
     var eid = escHtml(u.email);
+    var isSelf = session && u.email.toLowerCase() === session.email.toLowerCase();
+    var padamBtn = (isAdmin && !isSelf)
+      ? '<button class="btn-sm btn-sm-del" onclick="deletePensyarah(\'' + eid + '\',\'' + escHtml(u.full_name || '').replace(/'/g, "\\'") + '\')">Padam</button>'
+      : '';
     html += '<tr>' +
       '<td>' + escHtml(u.full_name || '') + '</td>' +
       '<td>' + escHtml(u.no_staf || '') + '</td>' +
@@ -996,6 +1010,7 @@ function renderPensyarahTable(rows) {
       '<td><div class="um-actions">' +
         '<button class="btn-sm btn-sm-edit" onclick="openEpModal(\'' + eid + '\')">Edit</button>' +
         '<button class="btn-sm btn-sm-reset" onclick="openPwModal(\'' + eid + '\')">Reset PW</button>' +
+        padamBtn +
       '</div></td>' +
       '</tr>';
   });
@@ -1049,5 +1064,145 @@ async function saveEpModal() {
   loadUruspensyarah();
 }
 // ===== END URUS PENSYARAH =====
+
+// ===== TAMBAH PENSYARAH MANUAL =====
+function openAddPensyarahModal() {
+  document.getElementById('ap-name').value    = '';
+  document.getElementById('ap-nostaf').value  = '';
+  document.getElementById('ap-jabatan').value = '';
+  document.getElementById('ap-email').value   = '';
+  document.getElementById('ap-pw').value      = '';
+  document.getElementById('ap-error').style.display   = 'none';
+  document.getElementById('ap-success').style.display = 'none';
+  var modal = document.getElementById('add-pensyarah-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
+}
+
+function closeAddPensyarahModal() {
+  var modal = document.getElementById('add-pensyarah-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+}
+
+async function saveAddPensyarah() {
+  var name    = document.getElementById('ap-name').value.trim();
+  var noStaf  = document.getElementById('ap-nostaf').value.trim();
+  var jabatan = document.getElementById('ap-jabatan').value.trim();
+  var email   = document.getElementById('ap-email').value.trim().toLowerCase();
+  var pw      = document.getElementById('ap-pw').value || 'utem1234';
+  var errEl   = document.getElementById('ap-error');
+  var sucEl   = document.getElementById('ap-success');
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+
+  if (!name || !noStaf || !jabatan || !email) {
+    errEl.textContent = 'Sila isi semua medan yang diperlukan.'; errEl.style.display = 'block'; return;
+  }
+  if (!email.endsWith('@utem.edu.my')) {
+    errEl.textContent = 'E-mel mesti berakhir dengan @utem.edu.my.'; errEl.style.display = 'block'; return;
+  }
+
+  var resp = await sb.from('users').insert({
+    full_name: name, no_staf: noStaf, jabatan: jabatan,
+    email: email, password_hash: pw, roles: ['PENSYARAH'], is_active: true
+  });
+  if (resp.error) {
+    errEl.textContent = resp.error.code === '23505' ? 'E-mel sudah digunakan.' : 'Ralat: ' + resp.error.message;
+    errEl.style.display = 'block'; return;
+  }
+  sucEl.textContent = 'Pensyarah ' + name + ' berjaya ditambah.';
+  sucEl.style.display = 'block';
+  document.getElementById('ap-name').value    = '';
+  document.getElementById('ap-nostaf').value  = '';
+  document.getElementById('ap-jabatan').value = '';
+  document.getElementById('ap-email').value   = '';
+  document.getElementById('ap-pw').value      = '';
+  loadUruspensyarah();
+}
+// ===== END TAMBAH PENSYARAH MANUAL =====
+
+// ===== TAMBAH PELAJAR MANUAL =====
+function openAddPelajarModal() {
+  document.getElementById('adp-name').value   = '';
+  document.getElementById('adp-matric').value = '';
+  document.getElementById('adp-kursus').value = '';
+  document.getElementById('adp-error').style.display   = 'none';
+  document.getElementById('adp-success').style.display = 'none';
+  var modal = document.getElementById('add-pelajar-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
+}
+
+function closeAddPelajarModal() {
+  var modal = document.getElementById('add-pelajar-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+}
+
+async function saveAddPelajar() {
+  var name    = document.getElementById('adp-name').value.trim();
+  var matric  = document.getElementById('adp-matric').value.trim();
+  var kursus  = document.getElementById('adp-kursus').value;
+  var errEl   = document.getElementById('adp-error');
+  var sucEl   = document.getElementById('adp-success');
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+
+  if (!name || !matric || !kursus) {
+    errEl.textContent = 'Sila isi semua medan yang diperlukan.'; errEl.style.display = 'block'; return;
+  }
+
+  var resp = await sb.from('students').insert({ name: name, matric_no: matric, kursus: kursus });
+  if (resp.error) {
+    errEl.textContent = resp.error.code === '23505' ? 'No Matrik sudah wujud.' : 'Ralat: ' + resp.error.message;
+    errEl.style.display = 'block'; return;
+  }
+  sucEl.textContent = 'Pelajar ' + name + ' berjaya ditambah.';
+  sucEl.style.display = 'block';
+  document.getElementById('adp-name').value   = '';
+  document.getElementById('adp-matric').value = '';
+  document.getElementById('adp-kursus').value = '';
+  loadUruspelajar();
+}
+// ===== END TAMBAH PELAJAR MANUAL =====
+
+// ===== DELETE STUDENT =====
+async function deleteStudent(matricNo, name) {
+  var msg = 'Adakah anda pasti mahu memadam pelajar ' + name + ' (' + matricNo + ')?\nSemua data markah berkaitan akan turut dipadam.';
+  if (!confirm(msg)) return;
+
+  // Get student id first
+  var sResp = await sb.from('students').select('id').eq('matric_no', matricNo).single();
+  if (sResp.error || !sResp.data) { alert('Pelajar tidak dijumpai.'); return; }
+  var studentId = sResp.data.id;
+
+  // Delete marks first, then student
+  await sb.from('marks').delete().eq('student_id', studentId);
+  var dResp = await sb.from('students').delete().eq('matric_no', matricNo);
+  if (dResp.error) { alert('Ralat memadam pelajar: ' + dResp.error.message); return; }
+  loadUruspelajar();
+}
+// ===== END DELETE STUDENT =====
+
+// ===== DELETE PENSYARAH =====
+async function deletePensyarah(email, name) {
+  // Check if pensyarah has students assigned
+  var cResp = await sb.from('students').select('id', { count: 'exact', head: true }).eq('svf_email', email);
+  var count = cResp.count || 0;
+
+  var confirmed = false;
+  if (count > 0) {
+    confirmed = confirm(
+      'Pensyarah ini masih mempunyai ' + count + ' pelajar assigned.\nPadam & Auto-Unassign semua pelajar berkaitan?\n\nKlik OK untuk "Padam & Auto-Unassign" atau Batal untuk membatalkan.'
+    );
+  } else {
+    confirmed = confirm('Adakah anda pasti mahu memadam pensyarah ' + name + ' (' + email + ')?');
+  }
+  if (!confirmed) return;
+
+  // Unassign students if any
+  if (count > 0) {
+    await sb.from('students').update({ svf_email: null }).eq('svf_email', email);
+  }
+  var dResp = await sb.from('users').delete().eq('email', email);
+  if (dResp.error) { alert('Ralat memadam pensyarah: ' + dResp.error.message); return; }
+  loadUruspensyarah();
+}
+// ===== END DELETE PENSYARAH =====
 
 initAuth();
