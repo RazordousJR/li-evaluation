@@ -230,16 +230,16 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - "Pelajar Lengkap" status = strict field-level validation via `isStudentComplete(marksMap)` (see below)
 - **Migration**: Run the DO block in `supabase/schema.sql` migration section to update existing DB
 
-## Confirmation Checkbox per Section (v4.4)
+## Confirmation Checkbox per Section (v4.5)
 - Each eval section (SVI, SVF, Logbook, Pembentangan, Laporan LI) has a confirmation checkbox at the bottom
 - Checkbox ID pattern: `{section}-confirm-cb` (e.g. `svi-confirm-cb`, `svf-confirm-cb`, etc.)
 - Checkbox label: "Saya sahkan bahawa semua markah di atas adalah muktamad"
-- Simpan button (ID: `{section}-simpan-btn`) is **disabled** until checkbox is ticked
-- `updateSimpanBtn(section)` — enables/disables Simpan button + toggles sidebar badge based on checkbox state
+- Ticking OR unticking checkbox triggers **immediate save** (no 2-second debounce) via `onConfirmChange(section)`
+- `onConfirmChange(section)` — calls `updateSimpanBtn(section)` then `saveAll()` immediately (clears debounce timer)
+- `updateSimpanBtn(section)` — toggles sidebar badge only (Simpan button removed)
 - Checkbox state saved as `confirmed: true/false` in the section's jsonb `data` field in Supabase
 - When loading saved marks, checkbox state is restored by `populateSection()`
 - When a section is confirmed, a green "✓" badge appears next to the section name in the sidebar nav (`{section}-confirm-badge`)
-- Simpan buttons have IDs: `svi-simpan-btn`, `svf-simpan-btn`, `logbook-simpan-btn`, `presentation-simpan-btn`, `report-simpan-btn`
 - `getCbVal(id)` helper — returns boolean checkbox value
 
 ## Strict Completion Check (v4.4 — Confirmation-Based)
@@ -248,13 +248,10 @@ Both upload flows perform duplicate checking against Supabase before showing the
   - Previous field-level validation removed — confirmation checkbox is the sole completion gate
 - All 3 dashboards (ADMIN, AJK_LI, PENSYARAH) use `isStudentComplete()` — marks fetched with `data` column
 
-## Manual Simpan with Validation (v4.3, updated v4.4)
-- Each eval tab (SVI, SVF, Logbook, Pembentangan, Laporan LI) has a **Simpan** button
-- Simpan button is **disabled** until confirmation checkbox is ticked (enforced via `disabled` HTML attribute + `updateSimpanBtn()`)
-- `simpanSection(section)` — validates current form fields for that section, calls `saveAll()`, then shows alert if anything is missing
-- `validateSection(section)` — checks text fields (ulasan) and radio fields (rating/status) for the given section; returns array of missing field labels
-- Alert format: "Bahagian berikut belum lengkap:\n[label1]\n[label2]..."
-- Auto-save is NOT affected — only manual Simpan button triggers the validation alert
+## Auto-Save Only (v4.5 — Simpan Button Removed)
+- Manual Simpan buttons have been **removed** from all 5 eval sections
+- Saves happen via: (1) 2-second debounce auto-save on any input change, (2) immediate save when confirmation checkbox is ticked/unticked
+- Save status indicator in topbar shows progress as usual
 
 ## Student Profile Modal Fix (v4.4)
 - `openStudentEval(student)` does a direct targeted Supabase query: `select('svi_name, organisasi').eq('id', student.id)`
@@ -264,6 +261,15 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - SVI/Org indicator (`#svi-org-indicator`) in the eval form header shows "✓ SVI: [nama] | ✓ Syarikat: [nama]" in green when both are filled
   - `#svi-indicator-name` and `#org-indicator-name` elements hold the values
   - Indicator shown by `loadStudentForEval()`, hidden by `goBackToDashboard()` and `showTab()` when not in eval tabs
+
+## Editable SVI & Syarikat in Eval Form Header (v4.5)
+- `esb-svi` and `esb-org` in `#eval-student-bar` are now `<input type="text">` fields (styled as `.esb-input`)
+- A **"Kemaskini"** button (`esb-kemaskini-btn`) appears next to these fields in `#eval-student-bar`
+- On click: `kemaskiniSviOrg()` saves `svi_name` and `organisasi` to `public.students WHERE id = currentStudent.id`
+- Updates all local caches (`currentStudent`, `_ajkliStudents`, `_pensyarahDashStudents`) and the info-page hidden fields
+- Shows inline feedback in `#esb-kemaskini-feedback`: "✓ Maklumat dikemaskini" (green) or "✗ Ralat" (red)
+- Available to all roles (ADMIN, AJK_LI, PENSYARAH)
+- CSS classes: `.esb-input`, `.esb-field-editable`, `.esb-kemaskini-group`, `.esb-kemaskini-btn`, `.esb-kemaskini-feedback`, `.esb-kmk-success`, `.esb-kmk-error`
 
 ## Tech Stack
 - Vanilla HTML, CSS, JavaScript only (no frameworks, no build tools)

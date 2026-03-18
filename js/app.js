@@ -369,11 +369,15 @@ async function simpanSection(section) {
 }
 
 function updateSimpanBtn(section) {
-  var cb  = document.getElementById(section + '-confirm-cb');
-  var btn = document.getElementById(section + '-simpan-btn');
-  if (btn && cb) btn.disabled = !cb.checked;
+  var cb = document.getElementById(section + '-confirm-cb');
   var badge = document.getElementById(section + '-confirm-badge');
   if (badge) badge.style.display = (cb && cb.checked) ? 'inline' : 'none';
+}
+
+function onConfirmChange(section) {
+  updateSimpanBtn(section);
+  clearTimeout(saveTimer);
+  saveAll();
 }
 // ===== END SECTION VALIDATION =====
 
@@ -1602,8 +1606,10 @@ async function loadStudentForEval(student) {
   document.getElementById('esb-matrik').textContent = student.matric_no || '—';
   document.getElementById('esb-kursus').textContent = student.kursus || '—';
   document.getElementById('esb-svf').textContent    = student.svf_name || '—';
-  document.getElementById('esb-svi').textContent    = student.svi_name || '—';
-  document.getElementById('esb-org').textContent    = student.organisasi || '—';
+  document.getElementById('esb-svi').value = student.svi_name || '';
+  document.getElementById('esb-org').value = student.organisasi || '';
+  var esbFeedback = document.getElementById('esb-kemaskini-feedback');
+  if (esbFeedback) esbFeedback.textContent = '';
 
   // Show/hide SVI/Org indicator
   var sviOrgEl = document.getElementById('svi-org-indicator');
@@ -1660,6 +1666,47 @@ function goBackToDashboard() {
     if (badge) badge.style.display = 'none';
   });
   showTab('dashboard');
+}
+async function kemaskiniSviOrg() {
+  if (!currentStudent) return;
+  var sviInput = document.getElementById('esb-svi');
+  var orgInput = document.getElementById('esb-org');
+  var feedback = document.getElementById('esb-kemaskini-feedback');
+  var svi = sviInput ? sviInput.value.trim() : '';
+  var org = orgInput ? orgInput.value.trim() : '';
+
+  if (feedback) { feedback.textContent = 'Menyimpan...'; feedback.className = 'esb-kemaskini-feedback'; }
+  var resp = await sb.from('students').update({ svi_name: svi, organisasi: org }).eq('id', currentStudent.id);
+  if (resp.error) {
+    if (feedback) { feedback.textContent = '✗ Ralat'; feedback.className = 'esb-kemaskini-feedback esb-kmk-error'; }
+    return;
+  }
+
+  currentStudent.svi_name = svi;
+  currentStudent.organisasi = org;
+  for (var _i = 0; _i < _ajkliStudents.length; _i++) {
+    if (_ajkliStudents[_i].id === currentStudent.id) { _ajkliStudents[_i].svi_name = svi; _ajkliStudents[_i].organisasi = org; break; }
+  }
+  for (var _j = 0; _j < _pensyarahDashStudents.length; _j++) {
+    if (_pensyarahDashStudents[_j].id === currentStudent.id) { _pensyarahDashStudents[_j].svi_name = svi; _pensyarahDashStudents[_j].organisasi = org; break; }
+  }
+  if (document.getElementById('svi_name')) document.getElementById('svi_name').value = svi;
+  if (document.getElementById('organisasi')) document.getElementById('organisasi').value = org;
+
+  var sviOrgEl = document.getElementById('svi-org-indicator');
+  if (sviOrgEl && svi && org) {
+    document.getElementById('svi-indicator-name').textContent = svi;
+    document.getElementById('org-indicator-name').textContent = org;
+    sviOrgEl.style.display = 'flex';
+  } else if (sviOrgEl) {
+    sviOrgEl.style.display = 'none';
+  }
+
+  if (feedback) {
+    feedback.textContent = '✓ Maklumat dikemaskini';
+    feedback.className = 'esb-kemaskini-feedback esb-kmk-success';
+    setTimeout(function() { if (feedback) feedback.textContent = ''; }, 3000);
+  }
 }
 // ===== END STUDENT EVAL WORKFLOW =====
 
