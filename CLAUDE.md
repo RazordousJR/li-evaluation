@@ -323,10 +323,18 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - HTML: `.score-group-header` class for group labels; `.subtotal-sub` class for group subtotals
 - Old field names `svf_a1`–`svf_a5` no longer exist; replaced by new names above
 
-## OBE Calculations — PRJ-3 and PRJ-4 Updated (v4.8)
-- **PRJ-3 (15%)** = SVF A1 only: `(svf_a1_admin + svf_a1_tech) / 30 * 15`
-- **PRJ-4 (15%)** = SVF A2 + A3 combined: `(svf_a2_admin + svf_a2_tech + svf_a3) / 60 * 15`
-- Both updated in `calcSummary()`
+## OBE Calculations — BITU3926 Full Component List (v4.10)
+- **PRJ-1 (15%)** = SVI A1+A2: `(svi_a1 + svi_a2) / 30 * 15`
+- **PRJ-2 (15%)** = SVI A3+A4: `(svi_a3 + svi_a4) / 20 * 15`
+- **PRJ-3 (15%)** = SVF A1: `(svf_a1_admin + svf_a1_tech) / 30 * 15`
+- **PRJ-4 (15%)** = SVF A2+A3: `(svf_a2_admin + svf_a2_tech + svf_a3) / 60 * 15`
+- **LR1 (20%)** = e-Logbook total: `(log_a1 + log_b1 + log_c1) / 70 * 20`
+- **PR1-1 (20%)** = Pembentangan (SVF Bah. B + SVI Bah. B):
+  - SVF Bah. B = `svf_b1` (max 10)
+  - SVI Bah. B = `sviB / 5` where sviB = sum of svi_b1..svi_b10 (raw max 50)
+  - PR1-1 = SVF Bah. B + SVI Bah. B (max 20)
+- `calcSummary()` variables: `sviA1`, `sviA23`, `prj1`, `prj2`, `prj3`, `prj4`, `lr1`, `pr11_svfb`, `pr11_svib`, `pr11`, `b3926`
+- Ringkasan display IDs for PR1-1: `r_pr11_svfb_raw`, `r_pr11_svfb`, `r_pr11_svib_raw`, `r_pr11_svib`, `r_pr11`
 
 ## SVF Backward Compatibility (v4.8)
 - `populateSection('svf')` auto-migrates old saved data (field names `a1`–`a5`) to new names:
@@ -350,15 +358,16 @@ TR1 (max 70) is composed of 4 components:
 - `repA` = Bahagian A raw sum; `repB` = Bahagian B raw sum; `repT = repA + repB` (for stat card)
 - Ringkasan display shows each component breakdown with IDs: `r2_tr1_lapa_raw`, `r2_tr1_lapa`, `r2_tr1_lapb_raw`, `r2_tr1_lapb`, `r2_tr1_svfc_raw`, `r2_tr1_svfc`, `r2_tr1_logc_raw`, `r2_tr1_logc`, `r2_tr1`
 
-## PR1-1 Calculation — BITU3946 (v4.9)
-PR1-1 (max 20, worth 20%) replaces the old two separate Pembentangan SVF/SVI rows:
-- **Component 1 — SVF Bah. B (max 10)**: `svf_b1` directly (no conversion)
-- **Component 2 — SVI Bah. B (max 10)**: `sviB / 5` where sviB = sum of svi_b1..svi_b10 (raw max 50)
-- **PR1-1 = Component 1 + Component 2** (max 20); converted value = PR1-1 total directly (20/20 × 20)
-- `calcSummary()` variables: `pr11b_svfb`, `pr11b_svib`, `pr11b`
-- BITU3946 total: `tr1 + pr11b + pr12` (70 + 20 + 10 = 100)
-- Ringkasan display IDs: `r2_pr11_svfb_raw`, `r2_pr11_svfb`, `r2_pr11_svib_raw`, `r2_pr11_svib`, `r2_pr11`
-- Old `r2_svfr`, `r2_svf`, `r2_svir`, `r2_svi` IDs removed; `psvfT`/`psviT` still used for stat cards only
+## PR1-1 and PR1-2 Calculation — BITU3946 (v4.10)
+BITU3946 OBE components:
+- **TR1 (70%)** = Laporan LI (see TR1 Calculation above)
+- **PR1-1 (20%)** = Pembentangan — average of SVF and SVI presentation totals:
+  - Formula: `(psvfT + psviT) / 200 * 20` where psvfT and psviT are each max 100
+  - `calcSummary()` variable: `pr11_pbt`
+  - Ringkasan display IDs: `r2_pr11_psvf_raw`, `r2_pr11_psvf`, `r2_pr11_psvi_raw`, `r2_pr11_psvi`, `r2_pr11`
+- **PR1-2 (10%)** = Soft Skills = SVI Bah. B ÷ 5: `sviB / 50 * 10` (max 10)
+  - Ringkasan display IDs: `r2_pr12r`, `r2_pr12`
+- BITU3946 total: `tr1 + pr11_pbt + pr12` (70 + 20 + 10 = 100)
 
 ## Important Rules
 - Never combine back into single file
