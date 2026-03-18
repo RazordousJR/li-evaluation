@@ -227,8 +227,30 @@ Both upload flows perform duplicate checking against Supabase before showing the
   - PENSYARAH: uses `session.email`
 - `saveAll()` upserts with `onConflict: 'student_id,evaluator_email,section'` using `_currentEvalEmail`
 - `loadByMatric()` filters marks by `evaluator_email` for PENSYARAH role
-- "Pelajar Lengkap" status = has at least one marks record for all 5 sections (any evaluator)
+- "Pelajar Lengkap" status = strict field-level validation via `isStudentComplete(marksMap)` (see below)
 - **Migration**: Run the DO block in `supabase/schema.sql` migration section to update existing DB
+
+## Strict Completion Check (v4.3)
+- `isStudentComplete(marksMap)` — validates all required fields across all 5 sections against saved Supabase data
+  - `marksMap` = `{svi: data, svf: data, logbook: data, presentation: data, report: data}`
+  - SVI: numeric fields a1–a4, b1–b10 must exist; `ulasan` non-empty; `rating` one of Sangat Baik/Baik/Memuaskan/Kurang Memuaskan/Lemah
+  - SVF: numeric fields a1–a5, b1, c1 must exist; `ulasan` non-empty; `rating` one of valid values; `status` = Lulus/Gagal
+  - Logbook: numeric fields a1, b1, c1 must exist
+  - Presentation: all 26 numeric fields (psvf_a, psvf_b1–b5, psvf_c1–c3, psvf_d1–d4, psvi equivalents) must exist
+  - Report: numeric fields a1–a3, a5–a7, b1 must exist; a4 fields depend on `pilihan` value; `ulasan` non-empty
+- All 3 dashboards (ADMIN, AJK_LI, PENSYARAH) now use `isStudentComplete()` — marks fetched with `data` column
+
+## Manual Simpan with Validation (v4.3)
+- Each eval tab (SVI, SVF, Logbook, Pembentangan, Laporan LI) has a **Simpan** button
+- `simpanSection(section)` — validates current form fields for that section, calls `saveAll()`, then shows alert if anything is missing
+- `validateSection(section)` — checks text fields (ulasan) and radio fields (rating/status) for the given section; returns array of missing field labels
+- Alert format: "Bahagian berikut belum lengkap:\n[label1]\n[label2]..."
+- Auto-save is NOT affected — only manual Simpan button triggers the validation alert
+
+## Student Profile Modal Fix (v4.3)
+- `openStudentEval(student)` now always re-fetches the student record fresh from Supabase before checking modal condition
+- Modal only shows if `svi_name` IS NULL or empty string in Supabase (not stale cached data)
+- Fresh data is written back to `_ajkliStudents` and `_pensyarahDashStudents` local arrays
 
 ## Tech Stack
 - Vanilla HTML, CSS, JavaScript only (no frameworks, no build tools)
