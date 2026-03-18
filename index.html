@@ -54,19 +54,28 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</a>
-      <a class="nav-item" id="info-nav-item" data-tab="info" onclick="showTab('info')">Maklumat Pelajar</a>
-      <a class="nav-item" data-tab="svi" onclick="showTab('svi')">Penyelia Industri (SVI)<span id="svi-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
-      <a class="nav-item" data-tab="svf" onclick="showTab('svf')">Penyelia Fakulti (SVF)<span id="svf-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
-      <a class="nav-item" data-tab="logbook" onclick="showTab('logbook')">e-Logbook<span id="logbook-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
-      <a class="nav-item" data-tab="presentation" onclick="showTab('presentation')">Pembentangan<span id="presentation-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
-      <a class="nav-item" data-tab="report" onclick="showTab('report')">Laporan LI<span id="report-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
-      <a class="nav-item" data-tab="summary" onclick="showTab('summary')">Ringkasan &amp; Gred</a>
-      <div class="sidebar-section-sep" id="admin-sep" style="display:none"></div>
-      <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
-      <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
-      <a class="nav-item" id="uruspensyarah-nav-item" data-tab="uruspensyarah" onclick="showTab('uruspensyarah')" style="display:none">Urus Pensyarah</a>
-      <a class="nav-item" id="admin-nav-item" data-tab="usermgmt" onclick="showTab('usermgmt')" style="display:none">Pengurusan Pengguna</a>
+      <!-- DEFAULT SIDEBAR: shown when no student is selected -->
+      <div id="sidebar-nav-default">
+        <a class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</a>
+        <div class="sidebar-section-sep" id="admin-sep" style="display:none"></div>
+        <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
+        <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
+        <a class="nav-item" id="uruspensyarah-nav-item" data-tab="uruspensyarah" onclick="showTab('uruspensyarah')" style="display:none">Urus Pensyarah</a>
+        <a class="nav-item" id="admin-nav-item" data-tab="usermgmt" onclick="showTab('usermgmt')" style="display:none">Pengurusan Pengguna</a>
+      </div>
+      <!-- EVAL SIDEBAR: shown when a student is selected for evaluation -->
+      <div id="sidebar-nav-eval" style="display:none">
+        <a class="nav-item nav-back-btn" onclick="goBackToDashboard()">&#8592; Kembali ke Dashboard</a>
+        <div class="sidebar-student-label" id="sidebar-student-label"></div>
+        <div class="sidebar-section-sep"></div>
+        <a class="nav-item" id="info-nav-item" data-tab="info" onclick="showTab('info')">Maklumat Pelajar</a>
+        <a class="nav-item" data-tab="svi" onclick="showTab('svi')">Penyelia Industri (SVI)<span id="svi-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+        <a class="nav-item" data-tab="svf" onclick="showTab('svf')">Penyelia Fakulti (SVF)<span id="svf-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+        <a class="nav-item" data-tab="logbook" onclick="showTab('logbook')">e-Logbook<span id="logbook-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+        <a class="nav-item" data-tab="presentation" onclick="showTab('presentation')">Pembentangan<span id="presentation-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+        <a class="nav-item" data-tab="report" onclick="showTab('report')">Laporan LI<span id="report-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+        <a class="nav-item" data-tab="summary" onclick="showTab('summary')">Ringkasan &amp; Gred</a>
+      </div>
     </nav>
 
     <div class="sidebar-footer">
@@ -983,6 +992,38 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeAddPelajarModal()">Batal</button>
       <button class="btn-primary" onclick="saveAddPelajar()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PELAJAR MODAL -->
+<div class="modal-overlay" id="edit-pelajar-modal" style="display:none">
+  <div class="modal-card" style="max-width:440px">
+    <div class="modal-header">
+      <span>Edit Maklumat Pelajar</span>
+      <button class="modal-close" onclick="closeEditPelajarModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edp-id">
+      <div class="field"><label>Nama Pelajar <span style="color:red">*</span></label><input type="text" id="edp-name" placeholder="Nama penuh pelajar"></div>
+      <div class="field"><label>No Matrik <span style="color:red">*</span></label><input type="text" id="edp-matric" placeholder="cth: B022310001"></div>
+      <div class="field"><label>Nama Program / Kursus <span style="color:red">*</span></label>
+        <select id="edp-kursus">
+          <option value="">-- Pilih Program --</option>
+          <option value="BITC">BITC - Kejuruteraan Komputer</option>
+          <option value="BITD">BITD - Keselamatan Digital</option>
+          <option value="BITM">BITM - Multimedia</option>
+          <option value="BITI">BITI - Teknologi Maklumat</option>
+          <option value="BITS">BITS - Sains Komputer</option>
+          <option value="BITE">BITE - Kejuruteraan Perisian</option>
+          <option value="BITZ">BITZ - Rangkaian Komputer</option>
+        </select>
+      </div>
+      <div class="modal-msg modal-err" id="edp-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeEditPelajarModal()">Batal</button>
+      <button class="btn-primary" id="edp-save-btn" onclick="saveEditPelajar()">Simpan Perubahan</button>
     </div>
   </div>
 </div>

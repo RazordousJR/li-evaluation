@@ -80,15 +80,22 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
   - `_suppressSave` flag prevents spurious auto-saves during load
 - Save status indicator in topbar: `● Belum disimpan` / `↑ Menyimpan...` / `✓ Tersimpan` / `✗ Ralat simpan`
 
-## Layout (v3.0 — Sidebar Navigation)
-- **Sidebar** (left, fixed 240px): dark blue (#1e3a8a), app logo/title, nav menu items, management section at bottom, user name + role badge in footer
+## Layout (v4.6 — Contextual Sidebar Navigation)
+- **Sidebar** (left, fixed 240px): dark blue (#1e3a8a), app logo/title, contextual nav menu, user name + role badge in footer
 - **Topbar** (right, sticky): hamburger (mobile), page title, BITU badges, save-status indicator, logout button
 - **Content area**: scrollable, renders selected page
 - Mobile responsive: sidebar collapses off-screen, opens via hamburger button with overlay backdrop
 - CSS variable: `--sidebar-bg: #1e3a8a`; `--sidebar-width: 240px`
-- Management nav items (`admin-sep`, `admin-label`, `admin-nav-item`, `uruspelajar-nav-item`, `uruspensyarah-nav-item`) have `style="display:none"` inline; shown by role in `applyRoleRestrictions()`
+- **Contextual Sidebar** — two nav states managed by `#sidebar-nav-default` and `#sidebar-nav-eval` divs:
+  - **Default state** (`#sidebar-nav-default`, visible when no student selected): Dashboard + management items (Urus Pelajar, Urus Pensyarah, Pengurusan Pengguna)
+  - **Eval state** (`#sidebar-nav-eval`, visible when student is selected): ← Kembali ke Dashboard, student name/matric label, divider, eval section links (Maklumat Pelajar, SVI, SVF, e-Logbook, Pembentangan, Laporan LI, Ringkasan & Gred)
+  - `showEvalSidebar(student)` — switches to eval state, populates `#sidebar-student-label`
+  - `showDefaultSidebar()` — switches back to default state
+  - Called from `loadStudentForEval()` (shows eval) and `goBackToDashboard()` (shows default)
+- Management nav items (`admin-sep`, `admin-label`, `admin-nav-item`, `uruspelajar-nav-item`, `uruspensyarah-nav-item`) are inside `#sidebar-nav-default`; shown by role in `applyRoleRestrictions()`
   - `uruspelajar-nav-item` and `uruspensyarah-nav-item` shown for ADMIN and AJK_LI
   - `admin-nav-item` shown for ADMIN only
+- `info-nav-item` now lives inside `#sidebar-nav-eval`; still hidden for PENSYARAH via `applyRoleRestrictions()`
 
 ## User Management Panel (ADMIN only — IMPLEMENTED)
 - Accessible via "Pengurusan Pengguna" sidebar nav item (admin-only)
@@ -143,9 +150,13 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 - **Students table**: checkbox, No Matrik, Nama Pelajar, Program, SVF Ditetapkan, Tukar SVF, Tindakan (7 cols)
   - SVF Ditetapkan shows pensyarah full_name (green badge) or red "Belum Assign" badge if `svf_email` is null
   - Tukar SVF: dropdown per row populated from `public.users` where `'PENSYARAH' = ANY(roles)`; changing triggers immediate `assignSVF()` call
+  - **Edit** button (ADMIN & AJK_LI only): opens `edit-pelajar-modal` with fields: Nama Pelajar, No Matrik, Nama Program (dropdown)
+    - `openEditPelajarModal(idx)` — reads from `_pelajarStudentsCache[idx]`, populates and shows modal
+    - `closeEditPelajarModal()` / `saveEditPelajar()` — updates `public.students WHERE id = student.id`, refreshes list
   - **Padam** button (ADMIN & AJK_LI only): confirmation dialog lists student name + matric, warns about marks deletion
     - On confirm: deletes from `public.marks` (by student_id), then from `public.students`
     - `deleteStudent(matricNo, name)` handles this flow
+  - `_pelajarStudentsCache[]` — module-level array storing current students for modal reference
 - **Bulk assign**: checkboxes per row + "Assign SVF Terpilih" button + bulk SVF dropdown
   - `toggleAllStudents()` selects/deselects all via header checkbox
   - `bulkAssignSVF()` updates all selected students' `svf_email` in parallel
