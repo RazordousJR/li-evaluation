@@ -416,11 +416,16 @@
 <div class="page" id="page-svf">
   <div class="section">
     <div class="section-title">Bahagian A: Pengetahuan, Kemahiran &amp; Prestasi Kerja <span class="badge-max">/ 90 markah</span></div>
-    <div class="score-row"><div class="score-label">1. Pengetahuan &amp; Kemahiran &mdash; Pentadbiran &amp; Pengurusan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_a1" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
-    <div class="score-row"><div class="score-label">2. Pengetahuan &amp; Kemahiran &mdash; Bidang Teknikal</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="svf_a2" oninput="clamp(this,20);calcSVF()"><span class="score-max">/20</span></div></div>
-    <div class="score-row"><div class="score-label">3. Kuantiti Hasil Kerja &mdash; Pentadbiran &amp; Pengurusan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_a3" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
-    <div class="score-row"><div class="score-label">4. Kuantiti Hasil Kerja &mdash; Bidang Teknikal</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="svf_a4" oninput="clamp(this,20);calcSVF()"><span class="score-max">/20</span></div></div>
-    <div class="score-row"><div class="score-label">5. Mutu Hasil Kerja</div><div class="score-input-wrap"><input type="number" min="0" max="30" value="0" id="svf_a5" oninput="clamp(this,30);calcSVF()"><span class="score-max">/30</span></div></div>
+    <div class="score-group-header">A1: Pengetahuan &amp; Kemahiran <span class="badge-max">/ 30</span></div>
+    <div class="score-row"><div class="score-label">Bidang Pentadbiran &amp; Pengurusan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_a1_admin" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">Bidang Teknikal</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="svf_a1_tech" oninput="clamp(this,20);calcSVF()"><span class="score-max">/20</span></div></div>
+    <div class="subtotal-wrap subtotal-sub"><div class="subtotal"><span class="subtotal-label">Subtotal A1</span><span class="subtotal-val" id="svf_a1_subtotal">0 / 30</span></div></div>
+    <div class="score-group-header">A2: Kuantiti Hasil Kerja <span class="badge-max">/ 30</span></div>
+    <div class="score-row"><div class="score-label">Bidang Pentadbiran &amp; Pengurusan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="svf_a2_admin" oninput="clamp(this,10);calcSVF()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">Bidang Teknikal</div><div class="score-input-wrap"><input type="number" min="0" max="20" value="0" id="svf_a2_tech" oninput="clamp(this,20);calcSVF()"><span class="score-max">/20</span></div></div>
+    <div class="subtotal-wrap subtotal-sub"><div class="subtotal"><span class="subtotal-label">Subtotal A2</span><span class="subtotal-val" id="svf_a2_subtotal">0 / 30</span></div></div>
+    <div class="score-group-header">A3: Mutu Hasil Kerja <span class="badge-max">/ 30</span></div>
+    <div class="score-row"><div class="score-label">Mutu Hasil Kerja</div><div class="score-input-wrap"><input type="number" min="0" max="30" value="0" id="svf_a3" oninput="clamp(this,30);calcSVF()"><span class="score-max">/30</span></div></div>
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian A</span><span class="subtotal-val" id="svf_a_total">0 / 90</span></div><div class="progress-bar"><div class="progress-fill" id="svf_a_bar" style="width:0%"></div></div></div>
   </div>
   <div class="section">
@@ -609,7 +614,7 @@
         <tr><td>PRJ-1 (SVI A1)</td><td id="r_prj1r">0</td><td>15%</td><td id="r_prj1">0</td></tr>
         <tr><td>PRJ-2 (SVI A2+A3+A4)</td><td id="r_prj2r">0</td><td>15%</td><td id="r_prj2">0</td></tr>
         <tr><td>PRJ-3 (SVF A1)</td><td id="r_prj3r">0</td><td>15%</td><td id="r_prj3">0</td></tr>
-        <tr><td>PRJ-4 (SVF A2+A3+A4+A5)</td><td id="r_prj4r">0</td><td>15%</td><td id="r_prj4">0</td></tr>
+        <tr><td>PRJ-4 (SVF A2+A3)</td><td id="r_prj4r">0</td><td>15%</td><td id="r_prj4">0</td></tr>
         <tr><td>LR1 (e-Logbook)</td><td id="r_lr1r">0</td><td>20%</td><td id="r_lr1">0</td></tr>
         <tr><td>PR1-1 (SVI Bah. B)</td><td id="r_pr11r">0</td><td>20%</td><td id="r_pr11">0</td></tr>
       </tbody>
