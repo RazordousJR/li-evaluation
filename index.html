@@ -56,11 +56,11 @@
     <nav class="sidebar-nav">
       <a class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</a>
       <a class="nav-item" id="info-nav-item" data-tab="info" onclick="showTab('info')">Maklumat Pelajar</a>
-      <a class="nav-item" data-tab="svi" onclick="showTab('svi')">Penyelia Industri (SVI)</a>
-      <a class="nav-item" data-tab="svf" onclick="showTab('svf')">Penyelia Fakulti (SVF)</a>
-      <a class="nav-item" data-tab="logbook" onclick="showTab('logbook')">e-Logbook</a>
-      <a class="nav-item" data-tab="presentation" onclick="showTab('presentation')">Pembentangan</a>
-      <a class="nav-item" data-tab="report" onclick="showTab('report')">Laporan LI</a>
+      <a class="nav-item" data-tab="svi" onclick="showTab('svi')">Penyelia Industri (SVI)<span id="svi-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+      <a class="nav-item" data-tab="svf" onclick="showTab('svf')">Penyelia Fakulti (SVF)<span id="svf-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+      <a class="nav-item" data-tab="logbook" onclick="showTab('logbook')">e-Logbook<span id="logbook-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+      <a class="nav-item" data-tab="presentation" onclick="showTab('presentation')">Pembentangan<span id="presentation-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
+      <a class="nav-item" data-tab="report" onclick="showTab('report')">Laporan LI<span id="report-confirm-badge" class="confirm-nav-badge">&#10003;</span></a>
       <a class="nav-item" data-tab="summary" onclick="showTab('summary')">Ringkasan &amp; Gred</a>
       <div class="sidebar-section-sep" id="admin-sep" style="display:none"></div>
       <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
@@ -104,6 +104,11 @@
     <div class="esb-field"><span class="esb-label">Syarikat</span><span id="esb-org" class="esb-val">—</span></div>
   </div>
   <button class="btn-secondary" style="white-space:nowrap;flex-shrink:0" onclick="goBackToDashboard()">&#8592; Kembali</button>
+</div>
+<div id="svi-org-indicator" class="svi-org-indicator">
+  <span>&#10003; SVI: <strong id="svi-indicator-name"></strong></span>
+  <span class="svi-org-sep">|</span>
+  <span>&#10003; Syarikat: <strong id="org-indicator-name"></strong></span>
 </div>
 
 <!-- DASHBOARD -->
@@ -391,7 +396,13 @@
     </div></div>
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVI (A + B)</span><span class="subtotal-val" id="svi_total">0 / 100</span></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('info')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('svi')">Simpan</button><button class="btn-primary" onclick="showTab('svf')">Seterusnya: SVF &rarr;</button></div>
+  <div class="confirm-section">
+    <label class="confirm-label">
+      <input type="checkbox" id="svi-confirm-cb" onchange="updateSimpanBtn('svi')">
+      <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
+    </label>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('info')">&#8592; Kembali</button><button class="btn-primary" id="svi-simpan-btn" onclick="simpanSection('svi')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('svf')">Seterusnya: SVF &rarr;</button></div>
 </div>
 
 <!-- SVF -->
@@ -436,7 +447,13 @@
       </div>
     </div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svi')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('svf')">Simpan</button><button class="btn-primary" onclick="showTab('logbook')">Seterusnya: e-Logbook &rarr;</button></div>
+  <div class="confirm-section">
+    <label class="confirm-label">
+      <input type="checkbox" id="svf-confirm-cb" onchange="updateSimpanBtn('svf')">
+      <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
+    </label>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svi')">&#8592; Kembali</button><button class="btn-primary" id="svf-simpan-btn" onclick="simpanSection('svf')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('logbook')">Seterusnya: e-Logbook &rarr;</button></div>
 </div>
 
 <!-- LOGBOOK -->
@@ -456,7 +473,13 @@
     <div class="score-row"><div class="score-label">Muat naik buku log, dokumen pengesahan, format betul, disemak penyelia<small>Mengikut masa ditetapkan, bertandatangan, mengikut format panduan</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="log_c1" oninput="clamp(this,10);calcLog()"><span class="score-max">/10</span></div></div>
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah e-Logbook (A + B + C)</span><span class="subtotal-val" id="log_total">0 / 70</span></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svf')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('logbook')">Simpan</button><button class="btn-primary" onclick="showTab('presentation')">Seterusnya: Pembentangan &rarr;</button></div>
+  <div class="confirm-section">
+    <label class="confirm-label">
+      <input type="checkbox" id="logbook-confirm-cb" onchange="updateSimpanBtn('logbook')">
+      <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
+    </label>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svf')">&#8592; Kembali</button><button class="btn-primary" id="logbook-simpan-btn" onclick="simpanSection('logbook')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('presentation')">Seterusnya: Pembentangan &rarr;</button></div>
 </div>
 
 <!-- PRESENTATION -->
@@ -495,7 +518,13 @@
     <div class="score-row"><div class="score-label">D4. Soal Jawab: jawapan memuaskan</div><div class="score-input-wrap"><input type="number" min="0" max="3" value="0" id="psvi_d4" oninput="clamp(this,3);calcPres()"><span class="score-max">/3</span></div></div>
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVI</span><span class="subtotal-val" id="psvi_total">0 / 100</span></div><div class="progress-bar"><div class="progress-fill" id="psvi_bar" style="width:0%"></div></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('logbook')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('presentation')">Simpan</button><button class="btn-primary" onclick="showTab('report')">Seterusnya: Laporan LI &rarr;</button></div>
+  <div class="confirm-section">
+    <label class="confirm-label">
+      <input type="checkbox" id="presentation-confirm-cb" onchange="updateSimpanBtn('presentation')">
+      <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
+    </label>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('logbook')">&#8592; Kembali</button><button class="btn-primary" id="presentation-simpan-btn" onclick="simpanSection('presentation')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('report')">Seterusnya: Laporan LI &rarr;</button></div>
 </div>
 
 <!-- REPORT -->
@@ -529,7 +558,13 @@
     <div class="section-title">Bahagian C: Ulasan</div>
     <div class="field-row full"><div class="field"><label>Ulasan keseluruhan laporan LI</label><textarea id="rep_ulasan" placeholder="Masukkan ulasan..." oninput="scheduleSave()"></textarea></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('report')">Simpan</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
+  <div class="confirm-section">
+    <label class="confirm-label">
+      <input type="checkbox" id="report-confirm-cb" onchange="updateSimpanBtn('report')">
+      <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
+    </label>
+  </div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" id="report-simpan-btn" onclick="simpanSection('report')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
 </div>
 
 <!-- SUMMARY -->

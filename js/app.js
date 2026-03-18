@@ -164,12 +164,14 @@ function showTab(t) {
   if (t === 'uruspensyarah') loadUruspensyarah();
   if (t === 'dashboard') loadDashboard();
 
-  // Show eval student bar only in eval tabs when a student is selected
+  // Show eval student bar and SVI/Org indicator only in eval tabs when a student is selected
   var evalTabs = ['svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
+  var inEval = currentStudent && evalTabs.indexOf(t) !== -1;
   var evalBar = document.getElementById('eval-student-bar');
-  if (evalBar) {
-    evalBar.style.display = (currentStudent && evalTabs.indexOf(t) !== -1) ? 'flex' : 'none';
-  }
+  if (evalBar) evalBar.style.display = inEval ? 'flex' : 'none';
+  var sviOrgEl = document.getElementById('svi-org-indicator');
+  if (sviOrgEl && !inEval) sviOrgEl.style.display = 'none';
+  if (sviOrgEl && inEval && currentStudent && currentStudent.svi_name && currentStudent.organisasi) sviOrgEl.style.display = 'flex';
 
   closeSidebar();
   window.scrollTo(0, 0);
@@ -190,7 +192,7 @@ function calcReport() { var a4 = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a
 function getGrade(m) { if (m >= 80) return { g: "A", cls: "grade-A" }; if (m >= 75) return { g: "A-", cls: "grade-A" }; if (m >= 70) return { g: "B+", cls: "grade-B" }; if (m >= 65) return { g: "B", cls: "grade-B" }; if (m >= 60) return { g: "B-", cls: "grade-B" }; if (m >= 55) return { g: "C+", cls: "grade-C" }; if (m >= 50) return { g: "C", cls: "grade-C" }; if (m >= 47) return { g: "C-", cls: "grade-C" }; if (m >= 44) return { g: "D+", cls: "grade-D" }; if (m >= 40) return { g: "D", cls: "grade-D" }; return { g: "E", cls: "grade-E" }; }
 function calcSummary() { document.getElementById("s_nama").textContent = document.getElementById("nama_pelajar").value || "\u2014"; document.getElementById("s_matrik").textContent = document.getElementById("no_matrik").value || "\u2014"; document.getElementById("s_kursus").textContent = document.getElementById("kursus").value || "\u2014"; document.getElementById("s_sesi").textContent = document.getElementById("sesi").value + " Sem " + document.getElementById("semester").value; document.getElementById("s_svf").textContent = document.getElementById("svf_name").value || "\u2014"; document.getElementById("s_svi").textContent = document.getElementById("svi_name").value || "\u2014"; document.getElementById("s_org").textContent = document.getElementById("organisasi").value || "\u2014"; document.getElementById("s_svi_rating").textContent = document.getElementById("svi_rating").value || "\u2014"; document.getElementById("s_svf_rating").textContent = document.getElementById("svf_rating").value || "\u2014"; document.getElementById("s_svf_status").textContent = document.getElementById("svf_status").value || "\u2014"; var sviA = v("svi_a1") + v("svi_a2") + v("svi_a3") + v("svi_a4"); var sviB = v("svi_b1") + v("svi_b2") + v("svi_b3") + v("svi_b4") + v("svi_b5") + v("svi_b6") + v("svi_b7") + v("svi_b8") + v("svi_b9") + v("svi_b10"); var svfA = v("svf_a1") + v("svf_a2") + v("svf_a3") + v("svf_a4") + v("svf_a5"); var logT = v("log_a1") + v("log_b1") + v("log_c1"); var psvfT = v("psvf_a") + v("psvf_b1") + v("psvf_b2") + v("psvf_b3") + v("psvf_b4") + v("psvf_b5") + v("psvf_c1") + v("psvf_c2") + v("psvf_c3") + v("psvf_d1") + v("psvf_d2") + v("psvf_d3") + v("psvf_d4"); var psviT = v("psvi_a") + v("psvi_b1") + v("psvi_b2") + v("psvi_b3") + v("psvi_b4") + v("psvi_b5") + v("psvi_c1") + v("psvi_c2") + v("psvi_c3") + v("psvi_d1") + v("psvi_d2") + v("psvi_d3") + v("psvi_d4"); var a4rep = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a4_admin_p1")) : (v("rep_a4_tech_p2") + v("rep_a4_admin_p2")); var repT = v("rep_a1") + v("rep_a2") + v("rep_a3") + a4rep + v("rep_a5") + v("rep_a6") + v("rep_a7") + v("rep_b1"); document.getElementById("sum_svi_a").textContent = sviA; document.getElementById("sum_svi_b").textContent = sviB; document.getElementById("sum_svf_a").textContent = svfA; document.getElementById("sum_log").textContent = logT; document.getElementById("sum_rep").textContent = repT; document.getElementById("sum_psvf").textContent = psvfT; document.getElementById("sum_psvi").textContent = psviT; document.getElementById("sum_soft").textContent = sviB; var sviA1 = v("svi_a1"); var sviA23 = v("svi_a2") + v("svi_a3") + v("svi_a4"); var svfA1 = v("svf_a1"); var svfA23 = v("svf_a2") + v("svf_a3") + v("svf_a4") + v("svf_a5"); var prj1 = fmt(sviA1 / 10 * 15); var prj2 = fmt(sviA23 / 40 * 15); var prj3 = fmt(svfA1 / 10 * 15); var prj4 = fmt(svfA23 / 80 * 15); var lr1 = fmt(logT / 70 * 20); var pr11 = fmt(sviB / 50 * 20); var hm = hadir ? 10 : 0; var b3926 = fmt(prj1 + prj2 + prj3 + prj4 + lr1 + pr11 + hm); document.getElementById("r_prj1r").textContent = sviA1; document.getElementById("r_prj1").textContent = prj1; document.getElementById("r_prj2r").textContent = sviA23; document.getElementById("r_prj2").textContent = prj2; document.getElementById("r_prj3r").textContent = svfA1; document.getElementById("r_prj3").textContent = prj3; document.getElementById("r_prj4r").textContent = svfA23; document.getElementById("r_prj4").textContent = prj4; document.getElementById("r_lr1r").textContent = logT; document.getElementById("r_lr1").textContent = lr1; document.getElementById("r_pr11r").textContent = sviB; document.getElementById("r_pr11").textContent = pr11; document.getElementById("r_hadir_s").textContent = hm; document.getElementById("r_hadir_pct").textContent = hadir ? "Hadir" : "Tidak Hadir"; document.getElementById("r_hadir").textContent = hm; document.getElementById("sum_3926_total").textContent = b3926; var g1 = getGrade(b3926); var gb1 = document.getElementById("sum_3926_grade"); gb1.textContent = g1.g; gb1.className = "grade-pill " + g1.cls; var tr1 = fmt(repT / 70 * 70); var p11svf = fmt(psvfT / 100 * 10); var p11svi = fmt(psviT / 100 * 10); var pr12 = fmt(sviB / 50 * 10); var b3946 = fmt(tr1 + p11svf + p11svi + pr12); document.getElementById("r2_tr1r").textContent = repT; document.getElementById("r2_tr1").textContent = tr1; document.getElementById("r2_svfr").textContent = psvfT; document.getElementById("r2_svf").textContent = p11svf; document.getElementById("r2_svir").textContent = psviT; document.getElementById("r2_svi").textContent = p11svi; document.getElementById("r2_pr12r").textContent = sviB; document.getElementById("r2_pr12").textContent = pr12; document.getElementById("sum_3946_total").textContent = b3946; var g2 = getGrade(b3946); var gb2 = document.getElementById("sum_3946_grade"); gb2.textContent = g2.g; gb2.className = "grade-pill " + g2.cls; }
 function exportCSV() { var nama = document.getElementById("nama_pelajar").value || ""; var matrik = document.getElementById("no_matrik").value || ""; var sviA = v("svi_a1") + v("svi_a2") + v("svi_a3") + v("svi_a4"); var sviB = v("svi_b1") + v("svi_b2") + v("svi_b3") + v("svi_b4") + v("svi_b5") + v("svi_b6") + v("svi_b7") + v("svi_b8") + v("svi_b9") + v("svi_b10"); var logT = v("log_a1") + v("log_b1") + v("log_c1"); var psvfT = v("psvf_a") + v("psvf_b1") + v("psvf_b2") + v("psvf_b3") + v("psvf_b4") + v("psvf_b5") + v("psvf_c1") + v("psvf_c2") + v("psvf_c3") + v("psvf_d1") + v("psvf_d2") + v("psvf_d3") + v("psvf_d4"); var psviT = v("psvi_a") + v("psvi_b1") + v("psvi_b2") + v("psvi_b3") + v("psvi_b4") + v("psvi_b5") + v("psvi_c1") + v("psvi_c2") + v("psvi_c3") + v("psvi_d1") + v("psvi_d2") + v("psvi_d3") + v("psvi_d4"); var a4rep = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a4_admin_p1")) : (v("rep_a4_tech_p2") + v("rep_a4_admin_p2")); var repT = v("rep_a1") + v("rep_a2") + v("rep_a3") + a4rep + v("rep_a5") + v("rep_a6") + v("rep_a7") + v("rep_b1"); var rows = [["Field", "Value"], ["Nama Pelajar", nama], ["No Matrik", matrik], ["Kursus", document.getElementById("kursus").value], ["Semester", document.getElementById("semester").value], ["Sesi", document.getElementById("sesi").value], ["SVF", document.getElementById("svf_name").value], ["SVI", document.getElementById("svi_name").value], ["Organisasi", document.getElementById("organisasi").value], ["Pilihan Tugasan", "Pilihan " + pilihan], ["Amalan Kejuruteraan", hadir ? "Hadir" : "Tidak Hadir"], ["---", "--- SVI ---"], ["SVI A1", v("svi_a1")], ["SVI A2", v("svi_a2")], ["SVI A3", v("svi_a3")], ["SVI A4", v("svi_a4")], ["SVI Bah A", sviA], ["SVI Bah B", sviB], ["SVI Total", sviA + sviB], ["SVI Penilaian", document.getElementById("svi_rating").value], ["---", "--- SVF ---"], ["SVF A1", v("svf_a1")], ["SVF A2", v("svf_a2")], ["SVF A3", v("svf_a3")], ["SVF A4", v("svf_a4")], ["SVF A5", v("svf_a5")], ["SVF B", v("svf_b1")], ["SVF Komitmen", v("svf_c1")], ["SVF Penilaian", document.getElementById("svf_rating").value], ["SVF Status", document.getElementById("svf_status").value], ["---", "--- Logbook ---"], ["Logbook Kandungan", v("log_a1")], ["Logbook Persembahan", v("log_b1")], ["Logbook Penghantaran", v("log_c1")], ["Logbook Total", logT], ["---", "--- Pembentangan ---"], ["Pembentangan SVF", psvfT], ["Pembentangan SVI", psviT], ["---", "--- Laporan LI ---"], ["Laporan LI Total", repT], ["---", "--- Gred Akhir ---"], ["BITU3926 Markah", document.getElementById("sum_3926_total").textContent], ["BITU3926 Gred", document.getElementById("sum_3926_grade").textContent], ["BITU3946 Markah", document.getElementById("sum_3946_total").textContent], ["BITU3946 Gred", document.getElementById("sum_3946_grade").textContent]]; var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\n"); var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "LI_" + (matrik || "pelajar") + "_" + new Date().toISOString().slice(0, 10) + ".csv"; a.click(); }
-function resetAll() { if (!confirm("Reset semua data? Tindakan ini tidak boleh diundo.")) return; document.querySelectorAll("input[type=number]").forEach(function(i) { i.value = 0; }); document.querySelectorAll("input[type=text]").forEach(function(i) { i.value = ""; }); document.querySelectorAll("textarea").forEach(function(i) { i.value = ""; }); document.querySelectorAll("select").forEach(function(i) { i.selectedIndex = 0; }); document.querySelectorAll("input[type=hidden]").forEach(function(i) { i.value = ""; }); document.querySelectorAll(".radio-opt").forEach(function(i) { i.classList.remove("selected"); }); pilihan = 1; hadir = 1; document.getElementById("opt-p1").classList.add("selected"); document.getElementById("opt-hadir").classList.add("selected"); document.getElementById("rep_p1_wrap").style.display = ""; document.getElementById("rep_p2_wrap").style.display = "none"; calcSVI(); calcSVF(); calcLog(); calcPres(); calcReport(); showTab("info"); currentStudentId = null; setSaveStatus(''); }
+function resetAll() { if (!confirm("Reset semua data? Tindakan ini tidak boleh diundo.")) return; document.querySelectorAll("input[type=number]").forEach(function(i) { i.value = 0; }); document.querySelectorAll("input[type=text]").forEach(function(i) { i.value = ""; }); document.querySelectorAll("textarea").forEach(function(i) { i.value = ""; }); document.querySelectorAll("select").forEach(function(i) { i.selectedIndex = 0; }); document.querySelectorAll("input[type=hidden]").forEach(function(i) { i.value = ""; }); document.querySelectorAll(".radio-opt").forEach(function(i) { i.classList.remove("selected"); }); pilihan = 1; hadir = 1; document.getElementById("opt-p1").classList.add("selected"); document.getElementById("opt-hadir").classList.add("selected"); document.getElementById("rep_p1_wrap").style.display = ""; document.getElementById("rep_p2_wrap").style.display = "none"; ['svi','svf','logbook','presentation','report'].forEach(function(sec) { var cb = document.getElementById(sec + '-confirm-cb'); if (cb) cb.checked = false; updateSimpanBtn(sec); }); calcSVI(); calcSVF(); calcLog(); calcPres(); calcReport(); showTab("info"); currentStudentId = null; setSaveStatus(''); }
 
 // ===== STUDENT & MARKS PERSISTENCE =====
 var currentStudentId = null;
@@ -221,6 +223,8 @@ function gVal(id) {
   return el ? el.value : '';
 }
 
+function getCbVal(id) { var el = document.getElementById(id); return !!(el && el.checked); }
+
 function collectSections() {
   return {
     svi: {
@@ -228,15 +232,18 @@ function collectSections() {
       b1: gVal('svi_b1'), b2: gVal('svi_b2'), b3: gVal('svi_b3'), b4: gVal('svi_b4'),
       b5: gVal('svi_b5'), b6: gVal('svi_b6'), b7: gVal('svi_b7'), b8: gVal('svi_b8'),
       b9: gVal('svi_b9'), b10: gVal('svi_b10'),
-      ulasan: gVal('svi_ulasan'), rating: gVal('svi_rating')
+      ulasan: gVal('svi_ulasan'), rating: gVal('svi_rating'),
+      confirmed: getCbVal('svi-confirm-cb')
     },
     svf: {
       a1: gVal('svf_a1'), a2: gVal('svf_a2'), a3: gVal('svf_a3'), a4: gVal('svf_a4'), a5: gVal('svf_a5'),
       b1: gVal('svf_b1'), c1: gVal('svf_c1'),
-      ulasan: gVal('svf_ulasan'), rating: gVal('svf_rating'), status: gVal('svf_status')
+      ulasan: gVal('svf_ulasan'), rating: gVal('svf_rating'), status: gVal('svf_status'),
+      confirmed: getCbVal('svf-confirm-cb')
     },
     logbook: {
-      a1: gVal('log_a1'), b1: gVal('log_b1'), c1: gVal('log_c1')
+      a1: gVal('log_a1'), b1: gVal('log_b1'), c1: gVal('log_c1'),
+      confirmed: getCbVal('logbook-confirm-cb')
     },
     presentation: {
       psvf_a:  gVal('psvf_a'),
@@ -248,14 +255,16 @@ function collectSections() {
       psvi_b1: gVal('psvi_b1'), psvi_b2: gVal('psvi_b2'), psvi_b3: gVal('psvi_b3'),
       psvi_b4: gVal('psvi_b4'), psvi_b5: gVal('psvi_b5'),
       psvi_c1: gVal('psvi_c1'), psvi_c2: gVal('psvi_c2'), psvi_c3: gVal('psvi_c3'),
-      psvi_d1: gVal('psvi_d1'), psvi_d2: gVal('psvi_d2'), psvi_d3: gVal('psvi_d3'), psvi_d4: gVal('psvi_d4')
+      psvi_d1: gVal('psvi_d1'), psvi_d2: gVal('psvi_d2'), psvi_d3: gVal('psvi_d3'), psvi_d4: gVal('psvi_d4'),
+      confirmed: getCbVal('presentation-confirm-cb')
     },
     report: {
       a1: gVal('rep_a1'), a2: gVal('rep_a2'), a3: gVal('rep_a3'),
       a4_tech_p1: gVal('rep_a4_tech_p1'), a4_admin_p1: gVal('rep_a4_admin_p1'),
       a4_tech_p2: gVal('rep_a4_tech_p2'), a4_admin_p2: gVal('rep_a4_admin_p2'),
       a5: gVal('rep_a5'), a6: gVal('rep_a6'), a7: gVal('rep_a7'), b1: gVal('rep_b1'),
-      ulasan: gVal('rep_ulasan'), pilihan: pilihan
+      ulasan: gVal('rep_ulasan'), pilihan: pilihan,
+      confirmed: getCbVal('report-confirm-cb')
     },
     meta: { hadir: hadir }
   };
@@ -273,18 +282,26 @@ function populateSection(section, data) {
     fieldMap.svi.forEach(function(k) { var el = document.getElementById('svi_' + k); if (el && data[k] !== undefined) el.value = data[k]; });
     if (data.ulasan !== undefined) { var el = document.getElementById('svi_ulasan'); if (el) el.value = data.ulasan; }
     if (data.rating) { var el = document.getElementById('svi_rating'); if (el) el.value = data.rating; }
+    var sviCb = document.getElementById('svi-confirm-cb'); if (sviCb) sviCb.checked = data.confirmed === true;
+    updateSimpanBtn('svi');
     calcSVI();
   } else if (section === 'svf') {
     fieldMap.svf.forEach(function(k) { var el = document.getElementById('svf_' + k); if (el && data[k] !== undefined) el.value = data[k]; });
     if (data.ulasan !== undefined) { var el = document.getElementById('svf_ulasan'); if (el) el.value = data.ulasan; }
     if (data.rating) { var el = document.getElementById('svf_rating'); if (el) el.value = data.rating; }
     if (data.status) { var el = document.getElementById('svf_status'); if (el) el.value = data.status; }
+    var svfCb = document.getElementById('svf-confirm-cb'); if (svfCb) svfCb.checked = data.confirmed === true;
+    updateSimpanBtn('svf');
     calcSVF();
   } else if (section === 'logbook') {
     fieldMap.logbook.forEach(function(k) { var el = document.getElementById('log_' + k); if (el && data[k] !== undefined) el.value = data[k]; });
+    var logCb = document.getElementById('logbook-confirm-cb'); if (logCb) logCb.checked = data.confirmed === true;
+    updateSimpanBtn('logbook');
     calcLog();
   } else if (section === 'presentation') {
     Object.keys(data).forEach(function(k) { var el = document.getElementById(k); if (el && data[k] !== undefined) el.value = data[k]; });
+    var presCb = document.getElementById('presentation-confirm-cb'); if (presCb) presCb.checked = data.confirmed === true;
+    updateSimpanBtn('presentation');
     calcPres();
   } else if (section === 'report') {
     ['a1','a2','a3','a4_tech_p1','a4_admin_p1','a4_tech_p2','a4_admin_p2','a5','a6','a7','b1'].forEach(function(k) {
@@ -292,6 +309,8 @@ function populateSection(section, data) {
     });
     if (data.ulasan !== undefined) { var el = document.getElementById('rep_ulasan'); if (el) el.value = data.ulasan; }
     if (data.pilihan) { pilihan = parseInt(data.pilihan) || 1; selectPilihan(pilihan); }
+    var repCb = document.getElementById('report-confirm-cb'); if (repCb) repCb.checked = data.confirmed === true;
+    updateSimpanBtn('report');
     calcReport();
   } else if (section === 'meta') {
     if (data.hadir !== undefined) {
@@ -303,57 +322,12 @@ function populateSection(section, data) {
 }
 
 // ===== STRICT COMPLETION CHECK =====
+// A student is "Lengkap" only when all 5 sections have confirmed: true
 function isStudentComplete(marksMap) {
-  var validRatings = ['Sangat Baik','Baik','Memuaskan','Kurang Memuaskan','Lemah'];
-  function hasVal(v) { return v !== null && v !== undefined && v !== ''; }
-
-  // SVI section
-  var svi = marksMap.svi;
-  if (!svi) return false;
-  var sviNums = ['a1','a2','a3','a4','b1','b2','b3','b4','b5','b6','b7','b8','b9','b10'];
-  if (!sviNums.every(function(k) { return hasVal(svi[k]); })) return false;
-  if (!svi.ulasan || !String(svi.ulasan).trim()) return false;
-  if (validRatings.indexOf(svi.rating) === -1) return false;
-
-  // SVF section
-  var svf = marksMap.svf;
-  if (!svf) return false;
-  var svfNums = ['a1','a2','a3','a4','a5','b1','c1'];
-  if (!svfNums.every(function(k) { return hasVal(svf[k]); })) return false;
-  if (!svf.ulasan || !String(svf.ulasan).trim()) return false;
-  if (validRatings.indexOf(svf.rating) === -1) return false;
-  if (['Lulus','Gagal'].indexOf(svf.status) === -1) return false;
-
-  // Logbook section
-  var logbook = marksMap.logbook;
-  if (!logbook) return false;
-  if (!['a1','b1','c1'].every(function(k) { return hasVal(logbook[k]); })) return false;
-
-  // Presentation section
-  var pres = marksMap.presentation;
-  if (!pres) return false;
-  var presFields = [
-    'psvf_a','psvf_b1','psvf_b2','psvf_b3','psvf_b4','psvf_b5',
-    'psvf_c1','psvf_c2','psvf_c3','psvf_d1','psvf_d2','psvf_d3','psvf_d4',
-    'psvi_a','psvi_b1','psvi_b2','psvi_b3','psvi_b4','psvi_b5',
-    'psvi_c1','psvi_c2','psvi_c3','psvi_d1','psvi_d2','psvi_d3','psvi_d4'
-  ];
-  if (!presFields.every(function(k) { return hasVal(pres[k]); })) return false;
-
-  // Report section
-  var rep = marksMap.report;
-  if (!rep) return false;
-  var repNums = ['a1','a2','a3','a5','a6','a7','b1'];
-  if (!repNums.every(function(k) { return hasVal(rep[k]); })) return false;
-  var pil = parseInt(rep.pilihan) || 1;
-  if (pil === 1) {
-    if (!hasVal(rep.a4_tech_p1) || !hasVal(rep.a4_admin_p1)) return false;
-  } else {
-    if (!hasVal(rep.a4_tech_p2) || !hasVal(rep.a4_admin_p2)) return false;
-  }
-  if (!rep.ulasan || !String(rep.ulasan).trim()) return false;
-
-  return true;
+  var sections = ['svi', 'svf', 'logbook', 'presentation', 'report'];
+  return sections.every(function(sec) {
+    return marksMap[sec] && marksMap[sec].confirmed === true;
+  });
 }
 // ===== END STRICT COMPLETION CHECK =====
 
@@ -392,6 +366,14 @@ async function simpanSection(section) {
   if (missing.length > 0) {
     alert('Bahagian berikut belum lengkap:\n' + missing.join('\n'));
   }
+}
+
+function updateSimpanBtn(section) {
+  var cb  = document.getElementById(section + '-confirm-cb');
+  var btn = document.getElementById(section + '-simpan-btn');
+  if (btn && cb) btn.disabled = !cb.checked;
+  var badge = document.getElementById(section + '-confirm-badge');
+  if (badge) badge.style.display = (cb && cb.checked) ? 'inline' : 'none';
 }
 // ===== END SECTION VALIDATION =====
 
@@ -1513,35 +1495,42 @@ async function openStudentEval(student) {
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
 
-  // Always re-fetch fresh student record from Supabase to avoid stale cache
-  var freshStudent = student;
+  // Direct Supabase query by id to get fresh svi_name and organisasi
+  var freshSviName = student.svi_name || '';
+  var freshOrg = student.organisasi || '';
   try {
-    var freshResp = await sb.from('students').select('*').eq('matric_no', student.matric_no).single();
-    if (!freshResp.error && freshResp.data) {
-      freshStudent = freshResp.data;
-      // Update cached local arrays to reflect fresh data
-      for (var _i = 0; _i < _ajkliStudents.length; _i++) {
-        if (_ajkliStudents[_i].matric_no === freshStudent.matric_no) { _ajkliStudents[_i] = freshStudent; break; }
-      }
-      for (var _j = 0; _j < _pensyarahDashStudents.length; _j++) {
-        if (_pensyarahDashStudents[_j].matric_no === freshStudent.matric_no) { _pensyarahDashStudents[_j] = freshStudent; break; }
-      }
+    var chkResp = await sb.from('students').select('svi_name, organisasi').eq('id', student.id).single();
+    if (!chkResp.error && chkResp.data) {
+      freshSviName = chkResp.data.svi_name || '';
+      freshOrg = chkResp.data.organisasi || '';
     }
   } catch(e) { /* use cached data on error */ }
 
+  // Update the student object with fresh values
+  student.svi_name = freshSviName;
+  student.organisasi = freshOrg;
+
+  // Update cached local arrays
+  for (var _i = 0; _i < _ajkliStudents.length; _i++) {
+    if (_ajkliStudents[_i].id === student.id) { _ajkliStudents[_i].svi_name = freshSviName; _ajkliStudents[_i].organisasi = freshOrg; break; }
+  }
+  for (var _j = 0; _j < _pensyarahDashStudents.length; _j++) {
+    if (_pensyarahDashStudents[_j].id === student.id) { _pensyarahDashStudents[_j].svi_name = freshSviName; _pensyarahDashStudents[_j].organisasi = freshOrg; break; }
+  }
+
   // For PENSYARAH and ADMIN: show modal only if svi_name or organisasi is NULL/empty in Supabase
-  if ((eff === 'PENSYARAH' || eff === 'ADMIN') && (!freshStudent.svi_name || !freshStudent.organisasi)) {
-    _pendingStudentEval = freshStudent;
-    document.getElementById('spm-matric').value = freshStudent.matric_no;
-    document.getElementById('spm-svi').value = freshStudent.svi_name || '';
-    document.getElementById('spm-org').value = freshStudent.organisasi || '';
+  if ((eff === 'PENSYARAH' || eff === 'ADMIN') && (!freshSviName || !freshOrg)) {
+    _pendingStudentEval = student;
+    document.getElementById('spm-matric').value = student.matric_no;
+    document.getElementById('spm-svi').value = freshSviName;
+    document.getElementById('spm-org').value = freshOrg;
     document.getElementById('spm-error').style.display = 'none';
     var modal = document.getElementById('student-profile-modal');
     modal.style.display = 'flex'; modal.classList.add('open');
     return;
   }
 
-  await loadStudentForEval(freshStudent);
+  await loadStudentForEval(student);
 }
 
 function closeStudentProfileModal() {
@@ -1573,6 +1562,13 @@ async function saveStudentProfile() {
   if (_pendingStudentEval) {
     _pendingStudentEval.svi_name   = svi;
     _pendingStudentEval.organisasi = org;
+    // Update ALL local arrays
+    for (var _i = 0; _i < _ajkliStudents.length; _i++) {
+      if (_ajkliStudents[_i].id === _pendingStudentEval.id) { _ajkliStudents[_i].svi_name = svi; _ajkliStudents[_i].organisasi = org; break; }
+    }
+    for (var _j = 0; _j < _pensyarahDashStudents.length; _j++) {
+      if (_pensyarahDashStudents[_j].id === _pendingStudentEval.id) { _pensyarahDashStudents[_j].svi_name = svi; _pensyarahDashStudents[_j].organisasi = org; break; }
+    }
     var pending = _pendingStudentEval;
     closeStudentProfileModal();
     await loadStudentForEval(pending);
@@ -1594,6 +1590,13 @@ async function loadStudentForEval(student) {
     _currentEvalEmail = student.svf_email || (_lsSession ? _lsSession.email : null);
   }
 
+  // Reset all confirmation checkboxes before loading new student data
+  ['svi', 'svf', 'logbook', 'presentation', 'report'].forEach(function(sec) {
+    var cb = document.getElementById(sec + '-confirm-cb');
+    if (cb) cb.checked = false;
+    updateSimpanBtn(sec);
+  });
+
   // Populate eval student bar
   document.getElementById('esb-nama').textContent   = student.name || '—';
   document.getElementById('esb-matrik').textContent = student.matric_no || '—';
@@ -1601,6 +1604,18 @@ async function loadStudentForEval(student) {
   document.getElementById('esb-svf').textContent    = student.svf_name || '—';
   document.getElementById('esb-svi').textContent    = student.svi_name || '—';
   document.getElementById('esb-org').textContent    = student.organisasi || '—';
+
+  // Show/hide SVI/Org indicator
+  var sviOrgEl = document.getElementById('svi-org-indicator');
+  if (sviOrgEl) {
+    if (student.svi_name && student.organisasi) {
+      document.getElementById('svi-indicator-name').textContent = student.svi_name;
+      document.getElementById('org-indicator-name').textContent = student.organisasi;
+      sviOrgEl.style.display = 'flex';
+    } else {
+      sviOrgEl.style.display = 'none';
+    }
+  }
 
   // Populate info-page fields (for ADMIN/AJK_LI usage)
   _suppressSave = true;
@@ -1636,6 +1651,14 @@ async function loadStudentForEval(student) {
 
 function goBackToDashboard() {
   currentStudent = null;
+  // Hide SVI/Org indicator
+  var sviOrgEl = document.getElementById('svi-org-indicator');
+  if (sviOrgEl) sviOrgEl.style.display = 'none';
+  // Reset all confirmation badges
+  ['svi', 'svf', 'logbook', 'presentation', 'report'].forEach(function(sec) {
+    var badge = document.getElementById(sec + '-confirm-badge');
+    if (badge) badge.style.display = 'none';
+  });
   showTab('dashboard');
 }
 // ===== END STUDENT EVAL WORKFLOW =====

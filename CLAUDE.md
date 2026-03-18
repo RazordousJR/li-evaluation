@@ -230,27 +230,40 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - "Pelajar Lengkap" status = strict field-level validation via `isStudentComplete(marksMap)` (see below)
 - **Migration**: Run the DO block in `supabase/schema.sql` migration section to update existing DB
 
-## Strict Completion Check (v4.3)
-- `isStudentComplete(marksMap)` — validates all required fields across all 5 sections against saved Supabase data
-  - `marksMap` = `{svi: data, svf: data, logbook: data, presentation: data, report: data}`
-  - SVI: numeric fields a1–a4, b1–b10 must exist; `ulasan` non-empty; `rating` one of Sangat Baik/Baik/Memuaskan/Kurang Memuaskan/Lemah
-  - SVF: numeric fields a1–a5, b1, c1 must exist; `ulasan` non-empty; `rating` one of valid values; `status` = Lulus/Gagal
-  - Logbook: numeric fields a1, b1, c1 must exist
-  - Presentation: all 26 numeric fields (psvf_a, psvf_b1–b5, psvf_c1–c3, psvf_d1–d4, psvi equivalents) must exist
-  - Report: numeric fields a1–a3, a5–a7, b1 must exist; a4 fields depend on `pilihan` value; `ulasan` non-empty
-- All 3 dashboards (ADMIN, AJK_LI, PENSYARAH) now use `isStudentComplete()` — marks fetched with `data` column
+## Confirmation Checkbox per Section (v4.4)
+- Each eval section (SVI, SVF, Logbook, Pembentangan, Laporan LI) has a confirmation checkbox at the bottom
+- Checkbox ID pattern: `{section}-confirm-cb` (e.g. `svi-confirm-cb`, `svf-confirm-cb`, etc.)
+- Checkbox label: "Saya sahkan bahawa semua markah di atas adalah muktamad"
+- Simpan button (ID: `{section}-simpan-btn`) is **disabled** until checkbox is ticked
+- `updateSimpanBtn(section)` — enables/disables Simpan button + toggles sidebar badge based on checkbox state
+- Checkbox state saved as `confirmed: true/false` in the section's jsonb `data` field in Supabase
+- When loading saved marks, checkbox state is restored by `populateSection()`
+- When a section is confirmed, a green "✓" badge appears next to the section name in the sidebar nav (`{section}-confirm-badge`)
+- Simpan buttons have IDs: `svi-simpan-btn`, `svf-simpan-btn`, `logbook-simpan-btn`, `presentation-simpan-btn`, `report-simpan-btn`
+- `getCbVal(id)` helper — returns boolean checkbox value
 
-## Manual Simpan with Validation (v4.3)
+## Strict Completion Check (v4.4 — Confirmation-Based)
+- `isStudentComplete(marksMap)` — simplified to check `confirmed: true` in each section's data
+  - A student is "Lengkap" only when all 5 sections (`svi`, `svf`, `logbook`, `presentation`, `report`) exist AND each has `confirmed: true`
+  - Previous field-level validation removed — confirmation checkbox is the sole completion gate
+- All 3 dashboards (ADMIN, AJK_LI, PENSYARAH) use `isStudentComplete()` — marks fetched with `data` column
+
+## Manual Simpan with Validation (v4.3, updated v4.4)
 - Each eval tab (SVI, SVF, Logbook, Pembentangan, Laporan LI) has a **Simpan** button
+- Simpan button is **disabled** until confirmation checkbox is ticked (enforced via `disabled` HTML attribute + `updateSimpanBtn()`)
 - `simpanSection(section)` — validates current form fields for that section, calls `saveAll()`, then shows alert if anything is missing
 - `validateSection(section)` — checks text fields (ulasan) and radio fields (rating/status) for the given section; returns array of missing field labels
 - Alert format: "Bahagian berikut belum lengkap:\n[label1]\n[label2]..."
 - Auto-save is NOT affected — only manual Simpan button triggers the validation alert
 
-## Student Profile Modal Fix (v4.3)
-- `openStudentEval(student)` now always re-fetches the student record fresh from Supabase before checking modal condition
-- Modal only shows if `svi_name` IS NULL or empty string in Supabase (not stale cached data)
-- Fresh data is written back to `_ajkliStudents` and `_pensyarahDashStudents` local arrays
+## Student Profile Modal Fix (v4.4)
+- `openStudentEval(student)` does a direct targeted Supabase query: `select('svi_name, organisasi').eq('id', student.id)`
+- Modal only shows if `svi_name` IS NULL/empty OR `organisasi` IS NULL/empty in Supabase (fresh from DB)
+- Fresh `svi_name` and `organisasi` values are written back to the student object AND to `_ajkliStudents` and `_pensyarahDashStudents` local arrays immediately
+- After `saveStudentProfile()`, ALL local arrays (`_ajkliStudents`, `_pensyarahDashStudents`) are updated with new svi_name/organisasi
+- SVI/Org indicator (`#svi-org-indicator`) in the eval form header shows "✓ SVI: [nama] | ✓ Syarikat: [nama]" in green when both are filled
+  - `#svi-indicator-name` and `#org-indicator-name` elements hold the values
+  - Indicator shown by `loadStudentForEval()`, hidden by `goBackToDashboard()` and `showTab()` when not in eval tabs
 
 ## Tech Stack
 - Vanilla HTML, CSS, JavaScript only (no frameworks, no build tools)
