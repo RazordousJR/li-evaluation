@@ -65,6 +65,30 @@ ALTER TABLE public.users    ADD COLUMN IF NOT EXISTS no_staf  TEXT;
 ALTER TABLE public.users    ADD COLUMN IF NOT EXISTS jabatan  TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS svf_email TEXT;
 
+-- v4.1: Change marks unique constraint to allow per-evaluator records
+-- (student_id, section) → (student_id, evaluator_email, section)
+-- Run in Supabase SQL Editor to apply this migration:
+DO $$
+BEGIN
+  -- Drop old constraint if it exists
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'marks_student_id_section_key'
+      AND conrelid = 'public.marks'::regclass
+  ) THEN
+    ALTER TABLE public.marks DROP CONSTRAINT marks_student_id_section_key;
+  END IF;
+  -- Add new composite unique constraint
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'marks_student_evaluator_section_key'
+      AND conrelid = 'public.marks'::regclass
+  ) THEN
+    ALTER TABLE public.marks ADD CONSTRAINT marks_student_evaluator_section_key
+      UNIQUE (student_id, evaluator_email, section);
+  END IF;
+END $$;
+
 -- ============================================================
 -- Seed default accounts (skip if already exist)
 -- ============================================================

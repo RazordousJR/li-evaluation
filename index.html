@@ -54,7 +54,8 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a class="nav-item active" data-tab="info" onclick="showTab('info')">Maklumat Pelajar</a>
+      <a class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</a>
+      <a class="nav-item" id="info-nav-item" data-tab="info" onclick="showTab('info')">Maklumat Pelajar</a>
       <a class="nav-item" data-tab="svi" onclick="showTab('svi')">Penyelia Industri (SVI)</a>
       <a class="nav-item" data-tab="svf" onclick="showTab('svf')">Penyelia Fakulti (SVF)</a>
       <a class="nav-item" data-tab="logbook" onclick="showTab('logbook')">e-Logbook</a>
@@ -92,8 +93,110 @@
 
     <div class="content-area">
 
+<!-- EVAL STUDENT BAR (shown when a student is selected from dashboard) -->
+<div id="eval-student-bar" style="display:none">
+  <div class="eval-student-info">
+    <div class="esb-field"><span class="esb-label">Pelajar</span><span id="esb-nama" class="esb-val">—</span></div>
+    <div class="esb-field"><span class="esb-label">Matrik</span><span id="esb-matrik" class="esb-val">—</span></div>
+    <div class="esb-field"><span class="esb-label">Program</span><span id="esb-kursus" class="esb-val">—</span></div>
+    <div class="esb-field"><span class="esb-label">SVF</span><span id="esb-svf" class="esb-val">—</span></div>
+    <div class="esb-field"><span class="esb-label">SVI</span><span id="esb-svi" class="esb-val">—</span></div>
+    <div class="esb-field"><span class="esb-label">Syarikat</span><span id="esb-org" class="esb-val">—</span></div>
+  </div>
+  <button class="btn-secondary" style="white-space:nowrap;flex-shrink:0" onclick="goBackToDashboard()">&#8592; Kembali</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+
+  <!-- ADMIN dashboard -->
+  <div id="dash-admin" style="display:none">
+    <div class="section">
+      <div class="section-title">Ringkasan Sistem</div>
+      <div class="dash-stats-grid">
+        <div class="dash-stat-card dash-card-blue" id="dsc-total-pelajar">
+          <div class="stat-label">Total Pelajar</div><div class="stat-val">—</div><div class="stat-sub">pelajar berdaftar</div>
+        </div>
+        <div class="dash-stat-card dash-card-green" id="dsc-total-pensyarah">
+          <div class="stat-label">Total Pensyarah</div><div class="stat-val">—</div><div class="stat-sub">dalam sistem</div>
+        </div>
+        <div class="dash-stat-card dash-card-amber" id="dsc-lengkap">
+          <div class="stat-label">Pelajar Lengkap</div><div class="stat-val">—</div><div class="stat-sub">semua bahagian diisi</div>
+        </div>
+        <div class="dash-stat-card dash-card-red" id="dsc-belum-assign">
+          <div class="stat-label">Belum Assign SVF</div><div class="stat-val">—</div><div class="stat-sub">pelajar belum ada SVF</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AJK_LI dashboard -->
+  <div id="dash-ajkli" style="display:none">
+    <div class="section">
+      <div class="section-title">Kemajuan Penilaian</div>
+      <div class="dash-progress-wrap">
+        <div class="dash-progress-header">
+          <span id="dash-progress-label" style="color:var(--text2)">Memuatkan...</span>
+          <span id="dash-progress-pct" class="dash-progress-pct">0%</span>
+        </div>
+        <div class="progress-bar" style="height:10px">
+          <div class="progress-fill" id="dash-progress-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="dash-filter-pensyarah" onchange="filterAjkliDashboard()" style="font-size:13px;padding:5px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit">
+          <option value="">Semua Pensyarah</option>
+        </select>
+        <select id="dash-filter-program" onchange="filterAjkliDashboard()" style="font-size:13px;padding:5px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit">
+          <option value="">Semua Program</option>
+          <option>BITC</option><option>BITD</option><option>BITM</option>
+          <option>BITI</option><option>BITS</option><option>BITE</option><option>BITZ</option>
+        </select>
+        <button class="btn-secondary" onclick="loadAjkliDashboard()">&#8635; Muat Semula</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="um-table-wrap">
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>No Matrik</th><th>Nama Pelajar</th><th>Program</th><th>SVF</th><th>Status Markah</th>
+            </tr>
+          </thead>
+          <tbody id="dash-ajkli-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PENSYARAH dashboard -->
+  <div id="dash-pensyarah" style="display:none">
+    <div class="section">
+      <div class="section-title" style="justify-content:space-between;align-items:center">
+        <span>Senarai Pelajar Anda</span>
+        <button class="btn-secondary" onclick="loadPensyarahDashboard()">&#8635; Muat Semula</button>
+      </div>
+      <div class="um-table-wrap">
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>No Matrik</th><th>Nama Pelajar</th><th>Program</th><th>Nama SVI</th><th>Syarikat</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="dash-pensyarah-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end page-dashboard -->
+
 <!-- INFO -->
-<div class="page active" id="page-info">
+<div class="page" id="page-info">
   <div class="alert alert-info">Lengkapkan maklumat pelajar terlebih dahulu sebelum memasukkan markah penilaian.</div>
   <div class="section">
     <div class="section-title">Maklumat Pelajar</div>
@@ -841,6 +944,26 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeAddPelajarModal()">Batal</button>
       <button class="btn-primary" onclick="saveAddPelajar()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT PROFILE SETUP MODAL (PENSYARAH — first time) -->
+<div class="modal-overlay" id="student-profile-modal" style="display:none">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-header">
+      <span>Lengkapkan Profil Pelajar</span>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">Sila isikan maklumat penyelia industri dan syarikat untuk pelajar ini sebelum meneruskan penilaian.</div>
+      <input type="hidden" id="spm-matric">
+      <div class="field"><label>Nama Penyelia Industri (SVI) <span style="color:var(--red-text)">*</span></label><input type="text" id="spm-svi" placeholder="Nama penyelia industri"></div>
+      <div class="field"><label>Nama Syarikat / Organisasi <span style="color:var(--red-text)">*</span></label><input type="text" id="spm-org" placeholder="Nama syarikat tempat LI"></div>
+      <div class="modal-msg modal-err" id="spm-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeStudentProfileModal()">Batal</button>
+      <button class="btn-primary" id="spm-save-btn" onclick="saveStudentProfile()">Simpan &amp; Teruskan</button>
     </div>
   </div>
 </div>

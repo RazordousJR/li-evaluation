@@ -3,6 +3,12 @@ var SUPABASE_URL = 'https://lvbtzoqkgmjztolwdchi.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_ChFCyvoYGVutAaFdwKZbtA_bq0P3DAR';
 var sb = null;
 
+// ===== DASHBOARD GLOBALS =====
+var currentStudent = null;
+var _pendingStudentEval = null;
+var _ajkliStudents = [];
+var _ajkliPensyarahMap = {};
+
 // ===== AUTH =====
 function getEffectiveRole(roles) {
   if (!roles || roles.length === 0) return 'PENSYARAH';
@@ -81,6 +87,7 @@ function showApp(user) {
   }
 
   applyRoleRestrictions(user.roles);
+  showTab('dashboard');
 }
 
 function applyRoleRestrictions(roles) {
@@ -108,6 +115,9 @@ function applyRoleRestrictions(roles) {
     document.querySelectorAll('.btn-danger').forEach(function(btn) {
       btn.classList.add('hidden-by-role');
     });
+    // Hide Maklumat Pelajar nav for PENSYARAH (they access via dashboard)
+    var infoNav = document.getElementById('info-nav-item');
+    if (infoNav) infoNav.style.display = 'none';
   }
 }
 // ===== END AUTH =====
@@ -126,6 +136,7 @@ function closeSidebar() {
 var pilihan = 1, hadir = 1;
 
 var TAB_TITLES = {
+  dashboard: 'Dashboard',
   info: 'Maklumat Pelajar',
   svi: 'Penyelia Industri (SVI)',
   svf: 'Penyelia Fakulti (SVF)',
@@ -143,12 +154,22 @@ function showTab(t) {
     el.classList.toggle('active', el.getAttribute('data-tab') === t);
   });
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-  document.getElementById('page-' + t).classList.add('active');
+  var pageEl = document.getElementById('page-' + t);
+  if (pageEl) pageEl.classList.add('active');
   document.getElementById('topbar-title').textContent = TAB_TITLES[t] || t;
   if (t === 'summary') calcSummary();
   if (t === 'usermgmt') loadUserMgmt();
   if (t === 'uruspelajar') loadUruspelajar();
   if (t === 'uruspensyarah') loadUruspensyarah();
+  if (t === 'dashboard') loadDashboard();
+
+  // Show eval student bar only in eval tabs when a student is selected
+  var evalTabs = ['svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
+  var evalBar = document.getElementById('eval-student-bar');
+  if (evalBar) {
+    evalBar.style.display = (currentStudent && evalTabs.indexOf(t) !== -1) ? 'flex' : 'none';
+  }
+
   closeSidebar();
   window.scrollTo(0, 0);
 }
@@ -321,7 +342,7 @@ async function saveAll() {
     });
 
     var mResp = await sb.from('marks')
-      .upsert(upserts, { onConflict: 'student_id,section' });
+      .upsert(upserts, { onConflict: 'student_id,evaluator_email,section' });
 
     if (mResp.error) throw mResp.error;
     setSaveStatus('saved');
@@ -346,6 +367,7 @@ async function loadByMatric(matric) {
     }
     var student = sResp.data;
     currentStudentId = student.id;
+    currentStudent = student;
 
     // Populate student info fields
     document.getElementById('nama_pelajar').value = student.name || '';
@@ -357,7 +379,11 @@ async function loadByMatric(matric) {
     document.getElementById('svi_name').value     = student.svi_name || '';
 
     // Load marks (suppress auto-save while populating form)
-    var mResp = await sb.from('marks').select('section,data').eq('student_id', student.id);
+    var session2 = getSession();
+    var eff2 = getEffectiveRole(session2 ? session2.roles : []);
+    var marksQ = sb.from('marks').select('section,data').eq('student_id', student.id);
+    if (eff2 === 'PENSYARAH' && session2) marksQ = marksQ.eq('evaluator_email', session2.email);
+    var mResp = await marksQ;
     if (!mResp.error && mResp.data) {
       _suppressSave = true;
       mResp.data.forEach(function(row) { populateSection(row.section, row.data); });
@@ -1204,5 +1230,301 @@ async function deletePensyarah(email, name) {
   loadUruspensyarah();
 }
 // ===== END DELETE PENSYARAH =====
+
+// ===== DASHBOARD =====
+async function loadDashboard() {
+  var session = getSession();
+  if (!session) return;
+  var eff = getEffectiveRole(session.roles);
+
+  document.getElementById('dash-admin').style.display     = (eff === 'ADMIN')      ? 'block' : 'none';
+  document.getElementById('dash-ajkli').style.display     = (eff === 'AJK_LI')     ? 'block' : 'none';
+  document.getElementById('dash-pensyarah').style.display = (eff === 'PENSYARAH')   ? 'block' : 'none';
+
+  if (eff === 'ADMIN')      renderAdminDashboard();
+  else if (eff === 'AJK_LI')    loadAjkliDashboard();
+  else if (eff === 'PENSYARAH') loadPensyarahDashboard();
+}
+
+function updateStatCard(id, val, sub) {
+  var card = document.getElementById(id);
+  if (!card) return;
+  card.querySelector('.stat-val').textContent = val;
+  var subEl = card.querySelector('.stat-sub');
+  if (subEl) subEl.textContent = sub;
+}
+
+async function renderAdminDashboard() {
+  var results = await Promise.all([
+    sb.from('students').select('id, svf_email'),
+    sb.from('users').select('id', { count: 'exact', head: true }).contains('roles', ['PENSYARAH']),
+    sb.from('marks').select('student_id, section')
+  ]);
+  var stData   = results[0].data || [];
+  var psCount  = results[1].count || 0;
+  var mrData   = results[2].data || [];
+
+  var totalPelajar = stData.length;
+  var belumAssign  = stData.filter(function(s) { return !s.svf_email; }).length;
+
+  var sectionsByStudent = {};
+  mrData.forEach(function(m) {
+    if (!sectionsByStudent[m.student_id]) sectionsByStudent[m.student_id] = {};
+    sectionsByStudent[m.student_id][m.section] = true;
+  });
+  var required = ['svi','svf','logbook','presentation','report'];
+  var lengkap = Object.values(sectionsByStudent).filter(function(s) {
+    return required.every(function(sec) { return s[sec]; });
+  }).length;
+
+  updateStatCard('dsc-total-pelajar',   totalPelajar, 'pelajar berdaftar');
+  updateStatCard('dsc-total-pensyarah', psCount,      'pensyarah dalam sistem');
+  updateStatCard('dsc-lengkap',         lengkap,      'semua bahagian diisi');
+  updateStatCard('dsc-belum-assign',    belumAssign,  'belum ada SVF');
+}
+
+async function loadAjkliDashboard() {
+  var tbody = document.getElementById('dash-ajkli-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
+
+  var results = await Promise.all([
+    sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
+    sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name').order('name'),
+    sb.from('marks').select('student_id, section')
+  ]);
+  var pensyarahList = results[0].data || [];
+  _ajkliStudents    = results[1].data || [];
+  var mrData        = results[2].data || [];
+
+  _ajkliPensyarahMap = {};
+  pensyarahList.forEach(function(p) { _ajkliPensyarahMap[p.email] = p.full_name; });
+
+  var filterEl = document.getElementById('dash-filter-pensyarah');
+  if (filterEl) {
+    filterEl.innerHTML = '<option value="">Semua Pensyarah</option>';
+    pensyarahList.forEach(function(p) {
+      filterEl.innerHTML += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
+    });
+  }
+
+  var sectionsByStudent = {};
+  mrData.forEach(function(m) {
+    if (!sectionsByStudent[m.student_id]) sectionsByStudent[m.student_id] = {};
+    sectionsByStudent[m.student_id][m.section] = true;
+  });
+  var required = ['svi','svf','logbook','presentation','report'];
+  _ajkliStudents.forEach(function(s) {
+    var secs = sectionsByStudent[s.id] || {};
+    s._lengkap = required.every(function(sec) { return secs[sec]; });
+  });
+
+  var total = _ajkliStudents.length;
+  var done  = _ajkliStudents.filter(function(s) { return s._lengkap; }).length;
+  var pct   = total > 0 ? Math.round(done / total * 100) : 0;
+  var lblEl = document.getElementById('dash-progress-label');
+  if (lblEl) lblEl.textContent = done + ' daripada ' + total + ' pelajar lengkap';
+  var pctEl = document.getElementById('dash-progress-pct');
+  if (pctEl) pctEl.textContent = pct + '%';
+  var barEl = document.getElementById('dash-progress-bar');
+  if (barEl) barEl.style.width = pct + '%';
+
+  filterAjkliDashboard();
+}
+
+function filterAjkliDashboard() {
+  var pFilter = (document.getElementById('dash-filter-pensyarah') || {}).value || '';
+  var prFilter = (document.getElementById('dash-filter-program') || {}).value || '';
+  var filtered = _ajkliStudents.filter(function(s) {
+    if (pFilter && s.svf_email !== pFilter) return false;
+    if (prFilter && (s.kursus || '').indexOf(prFilter) === -1) return false;
+    return true;
+  });
+  renderAjkliTable(filtered);
+}
+
+function renderAjkliTable(students) {
+  var tbody = document.getElementById('dash-ajkli-tbody');
+  if (!tbody) return;
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pelajar.</td></tr>';
+    return;
+  }
+  var html = '';
+  students.forEach(function(s, i) {
+    var svfName = s.svf_email ? (_ajkliPensyarahMap[s.svf_email] || s.svf_email) : '—';
+    var badge = s._lengkap
+      ? '<span class="status-badge status-active">Lengkap</span>'
+      : '<span class="status-badge status-inactive">Belum Lengkap</span>';
+    html += '<tr class="dash-row-clickable" onclick="openStudentEval(_ajkliStudents[' + i + '])">' +
+      '<td>' + escHtml(s.matric_no) + '</td>' +
+      '<td>' + escHtml(s.name || '') + '</td>' +
+      '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
+      '<td style="font-size:12.5px">' + escHtml(svfName) + '</td>' +
+      '<td>' + badge + '</td>' +
+      '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+var _pensyarahDashStudents = [];
+
+async function loadPensyarahDashboard() {
+  var tbody = document.getElementById('dash-pensyarah-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
+
+  var session = getSession();
+  if (!session) return;
+
+  var results = await Promise.all([
+    sb.from('students').select('id, matric_no, name, kursus, svf_name, svi_name, organisasi, svf_email')
+      .eq('svf_email', session.email).order('name'),
+    sb.from('marks').select('student_id, section').eq('evaluator_email', session.email)
+  ]);
+  _pensyarahDashStudents = results[0].data || [];
+  var mrData = results[1].data || [];
+
+  var sectionsByStudent = {};
+  mrData.forEach(function(m) {
+    if (!sectionsByStudent[m.student_id]) sectionsByStudent[m.student_id] = {};
+    sectionsByStudent[m.student_id][m.section] = true;
+  });
+  var required = ['svi','svf','logbook','presentation','report'];
+
+  if (!_pensyarahDashStudents.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pelajar ditetapkan kepada anda.</td></tr>';
+    return;
+  }
+
+  var html = '';
+  _pensyarahDashStudents.forEach(function(s, i) {
+    var secs = sectionsByStudent[s.id] || {};
+    var lengkap = required.every(function(sec) { return secs[sec]; });
+    var badge = lengkap
+      ? '<span class="status-badge status-active">Lengkap</span>'
+      : '<span class="status-badge status-inactive">Belum Lengkap</span>';
+    html += '<tr class="dash-row-clickable" onclick="openStudentEval(_pensyarahDashStudents[' + i + '])">' +
+      '<td>' + escHtml(s.matric_no) + '</td>' +
+      '<td>' + escHtml(s.name || '') + '</td>' +
+      '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
+      '<td style="font-size:12.5px">' + escHtml(s.svi_name || '—') + '</td>' +
+      '<td style="font-size:12.5px">' + escHtml(s.organisasi || '—') + '</td>' +
+      '<td>' + badge + '</td>' +
+      '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+// ===== END DASHBOARD =====
+
+// ===== STUDENT EVAL WORKFLOW =====
+async function openStudentEval(student) {
+  if (!student) return;
+  var session = getSession();
+  var eff = getEffectiveRole(session ? session.roles : []);
+
+  // For PENSYARAH: check if svi_name and organisasi are set
+  if (eff === 'PENSYARAH' && (!student.svi_name || !student.organisasi)) {
+    _pendingStudentEval = student;
+    document.getElementById('spm-matric').value = student.matric_no;
+    document.getElementById('spm-svi').value = student.svi_name || '';
+    document.getElementById('spm-org').value = student.organisasi || '';
+    document.getElementById('spm-error').style.display = 'none';
+    var modal = document.getElementById('student-profile-modal');
+    modal.style.display = 'flex'; modal.classList.add('open');
+    return;
+  }
+
+  await loadStudentForEval(student);
+}
+
+function closeStudentProfileModal() {
+  var modal = document.getElementById('student-profile-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+  _pendingStudentEval = null;
+}
+
+async function saveStudentProfile() {
+  var svi    = document.getElementById('spm-svi').value.trim();
+  var org    = document.getElementById('spm-org').value.trim();
+  var matric = document.getElementById('spm-matric').value;
+  var errEl  = document.getElementById('spm-error');
+  var btn    = document.getElementById('spm-save-btn');
+  errEl.style.display = 'none';
+
+  if (!svi || !org) {
+    errEl.textContent = 'Sila isi semua medan.'; errEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  var resp = await sb.from('students').update({ svi_name: svi, organisasi: org }).eq('matric_no', matric);
+  btn.disabled = false; btn.textContent = 'Simpan & Teruskan';
+
+  if (resp.error) {
+    errEl.textContent = 'Ralat: ' + resp.error.message; errEl.style.display = 'block'; return;
+  }
+
+  if (_pendingStudentEval) {
+    _pendingStudentEval.svi_name   = svi;
+    _pendingStudentEval.organisasi = org;
+    var pending = _pendingStudentEval;
+    closeStudentProfileModal();
+    await loadStudentForEval(pending);
+  } else {
+    closeStudentProfileModal();
+  }
+}
+
+async function loadStudentForEval(student) {
+  currentStudent   = student;
+  currentStudentId = student.id;
+
+  // Populate eval student bar
+  document.getElementById('esb-nama').textContent   = student.name || '—';
+  document.getElementById('esb-matrik').textContent = student.matric_no || '—';
+  document.getElementById('esb-kursus').textContent = student.kursus || '—';
+  document.getElementById('esb-svf').textContent    = student.svf_name || '—';
+  document.getElementById('esb-svi').textContent    = student.svi_name || '—';
+  document.getElementById('esb-org').textContent    = student.organisasi || '—';
+
+  // Populate info-page fields (for ADMIN/AJK_LI usage)
+  _suppressSave = true;
+  if (document.getElementById('nama_pelajar')) document.getElementById('nama_pelajar').value = student.name || '';
+  if (document.getElementById('no_matrik'))    document.getElementById('no_matrik').value    = student.matric_no || '';
+  if (document.getElementById('kursus'))       document.getElementById('kursus').value       = student.kursus || '';
+  if (document.getElementById('organisasi'))   document.getElementById('organisasi').value   = student.organisasi || '';
+  if (document.getElementById('svf_name'))     document.getElementById('svf_name').value     = student.svf_name || '';
+  if (document.getElementById('svi_name'))     document.getElementById('svi_name').value     = student.svi_name || '';
+  _suppressSave = false;
+
+  // Load marks for this student
+  setSaveStatus('saving');
+  try {
+    var session = getSession();
+    var eff = getEffectiveRole(session ? session.roles : []);
+    var marksQuery = sb.from('marks').select('section, data').eq('student_id', student.id);
+    if (eff === 'PENSYARAH' && session) {
+      marksQuery = marksQuery.eq('evaluator_email', session.email);
+    }
+    var mResp = await marksQuery;
+    if (!mResp.error && mResp.data) {
+      _suppressSave = true;
+      mResp.data.forEach(function(row) { populateSection(row.section, row.data); });
+      _suppressSave = false;
+    }
+    setSaveStatus('saved');
+  } catch(e) {
+    console.error('loadStudentForEval error:', e);
+    setSaveStatus('error');
+  }
+
+  showTab('svi');
+}
+
+function goBackToDashboard() {
+  currentStudent = null;
+  showTab('dashboard');
+}
+// ===== END STUDENT EVAL WORKFLOW =====
 
 initAuth();
