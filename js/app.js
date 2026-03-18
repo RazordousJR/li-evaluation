@@ -88,10 +88,11 @@ function showApp(user) {
 
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
-  // ADMIN — show admin-only elements, no other restrictions
+  // ADMIN — show admin sidebar items, no other restrictions
   if (eff === 'ADMIN') {
-    document.querySelectorAll('.admin-only').forEach(function(el) {
-      el.style.display = 'block';
+    ['admin-sep', 'admin-label', 'admin-nav-item'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'block';
     });
     return;
   }
