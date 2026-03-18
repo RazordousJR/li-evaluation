@@ -8,6 +8,7 @@ var currentStudent = null;
 var _pendingStudentEval = null;
 var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
+var _currentEvalEmail = null; // evaluator email used for save/load marks
 
 // ===== AUTH =====
 function getEffectiveRole(roles) {
@@ -331,10 +332,11 @@ async function saveAll() {
 
     var sections = collectSections();
     var now = new Date().toISOString();
+    var evalEmail = _currentEvalEmail || session.email;
     var upserts = Object.keys(sections).map(function(sec) {
       return {
         student_id:      currentStudentId,
-        evaluator_email: session.email,
+        evaluator_email: evalEmail,
         section:         sec,
         data:            sections[sec],
         updated_at:      now
@@ -1237,11 +1239,11 @@ async function loadDashboard() {
   if (!session) return;
   var eff = getEffectiveRole(session.roles);
 
-  document.getElementById('dash-admin').style.display     = (eff === 'ADMIN')      ? 'block' : 'none';
-  document.getElementById('dash-ajkli').style.display     = (eff === 'AJK_LI')     ? 'block' : 'none';
-  document.getElementById('dash-pensyarah').style.display = (eff === 'PENSYARAH')   ? 'block' : 'none';
+  document.getElementById('dash-admin').style.display     = (eff === 'ADMIN')                    ? 'block' : 'none';
+  document.getElementById('dash-ajkli').style.display     = (eff === 'AJK_LI' || eff === 'ADMIN') ? 'block' : 'none';
+  document.getElementById('dash-pensyarah').style.display = (eff === 'PENSYARAH')                 ? 'block' : 'none';
 
-  if (eff === 'ADMIN')      renderAdminDashboard();
+  if (eff === 'ADMIN')      { renderAdminDashboard(); loadAjkliDashboard(); }
   else if (eff === 'AJK_LI')    loadAjkliDashboard();
   else if (eff === 'PENSYARAH') loadPensyarahDashboard();
 }
@@ -1423,8 +1425,8 @@ async function openStudentEval(student) {
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
 
-  // For PENSYARAH: check if svi_name and organisasi are set
-  if (eff === 'PENSYARAH' && (!student.svi_name || !student.organisasi)) {
+  // For PENSYARAH and ADMIN: check if svi_name and organisasi are set
+  if ((eff === 'PENSYARAH' || eff === 'ADMIN') && (!student.svi_name || !student.organisasi)) {
     _pendingStudentEval = student;
     document.getElementById('spm-matric').value = student.matric_no;
     document.getElementById('spm-svi').value = student.svi_name || '';
@@ -1479,6 +1481,15 @@ async function loadStudentForEval(student) {
   currentStudent   = student;
   currentStudentId = student.id;
 
+  // Determine evaluator email: ADMIN/AJK_LI save under the student's SVF email
+  var _lsSession = getSession();
+  var _lsEff = getEffectiveRole(_lsSession ? _lsSession.roles : []);
+  if (_lsEff === 'PENSYARAH') {
+    _currentEvalEmail = _lsSession ? _lsSession.email : null;
+  } else {
+    _currentEvalEmail = student.svf_email || (_lsSession ? _lsSession.email : null);
+  }
+
   // Populate eval student bar
   document.getElementById('esb-nama').textContent   = student.name || '—';
   document.getElementById('esb-matrik').textContent = student.matric_no || '—';
@@ -1500,11 +1511,9 @@ async function loadStudentForEval(student) {
   // Load marks for this student
   setSaveStatus('saving');
   try {
-    var session = getSession();
-    var eff = getEffectiveRole(session ? session.roles : []);
     var marksQuery = sb.from('marks').select('section, data').eq('student_id', student.id);
-    if (eff === 'PENSYARAH' && session) {
-      marksQuery = marksQuery.eq('evaluator_email', session.email);
+    if (_currentEvalEmail) {
+      marksQuery = marksQuery.eq('evaluator_email', _currentEvalEmail);
     }
     var mResp = await marksQuery;
     if (!mResp.error && mResp.data) {
