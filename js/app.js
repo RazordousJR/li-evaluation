@@ -91,7 +91,7 @@ function applyRoleRestrictions(roles) {
   // ADMIN — show admin-only elements, no other restrictions
   if (eff === 'ADMIN') {
     document.querySelectorAll('.admin-only').forEach(function(el) {
-      el.style.display = '';
+      el.style.display = 'block';
     });
     return;
   }
