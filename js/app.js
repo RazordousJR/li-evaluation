@@ -132,6 +132,22 @@ function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('show');
 }
+function showEvalSidebar(student) {
+  var defNav = document.getElementById('sidebar-nav-default');
+  var evalNav = document.getElementById('sidebar-nav-eval');
+  if (defNav) defNav.style.display = 'none';
+  if (evalNav) evalNav.style.display = 'block';
+  var label = document.getElementById('sidebar-student-label');
+  if (label && student) {
+    label.innerHTML = escHtml(student.name || '—') + '<br><span style="opacity:.7;font-size:10.5px">' + escHtml(student.matric_no || '') + '</span>';
+  }
+}
+function showDefaultSidebar() {
+  var defNav = document.getElementById('sidebar-nav-default');
+  var evalNav = document.getElementById('sidebar-nav-eval');
+  if (evalNav) evalNav.style.display = 'none';
+  if (defNav) defNav.style.display = 'block';
+}
 // ===== END SIDEBAR TOGGLE =====
 
 var pilihan = 1, hadir = 1;
@@ -165,7 +181,7 @@ function showTab(t) {
   if (t === 'dashboard') loadDashboard();
 
   // Show eval student bar and SVI/Org indicator only in eval tabs when a student is selected
-  var evalTabs = ['svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
+  var evalTabs = ['info', 'svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
   var inEval = currentStudent && evalTabs.indexOf(t) !== -1;
   var evalBar = document.getElementById('eval-student-bar');
   if (evalBar) evalBar.style.display = inEval ? 'flex' : 'none';
@@ -964,6 +980,7 @@ async function confirmUploadPelajar() {
 
 // ===== URUS PELAJAR =====
 var _pensyarahList = [];
+var _pelajarStudentsCache = [];
 
 async function loadUruspelajar() {
   var tbody = document.getElementById('pelajar-tbody');
@@ -1003,8 +1020,9 @@ async function loadUruspelajar() {
   }
 
   var showDelete = (eff === 'ADMIN' || eff === 'AJK_LI');
+  _pelajarStudentsCache = students;
   var html = '';
-  students.forEach(function(s) {
+  students.forEach(function(s, i) {
     var assignedName = s.svf_email ? (pensyarahMap[s.svf_email] || s.svf_email) : null;
     var svfBadge = assignedName
       ? '<span class="status-badge status-active">' + escHtml(assignedName) + '</span>'
@@ -1019,8 +1037,9 @@ async function loadUruspelajar() {
 
     var mid = escHtml(s.matric_no);
     var sname = escHtml(s.name || '');
-    var padamBtn = showDelete
-      ? '<button class="btn-sm btn-sm-del" onclick="deleteStudent(\'' + mid + '\',\'' + sname.replace(/'/g, "\\'") + '\')">Padam</button>'
+    var actionBtns = showDelete
+      ? '<button class="btn-sm btn-sm-edit" onclick="openEditPelajarModal(' + i + ')" style="margin-right:4px">Edit</button>' +
+        '<button class="btn-sm btn-sm-del" onclick="deleteStudent(\'' + mid + '\',\'' + sname.replace(/'/g, "\\'") + '\')">Padam</button>'
       : '';
     html += '<tr>' +
       '<td style="text-align:center"><input type="checkbox" class="student-checkbox" value="' + mid + '"></td>' +
@@ -1029,7 +1048,7 @@ async function loadUruspelajar() {
       '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
       '<td>' + svfBadge + '</td>' +
       '<td><select class="svf-assign-select" onchange="assignSVF(\'' + mid + '\',this.value)" style="font-size:12px;padding:4px 6px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit;max-width:220px">' + opts + '</select></td>' +
-      '<td>' + padamBtn + '</td>' +
+      '<td>' + actionBtns + '</td>' +
       '</tr>';
   });
   tbody.innerHTML = html;
@@ -1056,6 +1075,49 @@ async function bulkAssignSVF() {
   await Promise.all(matricNos.map(function(m) {
     return sb.from('students').update({ svf_email: svfEmail }).eq('matric_no', m);
   }));
+  loadUruspelajar();
+}
+function openEditPelajarModal(idx) {
+  var s = _pelajarStudentsCache[idx];
+  if (!s) return;
+  document.getElementById('edp-id').value = s.id;
+  document.getElementById('edp-name').value = s.name || '';
+  document.getElementById('edp-matric').value = s.matric_no || '';
+  var kursusEl = document.getElementById('edp-kursus');
+  if (kursusEl) { kursusEl.value = s.kursus || ''; }
+  document.getElementById('edp-error').style.display = 'none';
+  document.getElementById('edp-error').textContent = '';
+  var modal = document.getElementById('edit-pelajar-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
+}
+
+function closeEditPelajarModal() {
+  var modal = document.getElementById('edit-pelajar-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+}
+
+async function saveEditPelajar() {
+  var id     = document.getElementById('edp-id').value;
+  var name   = document.getElementById('edp-name').value.trim();
+  var matric = document.getElementById('edp-matric').value.trim();
+  var kursus = document.getElementById('edp-kursus').value;
+  var errEl  = document.getElementById('edp-error');
+  var btn    = document.getElementById('edp-save-btn');
+
+  errEl.style.display = 'none';
+  if (!name || !matric || !kursus) {
+    errEl.textContent = 'Sila isi semua medan.'; errEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  var resp = await sb.from('students').update({ name: name, matric_no: matric, kursus: kursus }).eq('id', id);
+  btn.disabled = false; btn.textContent = 'Simpan Perubahan';
+
+  if (resp.error) {
+    errEl.textContent = 'Ralat: ' + resp.error.message; errEl.style.display = 'block'; return;
+  }
+
+  closeEditPelajarModal();
   loadUruspelajar();
 }
 // ===== END URUS PELAJAR =====
@@ -1652,6 +1714,7 @@ async function loadStudentForEval(student) {
     setSaveStatus('error');
   }
 
+  showEvalSidebar(student);
   showTab('svi');
 }
 
@@ -1665,6 +1728,7 @@ function goBackToDashboard() {
     var badge = document.getElementById(sec + '-confirm-badge');
     if (badge) badge.style.display = 'none';
   });
+  showDefaultSidebar();
   showTab('dashboard');
 }
 async function kemaskiniSviOrg() {
