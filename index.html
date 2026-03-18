@@ -360,12 +360,6 @@
           <div class="radio-opt" id="opt-p2" onclick="selectPilihan(2)">Pilihan 2 &mdash; Teknikal 60%</div>
         </div>
       </div>
-      <div class="field"><label>Amalan Kejuruteraan</label>
-        <div class="radio-group">
-          <div class="radio-opt selected" id="opt-hadir" onclick="selectHadir(1)">Hadir (+10 markah)</div>
-          <div class="radio-opt" id="opt-thadir" onclick="selectHadir(0)">Tidak Hadir</div>
-        </div>
-      </div>
     </div>
   </div>
   <div class="btn-row"><button class="btn-primary" onclick="showTab('svi')">Seterusnya: Penilaian SVI &rarr;</button></div>
@@ -562,10 +556,13 @@
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian A</span><span class="subtotal-val" id="rep_a_total">0 / 60</span></div><div class="progress-bar"><div class="progress-fill" id="rep_a_bar" style="width:0%"></div></div></div>
   </div>
   <div class="section">
-    <div class="section-title">Bahagian B: Persembahan Laporan <span class="badge-max">/ 10 markah</span></div>
-    <div class="score-row"><div class="score-label">Kualiti bahasa, persembahan visual, kekemasan, menepati format laporan</div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_b1" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
-    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian B</span><span class="subtotal-val" id="rep_b_total">0 / 10</span></div></div>
-    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Laporan LI (A + B)</span><span class="subtotal-val" id="rep_total">0 / 70</span></div></div>
+    <div class="section-title">Bahagian B: Persembahan Laporan <span class="badge-max">/ 40 markah</span></div>
+    <div class="score-row"><div class="score-label">1. Kualiti Bahasa<small>Struktur ayat yang baik, Ketepatan makna/fakta, Penggunaan Bahasa Inggeris yang baik</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_b1" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">2. Kualiti Persembahan<small>Menggunakan gambarajah yang sesuai dan tepat dalam menerangkan dan menyokong kandungan laporan</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_b2" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">3. Kekemasan<small>Penulisan yang kemas dan mudah difahami, Ralat penaipan (typo error) yang minimum, Susun letak gambarajah dan jadual yang bersesuaian</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_b3" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
+    <div class="score-row"><div class="score-label">4. Menepati Format Laporan<small>Halaman tajuk, Penghargaan, Halaman abstrak, Senarai kandungan, Daftar jadual, Daftar rajah, Daftar singkatan (akronim), Teks laporan, Rujukan, Lampiran</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="rep_b4" oninput="clamp(this,10);calcReport()"><span class="score-max">/10</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Bahagian B</span><span class="subtotal-val" id="rep_b_total">0 / 40</span></div></div>
+    <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah Laporan LI (A + B)</span><span class="subtotal-val" id="rep_total">0 / 100</span></div></div>
   </div>
   <div class="section">
     <div class="section-title">Bahagian C: Ulasan</div>
@@ -603,7 +600,7 @@
       <div class="stat-card"><div class="stat-label">e-Logbook</div><div class="stat-val" id="sum_log">0</div><div class="stat-sub">/ 70</div></div>
     </div>
     <div class="result-row">
-      <div><div class="result-label">Jumlah Markah BITU3926 (termasuk amalan kejuruteraan)</div><div class="result-score" id="sum_3926_total">0</div></div>
+      <div><div class="result-label">Jumlah Markah BITU3926</div><div class="result-score" id="sum_3926_total">0</div></div>
       <div class="grade-pill grade-E" id="sum_3926_grade">&mdash;</div>
     </div>
     <table class="print-table">
@@ -615,14 +612,13 @@
         <tr><td>PRJ-4 (SVF A2+A3+A4+A5)</td><td id="r_prj4r">0</td><td>15%</td><td id="r_prj4">0</td></tr>
         <tr><td>LR1 (e-Logbook)</td><td id="r_lr1r">0</td><td>20%</td><td id="r_lr1">0</td></tr>
         <tr><td>PR1-1 (SVI Bah. B)</td><td id="r_pr11r">0</td><td>20%</td><td id="r_pr11">0</td></tr>
-        <tr><td>Amalan Kejuruteraan</td><td id="r_hadir_s">0</td><td id="r_hadir_pct">Hadir</td><td id="r_hadir">0</td></tr>
       </tbody>
     </table>
   </div>
   <div class="section">
     <div class="section-title">BITU3946 &mdash; Laporan Latihan Industri</div>
     <div class="summary-grid">
-      <div class="stat-card"><div class="stat-label">Laporan LI</div><div class="stat-val" id="sum_rep">0</div><div class="stat-sub">/ 70</div></div>
+      <div class="stat-card"><div class="stat-label">Laporan LI</div><div class="stat-val" id="sum_rep">0</div><div class="stat-sub">/ 100</div></div>
       <div class="stat-card"><div class="stat-label">Pbtangan SVF</div><div class="stat-val" id="sum_psvf">0</div><div class="stat-sub">/ 100</div></div>
       <div class="stat-card"><div class="stat-label">Pbtangan SVI</div><div class="stat-val" id="sum_psvi">0</div><div class="stat-sub">/ 100</div></div>
       <div class="stat-card"><div class="stat-label">Soft Skills</div><div class="stat-val" id="sum_soft">0</div><div class="stat-sub">/ 50</div></div>

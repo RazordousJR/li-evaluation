@@ -289,6 +289,25 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - Session persisted in `localStorage` (`li_session` key only)
 - Hosted on GitHub Pages
 
+## Laporan LI — Bahagian B Fields (v4.7)
+- Bahagian B split into 4 separate fields (total /40, not /10):
+  - `rep_b1`: Kualiti Bahasa (max 10) — Struktur ayat, Ketepatan makna/fakta, Penggunaan Bahasa Inggeris
+  - `rep_b2`: Kualiti Persembahan (max 10) — Gambarajah yang sesuai dan tepat
+  - `rep_b3`: Kekemasan (max 10) — Penulisan kemas, typo minimum, susun letak yang bersesuaian
+  - `rep_b4`: Menepati Format Laporan (max 10) — Halaman tajuk, Penghargaan, Abstrak, Senarai kandungan, Daftar jadual/rajah/singkatan, Teks, Rujukan, Lampiran
+- Jumlah Laporan LI is now /100 (Bahagian A /60 + Bahagian B /40)
+- `calcReport()` sums rep_b1+rep_b2+rep_b3+rep_b4; shows /40 for Bahagian B, /100 total
+- `calcSummary()` BITU3946: TR1 normalized as `repT / 100 * 70` (wajaran 70%)
+- `collectFormData()`, `populateSection()`, `exportCSV()` all include b1-b4
+
+## Ringkasan & Gred — Markah Amalan Kejuruteraan Removed (v4.7)
+- Amalan Kejuruteraan row removed from BITU3926 OBE table in Ringkasan & Gred
+- Amalan Kejuruteraan input field removed from Maklumat Pelajar (info) page
+- BITU3926 total no longer includes the +10 hadir bonus
+- `calcSummary()`: `hm` variable removed; `b3926 = fmt(prj1 + prj2 + prj3 + prj4 + lr1 + pr11)`
+- `selectHadir()` retained (no-op) for backward compat with saved meta data
+- `populateSection('meta')` still loads hadir value silently (no UI side effects)
+
 ## Important Rules
 - Never combine back into single file
 - Always maintain separate html/css/js structure
