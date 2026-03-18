@@ -204,6 +204,10 @@ textarea{resize:vertical;min-height:70px}
   .main-content{margin-left:0}
 }
 
+/* ===== URUS PELAJAR ===== */
+.belum-assign-badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600;background:var(--red-bg);color:var(--red-text);white-space:nowrap}
+.svf-assign-select{max-width:200px}
+
 /* ===== PRINT ===== */
 @media print{
   body{background:white}

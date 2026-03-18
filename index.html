@@ -6,6 +6,7 @@
 <title>Sistem Penilaian Latihan Industri — UTeM FTMK</title>
 <link rel="stylesheet" href="css/style.css?v=3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -61,7 +62,8 @@
       <a class="nav-item" data-tab="report" onclick="showTab('report')">Laporan LI</a>
       <a class="nav-item" data-tab="summary" onclick="showTab('summary')">Ringkasan &amp; Gred</a>
       <div class="sidebar-section-sep" id="admin-sep" style="display:none"></div>
-      <div class="sidebar-section-label" id="admin-label" style="display:none">Pentadbiran</div>
+      <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
+      <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
       <a class="nav-item" id="admin-nav-item" data-tab="usermgmt" onclick="showTab('usermgmt')" style="display:none">Pengurusan Pengguna</a>
     </nav>
 
@@ -542,7 +544,55 @@
     </div>
     <div class="um-form-msg um-form-error" id="um-add-error"></div>
     <div class="um-form-msg um-form-success" id="um-add-success"></div>
-    <div class="btn-row"><button class="btn-primary" onclick="addUser()">Tambah Pengguna</button></div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="addUser()">Tambah Pengguna</button>
+      <button class="btn-secondary" onclick="document.getElementById('up-pensyarah-file').click()">&#8679; Upload Pensyarah (.xlsx/.csv)</button>
+      <input type="file" id="up-pensyarah-file" accept=".xlsx,.csv" style="display:none" onchange="handleUploadPensyarah(this)">
+    </div>
+    <div class="note-box" style="margin-top:.75rem">Upload Pensyarah: Lajur diperlukan: <strong>Nama Penuh, No Staf, Jabatan, Email</strong> &mdash; Kata laluan lalai: <code>utem1234</code>, peranan: PENSYARAH.</div>
+  </div>
+</div>
+
+<!-- URUS PELAJAR (ADMIN + AJK_LI) -->
+<div class="page" id="page-uruspelajar">
+  <div class="section">
+    <div class="section-title" style="justify-content:space-between;align-items:center">
+      <span>Upload Senarai Pelajar</span>
+      <div>
+        <button class="btn-primary" onclick="document.getElementById('up-pelajar-file').click()">&#8679; Upload Pelajar (.xlsx/.csv)</button>
+        <input type="file" id="up-pelajar-file" accept=".xlsx,.csv" style="display:none" onchange="handleUploadPelajar(this)">
+      </div>
+    </div>
+    <div class="note-box">Lajur diperlukan: <strong>Nama Pelajar, No Matrik, Nama Program</strong> &mdash; "Nama Program" akan disimpan sebagai kursus pelajar.</div>
+  </div>
+  <div class="section">
+    <div class="section-title" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span>Senarai Pelajar</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="bulk-svf-select" style="font-size:13px;padding:5px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit">
+          <option value="">-- Pilih SVF (Bulk Assign) --</option>
+        </select>
+        <button class="btn-secondary" onclick="bulkAssignSVF()">Assign SVF Terpilih</button>
+        <button class="btn-secondary" onclick="loadUruspelajar()">&#8635; Muat Semula</button>
+      </div>
+    </div>
+    <div class="um-table-wrap">
+      <table class="print-table um-table" id="pelajar-table">
+        <thead>
+          <tr>
+            <th style="width:36px;text-align:center"><input type="checkbox" id="select-all-students" onchange="toggleAllStudents(this)" title="Pilih semua"></th>
+            <th>No Matrik</th>
+            <th>Nama Pelajar</th>
+            <th>Program</th>
+            <th>SVF Ditetapkan</th>
+            <th>Tukar SVF</th>
+          </tr>
+        </thead>
+        <tbody id="pelajar-tbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -592,6 +642,73 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closePwModal()">Batal</button>
       <button class="btn-primary" onclick="saveResetPw()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD PENSYARAH PREVIEW MODAL -->
+<div class="modal-overlay" id="up-pensyarah-modal" style="display:none">
+  <div class="modal-card" style="max-width:700px;width:100%">
+    <div class="modal-header">
+      <span>Preview Upload Pensyarah</span>
+      <button class="modal-close" onclick="closeUploadPensyarahModal()">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div style="padding:.875rem 1.25rem;border-bottom:var(--border)">
+        <span id="up-pensyarah-count" style="font-size:13px;color:var(--text2)"></span>
+      </div>
+      <div class="um-table-wrap" style="max-height:380px;overflow-y:auto">
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nama Penuh</th>
+              <th>No Staf</th>
+              <th>Jabatan</th>
+              <th>Email</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="up-pensyarah-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeUploadPensyarahModal()">Batal</button>
+      <button class="btn-primary" id="up-pensyarah-confirm-btn" onclick="confirmUploadPensyarah()">Sahkan Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD PELAJAR PREVIEW MODAL -->
+<div class="modal-overlay" id="up-pelajar-modal" style="display:none">
+  <div class="modal-card" style="max-width:680px;width:100%">
+    <div class="modal-header">
+      <span>Preview Upload Pelajar</span>
+      <button class="modal-close" onclick="closeUploadPelajarModal()">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div style="padding:.875rem 1.25rem;border-bottom:var(--border)">
+        <span id="up-pelajar-count" style="font-size:13px;color:var(--text2)"></span>
+      </div>
+      <div class="um-table-wrap" style="max-height:380px;overflow-y:auto">
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nama Pelajar</th>
+              <th>No Matrik</th>
+              <th>Nama Program</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="up-pelajar-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeUploadPelajarModal()">Batal</button>
+      <button class="btn-primary" id="up-pelajar-confirm-btn" onclick="confirmUploadPelajar()">Sahkan Upload</button>
     </div>
   </div>
 </div>

@@ -85,19 +85,25 @@ function showApp(user) {
 
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
-  // Always reset admin sidebar items to hidden first
-  ['admin-sep', 'admin-label', 'admin-nav-item'].forEach(function(id) {
+  // Always reset management sidebar items to hidden first
+  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   if (eff === 'ADMIN') {
-    ['admin-sep', 'admin-label', 'admin-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
     return;
   }
-  if (eff === 'AJK_LI') return;
+  if (eff === 'AJK_LI') {
+    ['admin-sep', 'admin-label', 'uruspelajar-nav-item'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+    return;
+  }
   if (eff === 'PENSYARAH') {
     document.querySelectorAll('.btn-danger').forEach(function(btn) {
       btn.classList.add('hidden-by-role');
@@ -127,7 +133,8 @@ var TAB_TITLES = {
   presentation: 'Pembentangan',
   report: 'Laporan LI',
   summary: 'Ringkasan & Gred',
-  usermgmt: 'Pengurusan Pengguna'
+  usermgmt: 'Pengurusan Pengguna',
+  uruspelajar: 'Urus Pelajar'
 };
 
 function showTab(t) {
@@ -139,6 +146,7 @@ function showTab(t) {
   document.getElementById('topbar-title').textContent = TAB_TITLES[t] || t;
   if (t === 'summary') calcSummary();
   if (t === 'usermgmt') loadUserMgmt();
+  if (t === 'uruspelajar') loadUruspelajar();
   closeSidebar();
   window.scrollTo(0, 0);
 }
@@ -565,5 +573,306 @@ async function deleteUser(email) {
   loadUserMgmt();
 }
 // ===== END USER MANAGEMENT =====
+
+// ===== UPLOAD HELPERS =====
+function parseUploadFile(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var wb = XLSX.read(data, { type: 'array' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      callback(null, rows);
+    } catch(err) {
+      callback(err, null);
+    }
+  };
+  reader.onerror = function() { callback(new Error('Gagal membaca fail.'), null); };
+  reader.readAsArrayBuffer(file);
+}
+// ===== END UPLOAD HELPERS =====
+
+// ===== UPLOAD PENSYARAH =====
+var _uploadPensyarahRows = [];
+
+function handleUploadPensyarah(input) {
+  var file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  parseUploadFile(file, function(err, rows) {
+    if (err) { alert('Ralat membaca fail: ' + err.message); return; }
+    if (!rows || !rows.length) { alert('Fail kosong atau format tidak dikenali.'); return; }
+
+    // Validate columns
+    var sample = rows[0];
+    var hasRequired = ('Nama Penuh' in sample || 'nama penuh' in sample) &&
+                      ('Email' in sample || 'email' in sample);
+    if (!hasRequired) {
+      alert('Lajur tidak lengkap. Diperlukan: Nama Penuh, No Staf, Jabatan, Email');
+      return;
+    }
+
+    // Normalize keys
+    _uploadPensyarahRows = rows.map(function(r) {
+      var normalized = {};
+      Object.keys(r).forEach(function(k) { normalized[k.trim()] = String(r[k]).trim(); });
+      return {
+        full_name: normalized['Nama Penuh'] || normalized['nama penuh'] || '',
+        no_staf:   normalized['No Staf']   || normalized['no staf']   || normalized['NoStaf']   || '',
+        jabatan:   normalized['Jabatan']   || normalized['jabatan']   || '',
+        email:     (normalized['Email']    || normalized['email']     || '').toLowerCase()
+      };
+    }).filter(function(r) { return r.email && r.full_name; });
+
+    if (!_uploadPensyarahRows.length) {
+      alert('Tiada baris data yang sah ditemui. Semak semula fail anda.');
+      return;
+    }
+
+    // Build preview
+    var html = '';
+    _uploadPensyarahRows.forEach(function(r, i) {
+      var emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email);
+      var statusHtml = emailValid
+        ? '<span class="status-badge status-active">OK</span>'
+        : '<span class="status-badge status-inactive">E-mel tidak sah</span>';
+      html += '<tr>' +
+        '<td style="color:var(--text3)">' + (i + 1) + '</td>' +
+        '<td>' + escHtml(r.full_name) + '</td>' +
+        '<td>' + escHtml(r.no_staf) + '</td>' +
+        '<td>' + escHtml(r.jabatan) + '</td>' +
+        '<td style="font-size:12px">' + escHtml(r.email) + '</td>' +
+        '<td>' + statusHtml + '</td>' +
+        '</tr>';
+    });
+    document.getElementById('up-pensyarah-tbody').innerHTML = html;
+    document.getElementById('up-pensyarah-count').textContent =
+      _uploadPensyarahRows.length + ' rekod dijumpai. Semak sebelum mengesahkan.';
+
+    var modal = document.getElementById('up-pensyarah-modal');
+    modal.style.display = 'flex'; modal.classList.add('open');
+  });
+}
+
+function closeUploadPensyarahModal() {
+  var modal = document.getElementById('up-pensyarah-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+  _uploadPensyarahRows = [];
+}
+
+async function confirmUploadPensyarah() {
+  if (!_uploadPensyarahRows.length) return;
+  var btn = document.getElementById('up-pensyarah-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Memproses...';
+
+  var success = 0, errors = 0;
+  for (var i = 0; i < _uploadPensyarahRows.length; i++) {
+    var r = _uploadPensyarahRows[i];
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) { errors++; continue; }
+    var resp = await sb.from('users').upsert({
+      full_name:     r.full_name,
+      no_staf:       r.no_staf,
+      jabatan:       r.jabatan,
+      email:         r.email,
+      password_hash: 'utem1234',
+      roles:         ['PENSYARAH'],
+      is_active:     true
+    }, { onConflict: 'email' });
+    if (resp.error) { errors++; } else { success++; }
+  }
+
+  btn.disabled = false; btn.textContent = 'Sahkan Upload';
+  closeUploadPensyarahModal();
+  alert('Upload selesai: ' + success + ' berjaya, ' + errors + ' gagal.');
+  loadUserMgmt();
+}
+// ===== END UPLOAD PENSYARAH =====
+
+// ===== UPLOAD PELAJAR =====
+var _uploadPelajarRows = [];
+
+function handleUploadPelajar(input) {
+  var file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  parseUploadFile(file, function(err, rows) {
+    if (err) { alert('Ralat membaca fail: ' + err.message); return; }
+    if (!rows || !rows.length) { alert('Fail kosong atau format tidak dikenali.'); return; }
+
+    var sample = rows[0];
+    var hasRequired = ('No Matrik' in sample || 'no matrik' in sample || 'Matrik' in sample);
+    if (!hasRequired) {
+      alert('Lajur tidak lengkap. Diperlukan: Nama Pelajar, No Matrik, Nama Program');
+      return;
+    }
+
+    _uploadPelajarRows = rows.map(function(r) {
+      var normalized = {};
+      Object.keys(r).forEach(function(k) { normalized[k.trim()] = String(r[k]).trim(); });
+      return {
+        name:      normalized['Nama Pelajar'] || normalized['nama pelajar'] || normalized['Nama']    || '',
+        matric_no: normalized['No Matrik']    || normalized['no matrik']    || normalized['Matrik']  || '',
+        kursus:    normalized['Nama Program'] || normalized['nama program'] || normalized['Program'] || ''
+      };
+    }).filter(function(r) { return r.matric_no && r.name; });
+
+    if (!_uploadPelajarRows.length) {
+      alert('Tiada baris data yang sah ditemui. Semak semula fail anda.');
+      return;
+    }
+
+    var html = '';
+    _uploadPelajarRows.forEach(function(r, i) {
+      html += '<tr>' +
+        '<td style="color:var(--text3)">' + (i + 1) + '</td>' +
+        '<td>' + escHtml(r.name) + '</td>' +
+        '<td>' + escHtml(r.matric_no) + '</td>' +
+        '<td>' + escHtml(r.kursus) + '</td>' +
+        '<td><span class="status-badge status-active">OK</span></td>' +
+        '</tr>';
+    });
+    document.getElementById('up-pelajar-tbody').innerHTML = html;
+    document.getElementById('up-pelajar-count').textContent =
+      _uploadPelajarRows.length + ' rekod dijumpai. Semak sebelum mengesahkan.';
+
+    var modal = document.getElementById('up-pelajar-modal');
+    modal.style.display = 'flex'; modal.classList.add('open');
+  });
+}
+
+function closeUploadPelajarModal() {
+  var modal = document.getElementById('up-pelajar-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+  _uploadPelajarRows = [];
+}
+
+async function confirmUploadPelajar() {
+  if (!_uploadPelajarRows.length) return;
+  var btn = document.getElementById('up-pelajar-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Memproses...';
+
+  var success = 0, errors = 0;
+  for (var i = 0; i < _uploadPelajarRows.length; i++) {
+    var r = _uploadPelajarRows[i];
+    var resp = await sb.from('students').upsert({
+      matric_no: r.matric_no,
+      name:      r.name,
+      kursus:    r.kursus
+    }, { onConflict: 'matric_no' });
+    if (resp.error) { errors++; } else { success++; }
+  }
+
+  btn.disabled = false; btn.textContent = 'Sahkan Upload';
+  closeUploadPelajarModal();
+  alert('Upload selesai: ' + success + ' berjaya, ' + errors + ' gagal.');
+  loadUruspelajar();
+}
+// ===== END UPLOAD PELAJAR =====
+
+// ===== URUS PELAJAR =====
+var _pensyarahList = [];
+
+async function loadUruspelajar() {
+  var tbody = document.getElementById('pelajar-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
+
+  // Load pensyarah list for dropdowns
+  var prResp = await sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name');
+  _pensyarahList = prResp.data || [];
+
+  // Populate bulk assign dropdown
+  var bulkSel = document.getElementById('bulk-svf-select');
+  if (bulkSel) {
+    bulkSel.innerHTML = '<option value="">-- Pilih SVF (Bulk Assign) --</option>';
+    _pensyarahList.forEach(function(p) {
+      bulkSel.innerHTML += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
+    });
+  }
+
+  // Build lookup map
+  var pensyarahMap = {};
+  _pensyarahList.forEach(function(p) { pensyarahMap[p.email] = p.full_name; });
+
+  // Load students
+  var session = getSession();
+  var eff = getEffectiveRole(session ? session.roles : []);
+  var query = sb.from('students').select('id, matric_no, name, kursus, svf_email').order('name');
+  if (eff === 'PENSYARAH' && session) {
+    query = query.eq('svf_email', session.email);
+  }
+  var stResp = await query;
+  if (stResp.error) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;padding:1.5rem">Ralat memuatkan data.</td></tr>';
+    return;
+  }
+  var students = stResp.data || [];
+
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pelajar. Muat naik senarai pelajar terlebih dahulu.</td></tr>';
+    return;
+  }
+
+  // Build SVF dropdown options string
+  var basePensyarahOpts = '<option value="">-- Nyahaktif SVF --</option>';
+  _pensyarahList.forEach(function(p) {
+    basePensyarahOpts += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
+  });
+
+  var html = '';
+  students.forEach(function(s) {
+    var assignedName = s.svf_email ? (pensyarahMap[s.svf_email] || s.svf_email) : null;
+    var svfBadge = assignedName
+      ? '<span class="status-badge status-active">' + escHtml(assignedName) + '</span>'
+      : '<span class="belum-assign-badge">Belum Assign</span>';
+
+    // Build per-row dropdown with correct selected value
+    var opts = '<option value="">-- Nyahaktif SVF --</option>';
+    _pensyarahList.forEach(function(p) {
+      opts += '<option value="' + escHtml(p.email) + '"' +
+              (s.svf_email === p.email ? ' selected' : '') + '>' +
+              escHtml(p.full_name) + '</option>';
+    });
+
+    var mid = escHtml(s.matric_no);
+    html += '<tr>' +
+      '<td style="text-align:center"><input type="checkbox" class="student-checkbox" value="' + mid + '"></td>' +
+      '<td>' + mid + '</td>' +
+      '<td>' + escHtml(s.name || '') + '</td>' +
+      '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
+      '<td>' + svfBadge + '</td>' +
+      '<td><select class="svf-assign-select" onchange="assignSVF(\'' + mid + '\',this.value)" style="font-size:12px;padding:4px 6px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit;max-width:220px">' + opts + '</select></td>' +
+      '</tr>';
+  });
+  tbody.innerHTML = html;
+
+  // Reset select-all checkbox
+  var selectAll = document.getElementById('select-all-students');
+  if (selectAll) selectAll.checked = false;
+}
+
+function toggleAllStudents(cb) {
+  document.querySelectorAll('.student-checkbox').forEach(function(c) { c.checked = cb.checked; });
+}
+
+async function assignSVF(matricNo, svfEmail) {
+  var payload = { svf_email: svfEmail || null };
+  await sb.from('students').update(payload).eq('matric_no', matricNo);
+  loadUruspelajar();
+}
+
+async function bulkAssignSVF() {
+  var svfEmail = document.getElementById('bulk-svf-select').value;
+  if (!svfEmail) { alert('Sila pilih SVF terlebih dahulu.'); return; }
+  var checked = document.querySelectorAll('.student-checkbox:checked');
+  if (!checked.length) { alert('Tiada pelajar dipilih.'); return; }
+  var matricNos = Array.from(checked).map(function(cb) { return cb.value; });
+  await Promise.all(matricNos.map(function(m) {
+    return sb.from('students').update({ svf_email: svfEmail }).eq('matric_no', m);
+  }));
+  loadUruspelajar();
+}
+// ===== END URUS PELAJAR =====
 
 initAuth();

@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS public.users (
   password_hash TEXT       NOT NULL,   -- stored as plaintext for now; hash in production
   roles        TEXT[]      NOT NULL DEFAULT '{PENSYARAH}',
   is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
+  no_staf      TEXT,
+  jabatan      TEXT,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -26,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   organisasi   TEXT        DEFAULT '',
   svf_name     TEXT        DEFAULT '',
   svi_name     TEXT        DEFAULT '',
+  svf_email    TEXT,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -54,6 +57,13 @@ ALTER TABLE public.marks    DISABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.users    TO anon;
 GRANT ALL ON public.students TO anon;
 GRANT ALL ON public.marks    TO anon;
+
+-- ============================================================
+-- Migration: Run these if upgrading an existing database
+-- ============================================================
+ALTER TABLE public.users    ADD COLUMN IF NOT EXISTS no_staf  TEXT;
+ALTER TABLE public.users    ADD COLUMN IF NOT EXISTS jabatan  TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS svf_email TEXT;
 
 -- ============================================================
 -- Seed default accounts (skip if already exist)
