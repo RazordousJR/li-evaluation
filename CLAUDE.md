@@ -308,6 +308,31 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - `selectHadir()` retained (no-op) for backward compat with saved meta data
 - `populateSection('meta')` still loads hadir value silently (no UI side effects)
 
+## SVF Bahagian A — Regrouped Fields (v4.8)
+- Bahagian A fields reorganised into 3 named groups (A1, A2, A3) with subtotals per group:
+  - **A1: Pengetahuan & Kemahiran** (max /30):
+    - `svf_a1_admin`: Bidang Pentadbiran & Pengurusan (max /10)
+    - `svf_a1_tech`: Bidang Teknikal (max /20)
+    - Subtotal displayed in `#svf_a1_subtotal`
+  - **A2: Kuantiti Hasil Kerja** (max /30):
+    - `svf_a2_admin`: Bidang Pentadbiran & Pengurusan (max /10)
+    - `svf_a2_tech`: Bidang Teknikal (max /20)
+    - Subtotal displayed in `#svf_a2_subtotal`
+  - **A3: Mutu Hasil Kerja** (max /30): single field `svf_a3`
+  - Bahagian A Total = A1 + A2 + A3 = /90 (unchanged)
+- HTML: `.score-group-header` class for group labels; `.subtotal-sub` class for group subtotals
+- Old field names `svf_a1`–`svf_a5` no longer exist; replaced by new names above
+
+## OBE Calculations — PRJ-3 and PRJ-4 Updated (v4.8)
+- **PRJ-3 (15%)** = SVF A1 only: `(svf_a1_admin + svf_a1_tech) / 30 * 15`
+- **PRJ-4 (15%)** = SVF A2 + A3 combined: `(svf_a2_admin + svf_a2_tech + svf_a3) / 60 * 15`
+- Both updated in `calcSummary()`
+
+## SVF Backward Compatibility (v4.8)
+- `populateSection('svf')` auto-migrates old saved data (field names `a1`–`a5`) to new names:
+  - `a1` → `a1_admin`, `a2` → `a1_tech`, `a3` → `a2_admin`, `a4` → `a2_tech`, `a5` → `a3`
+- Migration only triggers when old `a1` key present and new `a1_admin` key absent
+
 ## Important Rules
 - Never combine back into single file
 - Always maintain separate html/css/js structure
