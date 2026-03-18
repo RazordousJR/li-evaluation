@@ -391,7 +391,7 @@
     </div></div>
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVI (A + B)</span><span class="subtotal-val" id="svi_total">0 / 100</span></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('info')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('svf')">Seterusnya: SVF &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('info')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('svi')">Simpan</button><button class="btn-primary" onclick="showTab('svf')">Seterusnya: SVF &rarr;</button></div>
 </div>
 
 <!-- SVF -->
@@ -436,7 +436,7 @@
       </div>
     </div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svi')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('logbook')">Seterusnya: e-Logbook &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svi')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('svf')">Simpan</button><button class="btn-primary" onclick="showTab('logbook')">Seterusnya: e-Logbook &rarr;</button></div>
 </div>
 
 <!-- LOGBOOK -->
@@ -456,7 +456,7 @@
     <div class="score-row"><div class="score-label">Muat naik buku log, dokumen pengesahan, format betul, disemak penyelia<small>Mengikut masa ditetapkan, bertandatangan, mengikut format panduan</small></div><div class="score-input-wrap"><input type="number" min="0" max="10" value="0" id="log_c1" oninput="clamp(this,10);calcLog()"><span class="score-max">/10</span></div></div>
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah e-Logbook (A + B + C)</span><span class="subtotal-val" id="log_total">0 / 70</span></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svf')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('presentation')">Seterusnya: Pembentangan &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svf')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('logbook')">Simpan</button><button class="btn-primary" onclick="showTab('presentation')">Seterusnya: Pembentangan &rarr;</button></div>
 </div>
 
 <!-- PRESENTATION -->
@@ -495,7 +495,7 @@
     <div class="score-row"><div class="score-label">D4. Soal Jawab: jawapan memuaskan</div><div class="score-input-wrap"><input type="number" min="0" max="3" value="0" id="psvi_d4" oninput="clamp(this,3);calcPres()"><span class="score-max">/3</span></div></div>
     <div class="subtotal-wrap"><div class="subtotal"><span class="subtotal-label">Jumlah SVI</span><span class="subtotal-val" id="psvi_total">0 / 100</span></div><div class="progress-bar"><div class="progress-fill" id="psvi_bar" style="width:0%"></div></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('logbook')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('report')">Seterusnya: Laporan LI &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('logbook')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('presentation')">Simpan</button><button class="btn-primary" onclick="showTab('report')">Seterusnya: Laporan LI &rarr;</button></div>
 </div>
 
 <!-- REPORT -->
@@ -529,7 +529,7 @@
     <div class="section-title">Bahagian C: Ulasan</div>
     <div class="field-row full"><div class="field"><label>Ulasan keseluruhan laporan LI</label><textarea id="rep_ulasan" placeholder="Masukkan ulasan..." oninput="scheduleSave()"></textarea></div></div>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" onclick="simpanSection('report')">Simpan</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
 </div>
 
 <!-- SUMMARY -->

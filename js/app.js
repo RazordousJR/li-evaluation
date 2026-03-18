@@ -302,6 +302,99 @@ function populateSection(section, data) {
   }
 }
 
+// ===== STRICT COMPLETION CHECK =====
+function isStudentComplete(marksMap) {
+  var validRatings = ['Sangat Baik','Baik','Memuaskan','Kurang Memuaskan','Lemah'];
+  function hasVal(v) { return v !== null && v !== undefined && v !== ''; }
+
+  // SVI section
+  var svi = marksMap.svi;
+  if (!svi) return false;
+  var sviNums = ['a1','a2','a3','a4','b1','b2','b3','b4','b5','b6','b7','b8','b9','b10'];
+  if (!sviNums.every(function(k) { return hasVal(svi[k]); })) return false;
+  if (!svi.ulasan || !String(svi.ulasan).trim()) return false;
+  if (validRatings.indexOf(svi.rating) === -1) return false;
+
+  // SVF section
+  var svf = marksMap.svf;
+  if (!svf) return false;
+  var svfNums = ['a1','a2','a3','a4','a5','b1','c1'];
+  if (!svfNums.every(function(k) { return hasVal(svf[k]); })) return false;
+  if (!svf.ulasan || !String(svf.ulasan).trim()) return false;
+  if (validRatings.indexOf(svf.rating) === -1) return false;
+  if (['Lulus','Gagal'].indexOf(svf.status) === -1) return false;
+
+  // Logbook section
+  var logbook = marksMap.logbook;
+  if (!logbook) return false;
+  if (!['a1','b1','c1'].every(function(k) { return hasVal(logbook[k]); })) return false;
+
+  // Presentation section
+  var pres = marksMap.presentation;
+  if (!pres) return false;
+  var presFields = [
+    'psvf_a','psvf_b1','psvf_b2','psvf_b3','psvf_b4','psvf_b5',
+    'psvf_c1','psvf_c2','psvf_c3','psvf_d1','psvf_d2','psvf_d3','psvf_d4',
+    'psvi_a','psvi_b1','psvi_b2','psvi_b3','psvi_b4','psvi_b5',
+    'psvi_c1','psvi_c2','psvi_c3','psvi_d1','psvi_d2','psvi_d3','psvi_d4'
+  ];
+  if (!presFields.every(function(k) { return hasVal(pres[k]); })) return false;
+
+  // Report section
+  var rep = marksMap.report;
+  if (!rep) return false;
+  var repNums = ['a1','a2','a3','a5','a6','a7','b1'];
+  if (!repNums.every(function(k) { return hasVal(rep[k]); })) return false;
+  var pil = parseInt(rep.pilihan) || 1;
+  if (pil === 1) {
+    if (!hasVal(rep.a4_tech_p1) || !hasVal(rep.a4_admin_p1)) return false;
+  } else {
+    if (!hasVal(rep.a4_tech_p2) || !hasVal(rep.a4_admin_p2)) return false;
+  }
+  if (!rep.ulasan || !String(rep.ulasan).trim()) return false;
+
+  return true;
+}
+// ===== END STRICT COMPLETION CHECK =====
+
+// ===== SECTION VALIDATION & MANUAL SIMPAN =====
+function validateSection(section) {
+  var missing = [];
+  var validRatings = ['Sangat Baik','Baik','Memuaskan','Kurang Memuaskan','Lemah'];
+  function chkText(id, label) {
+    var el = document.getElementById(id);
+    if (!el || !el.value || !el.value.trim()) missing.push(label);
+  }
+  function chkRadio(id, validVals, label) {
+    var el = document.getElementById(id);
+    if (!el || validVals.indexOf(el.value) === -1) missing.push(label);
+  }
+  if (section === 'svi') {
+    chkText('svi_ulasan', 'Ulasan prestasi kerja (SVI)');
+    chkRadio('svi_rating', validRatings, 'Penilaian keseluruhan SVI');
+  } else if (section === 'svf') {
+    chkText('svf_ulasan', 'Ulasan keseluruhan (SVF)');
+    chkRadio('svf_rating', validRatings, 'Penilaian keseluruhan SVF');
+    chkRadio('svf_status', ['Lulus','Gagal'], 'Cadangan status pelajar (Lulus/Gagal)');
+  } else if (section === 'logbook') {
+    // All numeric fields — no text/radio required
+  } else if (section === 'presentation') {
+    // All numeric fields — no text/radio required
+  } else if (section === 'report') {
+    chkText('rep_ulasan', 'Ulasan laporan LI');
+  }
+  return missing;
+}
+
+async function simpanSection(section) {
+  var missing = validateSection(section);
+  await saveAll();
+  if (missing.length > 0) {
+    alert('Bahagian berikut belum lengkap:\n' + missing.join('\n'));
+  }
+}
+// ===== END SECTION VALIDATION =====
+
 async function saveAll() {
   if (!sb) return;
   var session = getSession();
@@ -1260,7 +1353,7 @@ async function renderAdminDashboard() {
   var results = await Promise.all([
     sb.from('students').select('id, svf_email'),
     sb.from('users').select('id', { count: 'exact', head: true }).contains('roles', ['PENSYARAH']),
-    sb.from('marks').select('student_id, section')
+    sb.from('marks').select('student_id, section, data')
   ]);
   var stData   = results[0].data || [];
   var psCount  = results[1].count || 0;
@@ -1269,14 +1362,13 @@ async function renderAdminDashboard() {
   var totalPelajar = stData.length;
   var belumAssign  = stData.filter(function(s) { return !s.svf_email; }).length;
 
-  var sectionsByStudent = {};
+  var marksDataByStudent = {};
   mrData.forEach(function(m) {
-    if (!sectionsByStudent[m.student_id]) sectionsByStudent[m.student_id] = {};
-    sectionsByStudent[m.student_id][m.section] = true;
+    if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
+    marksDataByStudent[m.student_id][m.section] = m.data;
   });
-  var required = ['svi','svf','logbook','presentation','report'];
-  var lengkap = Object.values(sectionsByStudent).filter(function(s) {
-    return required.every(function(sec) { return s[sec]; });
+  var lengkap = stData.filter(function(s) {
+    return isStudentComplete(marksDataByStudent[s.id] || {});
   }).length;
 
   updateStatCard('dsc-total-pelajar',   totalPelajar, 'pelajar berdaftar');
@@ -1293,7 +1385,7 @@ async function loadAjkliDashboard() {
   var results = await Promise.all([
     sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
     sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name').order('name'),
-    sb.from('marks').select('student_id, section')
+    sb.from('marks').select('student_id, section, data')
   ]);
   var pensyarahList = results[0].data || [];
   _ajkliStudents    = results[1].data || [];
@@ -1310,15 +1402,13 @@ async function loadAjkliDashboard() {
     });
   }
 
-  var sectionsByStudent = {};
+  var marksDataByStudent = {};
   mrData.forEach(function(m) {
-    if (!sectionsByStudent[m.student_id]) sectionsByStudent[m.student_id] = {};
-    sectionsByStudent[m.student_id][m.section] = true;
+    if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
+    marksDataByStudent[m.student_id][m.section] = m.data;
   });
-  var required = ['svi','svf','logbook','presentation','report'];
   _ajkliStudents.forEach(function(s) {
-    var secs = sectionsByStudent[s.id] || {};
-    s._lengkap = required.every(function(sec) { return secs[sec]; });
+    s._lengkap = isStudentComplete(marksDataByStudent[s.id] || {});
   });
 
   var total = _ajkliStudents.length;
@@ -1382,17 +1472,16 @@ async function loadPensyarahDashboard() {
   var results = await Promise.all([
     sb.from('students').select('id, matric_no, name, kursus, svf_name, svi_name, organisasi, svf_email')
       .eq('svf_email', session.email).order('name'),
-    sb.from('marks').select('student_id, section').eq('evaluator_email', session.email)
+    sb.from('marks').select('student_id, section, data').eq('evaluator_email', session.email)
   ]);
   _pensyarahDashStudents = results[0].data || [];
   var mrData = results[1].data || [];
 
-  var sectionsByStudent = {};
+  var marksDataByStudent = {};
   mrData.forEach(function(m) {
-    if (!sectionsByStudent[m.student_id]) sectionsByStudent[m.student_id] = {};
-    sectionsByStudent[m.student_id][m.section] = true;
+    if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
+    marksDataByStudent[m.student_id][m.section] = m.data;
   });
-  var required = ['svi','svf','logbook','presentation','report'];
 
   if (!_pensyarahDashStudents.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pelajar ditetapkan kepada anda.</td></tr>';
@@ -1401,8 +1490,7 @@ async function loadPensyarahDashboard() {
 
   var html = '';
   _pensyarahDashStudents.forEach(function(s, i) {
-    var secs = sectionsByStudent[s.id] || {};
-    var lengkap = required.every(function(sec) { return secs[sec]; });
+    var lengkap = isStudentComplete(marksDataByStudent[s.id] || {});
     var badge = lengkap
       ? '<span class="status-badge status-active">Lengkap</span>'
       : '<span class="status-badge status-inactive">Belum Lengkap</span>';
@@ -1425,19 +1513,35 @@ async function openStudentEval(student) {
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
 
-  // For PENSYARAH and ADMIN: check if svi_name and organisasi are set
-  if ((eff === 'PENSYARAH' || eff === 'ADMIN') && (!student.svi_name || !student.organisasi)) {
-    _pendingStudentEval = student;
-    document.getElementById('spm-matric').value = student.matric_no;
-    document.getElementById('spm-svi').value = student.svi_name || '';
-    document.getElementById('spm-org').value = student.organisasi || '';
+  // Always re-fetch fresh student record from Supabase to avoid stale cache
+  var freshStudent = student;
+  try {
+    var freshResp = await sb.from('students').select('*').eq('matric_no', student.matric_no).single();
+    if (!freshResp.error && freshResp.data) {
+      freshStudent = freshResp.data;
+      // Update cached local arrays to reflect fresh data
+      for (var _i = 0; _i < _ajkliStudents.length; _i++) {
+        if (_ajkliStudents[_i].matric_no === freshStudent.matric_no) { _ajkliStudents[_i] = freshStudent; break; }
+      }
+      for (var _j = 0; _j < _pensyarahDashStudents.length; _j++) {
+        if (_pensyarahDashStudents[_j].matric_no === freshStudent.matric_no) { _pensyarahDashStudents[_j] = freshStudent; break; }
+      }
+    }
+  } catch(e) { /* use cached data on error */ }
+
+  // For PENSYARAH and ADMIN: show modal only if svi_name or organisasi is NULL/empty in Supabase
+  if ((eff === 'PENSYARAH' || eff === 'ADMIN') && (!freshStudent.svi_name || !freshStudent.organisasi)) {
+    _pendingStudentEval = freshStudent;
+    document.getElementById('spm-matric').value = freshStudent.matric_no;
+    document.getElementById('spm-svi').value = freshStudent.svi_name || '';
+    document.getElementById('spm-org').value = freshStudent.organisasi || '';
     document.getElementById('spm-error').style.display = 'none';
     var modal = document.getElementById('student-profile-modal');
     modal.style.display = 'flex'; modal.classList.add('open');
     return;
   }
 
-  await loadStudentForEval(student);
+  await loadStudentForEval(freshStudent);
 }
 
 function closeStudentProfileModal() {
