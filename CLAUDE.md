@@ -297,7 +297,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
   - `rep_b4`: Menepati Format Laporan (max 10) — Halaman tajuk, Penghargaan, Abstrak, Senarai kandungan, Daftar jadual/rajah/singkatan, Teks, Rujukan, Lampiran
 - Jumlah Laporan LI is now /100 (Bahagian A /60 + Bahagian B /40)
 - `calcReport()` sums rep_b1+rep_b2+rep_b3+rep_b4; shows /40 for Bahagian B, /100 total
-- `calcSummary()` BITU3946: TR1 normalized as `repT / 100 * 70` (wajaran 70%)
+- `calcSummary()` BITU3946: TR1 computed from 4 components (see TR1 Calculation below)
 - `collectFormData()`, `populateSection()`, `exportCSV()` all include b1-b4
 
 ## Ringkasan & Gred — Markah Amalan Kejuruteraan Removed (v4.7)
@@ -337,6 +337,18 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - `v(id)` — updated to null-safe: `var el = getElementById(id); return el ? parseInt(el.value)||0 : 0;`
 - `setBar(id, val, max)` — updated to null-safe: checks element exists before setting width
 - `calcSVF()` — all `getElementById` display updates wrapped with null checks to prevent crashes when SVF page elements are queried before the section is rendered
+
+## TR1 Calculation — BITU3946 (v4.9)
+TR1 (max 70) is composed of 4 components:
+- **Component 1 — Laporan A (max 40)**: `(rep_a1 + rep_a2 + rep_a3 + rep_a4 + rep_a5 + rep_a6 + rep_a7) / 2`
+  - raw Bahagian A max = 80 (sum of all A field maximums); divided by 2 → max 40
+- **Component 2 — Laporan B (max 10)**: `(rep_b1 + rep_b2 + rep_b3 + rep_b4) / 40 * 10`
+- **Component 3 — SVF Komitmen (max 10)**: `svf_c1` directly (no conversion)
+- **Component 4 — Logbook Penghantaran (max 10)**: `log_c1` directly (no conversion)
+- **TR1 = Component 1 + 2 + 3 + 4** (max 70)
+- `calcSummary()` variables: `tr1_lapa`, `tr1_lapb`, `tr1_svfc`, `tr1_logc`, `tr1`
+- `repA` = Bahagian A raw sum; `repB` = Bahagian B raw sum; `repT = repA + repB` (for stat card)
+- Ringkasan display shows each component breakdown with IDs: `r2_tr1_lapa_raw`, `r2_tr1_lapa`, `r2_tr1_lapb_raw`, `r2_tr1_lapb`, `r2_tr1_svfc_raw`, `r2_tr1_svfc`, `r2_tr1_logc_raw`, `r2_tr1_logc`, `r2_tr1`
 
 ## Important Rules
 - Never combine back into single file
