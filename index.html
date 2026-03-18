@@ -32,33 +32,63 @@
   </div>
 </div>
 
-<div class="app" id="main-app" style="display:none">
-<div class="header">
-  <div>
-    <h1>Sistem Penilaian Latihan Industri</h1>
-    <p>Universiti Teknikal Malaysia Melaka (UTeM) &mdash; Fakulti Teknologi Maklumat dan Komunikasi</p>
-    <div class="header-badges">
-      <span class="badge badge-blue">BITU3926</span>
-      <span class="badge badge-green">BITU3946</span>
-      <span class="badge badge-gray">v2.4</span>
-    </div>
-  </div>
-  <div class="user-info" id="user-info">
-    <span class="user-display-name" id="user-name-display"></span>
-    <span class="role-badge" id="role-badge-display"></span>
-    <button class="btn-logout" onclick="doLogout()">Log Keluar</button>
-  </div>
-</div>
+<!-- APP LAYOUT -->
+<div class="app-layout" id="main-app" style="display:none">
 
-<div class="tabs">
-  <button class="tab active" onclick="showTab('info')">Maklumat Pelajar</button>
-  <button class="tab" onclick="showTab('svi')">Penyelia Industri</button>
-  <button class="tab" onclick="showTab('svf')">Penyelia Fakulti</button>
-  <button class="tab" onclick="showTab('logbook')">e-Logbook</button>
-  <button class="tab" onclick="showTab('presentation')">Pembentangan</button>
-  <button class="tab" onclick="showTab('report')">Laporan LI</button>
-  <button class="tab" onclick="showTab('summary')">Ringkasan &amp; Gred</button>
-</div>
+  <!-- MOBILE OVERLAY -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo-circle">UTeM</div>
+        <div class="sidebar-brand-text">
+          <div class="sidebar-brand-title">Penilaian LI</div>
+          <div class="sidebar-brand-sub">FTMK &mdash; UTeM</div>
+        </div>
+      </div>
+      <button class="sidebar-close-btn" onclick="closeSidebar()">&#10005;</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-tab="info" onclick="showTab('info')">Maklumat Pelajar</a>
+      <a class="nav-item" data-tab="svi" onclick="showTab('svi')">Penyelia Industri (SVI)</a>
+      <a class="nav-item" data-tab="svf" onclick="showTab('svf')">Penyelia Fakulti (SVF)</a>
+      <a class="nav-item" data-tab="logbook" onclick="showTab('logbook')">e-Logbook</a>
+      <a class="nav-item" data-tab="presentation" onclick="showTab('presentation')">Pembentangan</a>
+      <a class="nav-item" data-tab="report" onclick="showTab('report')">Laporan LI</a>
+      <a class="nav-item" data-tab="summary" onclick="showTab('summary')">Ringkasan &amp; Gred</a>
+    </nav>
+
+    <div class="sidebar-admin-section admin-only" id="sidebar-admin-section">
+      <div class="sidebar-section-sep"></div>
+      <div class="sidebar-section-label">Pentadbiran</div>
+      <a class="nav-item" data-tab="usermgmt" onclick="showTab('usermgmt')">Pengurusan Pengguna</a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebar-user-name">—</div>
+        <span class="role-badge" id="sidebar-role-badge"></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <div class="topbar">
+      <button class="hamburger-btn" onclick="openSidebar()">&#9776;</button>
+      <div class="topbar-title" id="topbar-title">Maklumat Pelajar</div>
+      <div class="topbar-badges">
+        <span class="badge badge-blue">BITU3926</span>
+        <span class="badge badge-green">BITU3946</span>
+        <span class="badge badge-gray">v3.0</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Log Keluar</button>
+    </div>
+
+    <div class="content-area">
 
 <!-- INFO -->
 <div class="page active" id="page-info">
@@ -472,6 +502,98 @@
     <button class="btn-danger" onclick="resetAll()">Reset Semua</button>
   </div>
 </div>
+
+<!-- USER MANAGEMENT (ADMIN ONLY) -->
+<div class="page" id="page-usermgmt">
+  <div class="section">
+    <div class="section-title">Senarai Pengguna</div>
+    <div class="um-table-wrap">
+      <table class="print-table um-table">
+        <thead>
+          <tr>
+            <th>Nama Penuh</th>
+            <th>E-mel</th>
+            <th>Peranan</th>
+            <th>Status</th>
+            <th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="um-tbody">
+          <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Tambah Pengguna Baharu</div>
+    <div class="field-row">
+      <div class="field"><label>Nama Penuh</label><input type="text" id="um-add-name" placeholder="Nama penuh pengguna"></div>
+      <div class="field"><label>E-mel</label><input type="email" id="um-add-email" placeholder="email@utem.edu.my"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Kata Laluan</label><input type="password" id="um-add-pw" placeholder="Kata laluan"></div>
+      <div class="field"><label>Peranan</label>
+        <div class="check-group">
+          <label class="check-opt"><input type="checkbox" id="um-add-r-admin" value="ADMIN"> ADMIN</label>
+          <label class="check-opt"><input type="checkbox" id="um-add-r-ajk" value="AJK_LI"> AJK_LI</label>
+          <label class="check-opt"><input type="checkbox" id="um-add-r-psy" value="PENSYARAH" checked> PENSYARAH</label>
+        </div>
+      </div>
+    </div>
+    <div class="um-form-msg um-form-error" id="um-add-error"></div>
+    <div class="um-form-msg um-form-success" id="um-add-success"></div>
+    <div class="btn-row"><button class="btn-primary" onclick="addUser()">Tambah Pengguna</button></div>
+  </div>
+</div>
+
+    </div><!-- end content-area -->
+  </div><!-- end main-content -->
+</div><!-- end app-layout -->
+
+<!-- EDIT USER MODAL -->
+<div class="modal-overlay" id="um-edit-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span>Edit Pengguna</span>
+      <button class="modal-close" onclick="closeEditModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="um-edit-idx">
+      <div class="field"><label>Nama Penuh</label><input type="text" id="um-edit-name" placeholder="Nama penuh"></div>
+      <div class="field"><label>E-mel</label><input type="email" id="um-edit-email" placeholder="email@utem.edu.my"></div>
+      <div class="field"><label>Peranan</label>
+        <div class="check-group">
+          <label class="check-opt"><input type="checkbox" id="um-edit-r-admin" value="ADMIN"> ADMIN</label>
+          <label class="check-opt"><input type="checkbox" id="um-edit-r-ajk" value="AJK_LI"> AJK_LI</label>
+          <label class="check-opt"><input type="checkbox" id="um-edit-r-psy" value="PENSYARAH"> PENSYARAH</label>
+        </div>
+      </div>
+      <div class="modal-msg modal-err" id="um-edit-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeEditModal()">Batal</button>
+      <button class="btn-primary" onclick="saveEditUser()">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="um-pw-modal">
+  <div class="modal-card" style="max-width:380px">
+    <div class="modal-header">
+      <span>Reset Kata Laluan</span>
+      <button class="modal-close" onclick="closePwModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="um-pw-idx">
+      <div class="field"><label id="um-pw-label">Kata Laluan Baharu untuk pengguna</label><input type="password" id="um-new-pw" placeholder="Kata laluan baharu"></div>
+      <div class="modal-msg modal-err" id="um-pw-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closePwModal()">Batal</button>
+      <button class="btn-primary" onclick="saveResetPw()">Simpan</button>
+    </div>
+  </div>
 </div>
 
 <script src="js/app.js"></script>
