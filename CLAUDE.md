@@ -350,6 +350,16 @@ TR1 (max 70) is composed of 4 components:
 - `repA` = Bahagian A raw sum; `repB` = Bahagian B raw sum; `repT = repA + repB` (for stat card)
 - Ringkasan display shows each component breakdown with IDs: `r2_tr1_lapa_raw`, `r2_tr1_lapa`, `r2_tr1_lapb_raw`, `r2_tr1_lapb`, `r2_tr1_svfc_raw`, `r2_tr1_svfc`, `r2_tr1_logc_raw`, `r2_tr1_logc`, `r2_tr1`
 
+## PR1-1 Calculation — BITU3946 (v4.9)
+PR1-1 (max 20, worth 20%) replaces the old two separate Pembentangan SVF/SVI rows:
+- **Component 1 — SVF Bah. B (max 10)**: `svf_b1` directly (no conversion)
+- **Component 2 — SVI Bah. B (max 10)**: `sviB / 5` where sviB = sum of svi_b1..svi_b10 (raw max 50)
+- **PR1-1 = Component 1 + Component 2** (max 20); converted value = PR1-1 total directly (20/20 × 20)
+- `calcSummary()` variables: `pr11b_svfb`, `pr11b_svib`, `pr11b`
+- BITU3946 total: `tr1 + pr11b + pr12` (70 + 20 + 10 = 100)
+- Ringkasan display IDs: `r2_pr11_svfb_raw`, `r2_pr11_svfb`, `r2_pr11_svib_raw`, `r2_pr11_svib`, `r2_pr11`
+- Old `r2_svfr`, `r2_svf`, `r2_svir`, `r2_svi` IDs removed; `psvfT`/`psviT` still used for stat cards only
+
 ## Important Rules
 - Never combine back into single file
 - Always maintain separate html/css/js structure
