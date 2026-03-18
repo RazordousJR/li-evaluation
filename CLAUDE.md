@@ -166,7 +166,62 @@ Both upload flows perform duplicate checking against Supabase before showing the
 ## Navigation
 - `showTab(t)` in app.js handles page switching, updates sidebar nav active state and topbar title
 - `openSidebar()` / `closeSidebar()` handle mobile sidebar toggle
-- Tab names: `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`
+- Tab names: `dashboard`, `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`
+- **Dashboard** is the new landing page for all roles (replaces `info` as default)
+- `loadDashboard()` detects role and calls role-specific render function
+
+## Dashboard (v4.1 — Batch 2)
+
+### ADMIN Dashboard
+- Page: `#page-dashboard` → `#dash-admin` section
+- 4 stat cards: Total Pelajar, Total Pensyarah, Pelajar Lengkap (all 5 sections), Belum Assign SVF
+- `renderAdminDashboard()` queries students, users (PENSYARAH), and marks in parallel
+
+### AJK_LI Dashboard
+- Page: `#page-dashboard` → `#dash-ajkli` section
+- Progress bar showing % completion across all students
+- Filter dropdowns: by Pensyarah (SVF) and by Program
+- Student table: No Matrik, Nama, Program, SVF, Status Markah (Lengkap/Belum Lengkap)
+- Click row → opens Evaluation Form for that student
+- `loadAjkliDashboard()`, `filterAjkliDashboard()`, `renderAjkliTable()`
+- `_ajkliStudents[]` and `_ajkliPensyarahMap{}` globals cache loaded data
+
+### PENSYARAH Dashboard
+- Page: `#page-dashboard` → `#dash-pensyarah` section
+- Shows only students where `svf_email = session.email`
+- Table: No Matrik, Nama, Program, Nama SVI, Syarikat, Status
+- Status computed from marks evaluator_email-filtered query
+- Click row → triggers `openStudentEval(student)` flow
+- `loadPensyarahDashboard()`, `_pensyarahDashStudents[]` global
+
+## Student Profile Setup (v4.1)
+- `openStudentEval(student)` — entry point for selecting a student from any dashboard
+- For PENSYARAH: if `svi_name` or `organisasi` is empty → shows `#student-profile-modal`
+  - Modal fields: Nama SVI, Nama Syarikat/Organisasi
+  - `saveStudentProfile()` updates `public.students` then calls `loadStudentForEval()`
+  - `_pendingStudentEval` global stores student while modal is open
+  - `closeStudentProfileModal()` closes and clears pending
+- For ADMIN/AJK_LI: skips modal, goes directly to `loadStudentForEval()`
+
+## Evaluation Form (v4.1 — Student Context)
+- `loadStudentForEval(student)` — loads student data and marks, then calls `showTab('svi')`
+  - Sets `currentStudent` and `currentStudentId` globals
+  - Populates `#eval-student-bar` with read-only student info
+  - Loads marks filtered by evaluator_email for PENSYARAH; unfiltered for ADMIN/AJK_LI
+  - Populates page-info fields via `_suppressSave` to prevent spurious saves
+- `#eval-student-bar` — sticky bar in content-area showing Pelajar, Matrik, Program, SVF, SVI, Syarikat + Back button
+  - Visible only when `currentStudent` is set AND in eval tabs (svi/svf/logbook/presentation/report/summary)
+- `goBackToDashboard()` — clears `currentStudent`, calls `showTab('dashboard')`
+- PENSYARAH role: `#info-nav-item` hidden (access eval form only via dashboard)
+- Ringkasan & Gred: READ-ONLY for PENSYARAH (Reset button hidden via `btn-danger hidden-by-role`)
+
+## Marks Persistence (v4.1 Update)
+- Unique constraint on `public.marks` changed from `(student_id, section)` → `(student_id, evaluator_email, section)`
+- Each evaluator can have their own marks record per section
+- `saveAll()` now upserts with `onConflict: 'student_id,evaluator_email,section'`
+- `loadByMatric()` filters marks by `evaluator_email` for PENSYARAH role
+- "Pelajar Lengkap" status = has at least one marks record for all 5 sections (any evaluator)
+- **Migration**: Run the DO block in `supabase/schema.sql` migration section to update existing DB
 
 ## Tech Stack
 - Vanilla HTML, CSS, JavaScript only (no frameworks, no build tools)
