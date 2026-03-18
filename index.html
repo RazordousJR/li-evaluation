@@ -64,6 +64,7 @@
       <div class="sidebar-section-sep" id="admin-sep" style="display:none"></div>
       <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
       <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
+      <a class="nav-item" id="uruspensyarah-nav-item" data-tab="uruspensyarah" onclick="showTab('uruspensyarah')" style="display:none">Urus Pensyarah</a>
       <a class="nav-item" id="admin-nav-item" data-tab="usermgmt" onclick="showTab('usermgmt')" style="display:none">Pengurusan Pengguna</a>
     </nav>
 
@@ -544,12 +545,47 @@
     </div>
     <div class="um-form-msg um-form-error" id="um-add-error"></div>
     <div class="um-form-msg um-form-success" id="um-add-success"></div>
-    <div class="btn-row">
-      <button class="btn-primary" onclick="addUser()">Tambah Pengguna</button>
-      <button class="btn-secondary" onclick="document.getElementById('up-pensyarah-file').click()">&#8679; Upload Pensyarah (.xlsx/.csv)</button>
-      <input type="file" id="up-pensyarah-file" accept=".xlsx,.csv" style="display:none" onchange="handleUploadPensyarah(this)">
+    <div class="btn-row"><button class="btn-primary" onclick="addUser()">Tambah Pengguna</button></div>
+  </div>
+</div>
+
+<!-- URUS PENSYARAH (ADMIN + AJK_LI) -->
+<div class="page" id="page-uruspensyarah">
+  <div class="section">
+    <div class="section-title" style="justify-content:space-between;align-items:center">
+      <span>Upload Pensyarah</span>
+      <div>
+        <button class="btn-primary" onclick="document.getElementById('up-pensyarah-file').click()">&#8679; Upload Pensyarah (.xlsx/.csv)</button>
+        <input type="file" id="up-pensyarah-file" accept=".xlsx,.csv" style="display:none" onchange="handleUploadPensyarah(this)">
+      </div>
     </div>
-    <div class="note-box" style="margin-top:.75rem">Upload Pensyarah: Lajur diperlukan: <strong>Nama Penuh, No Staf, Jabatan, Email</strong> &mdash; Kata laluan lalai: <code>utem1234</code>, peranan: PENSYARAH.</div>
+    <div class="note-box">Lajur diperlukan: <strong>Nama Penuh, No Staf, Jabatan, Email</strong> &mdash; Kata laluan lalai: <code>utem1234</code>, peranan: PENSYARAH.</div>
+  </div>
+  <div class="section">
+    <div class="section-title" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span>Senarai Pensyarah</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="pensyarah-filter" placeholder="Cari nama atau jabatan..." oninput="filterPensyarah()" style="font-size:13px;padding:5px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit;width:220px">
+        <button class="btn-secondary" onclick="loadUruspensyarah()">&#8635; Muat Semula</button>
+      </div>
+    </div>
+    <div class="um-table-wrap">
+      <table class="print-table um-table">
+        <thead>
+          <tr>
+            <th>Nama Penuh</th>
+            <th>No Staf</th>
+            <th>Jabatan</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="pensyarah-tbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -648,26 +684,30 @@
 
 <!-- UPLOAD PENSYARAH PREVIEW MODAL -->
 <div class="modal-overlay" id="up-pensyarah-modal" style="display:none">
-  <div class="modal-card" style="max-width:700px;width:100%">
+  <div class="modal-card" style="max-width:720px;width:100%">
     <div class="modal-header">
       <span>Preview Upload Pensyarah</span>
       <button class="modal-close" onclick="closeUploadPensyarahModal()">&#10005;</button>
     </div>
     <div class="modal-body" style="padding:0">
-      <div style="padding:.875rem 1.25rem;border-bottom:var(--border)">
-        <span id="up-pensyarah-count" style="font-size:13px;color:var(--text2)"></span>
+      <div style="padding:.75rem 1.25rem;border-bottom:var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span id="up-pensyarah-count" style="font-size:13px;color:var(--text2);flex:1"></span>
+        <span style="font-size:11.5px;color:var(--text3)">
+          <span class="upload-badge upload-badge-baru">Baru</span> rekod baharu &nbsp;
+          <span class="upload-badge upload-badge-kemaskini">Kemaskini</span> kemas kini &nbsp;
+          <span class="upload-badge upload-badge-konflik">Konflik</span> dup. nama
+        </span>
       </div>
-      <div class="um-table-wrap" style="max-height:380px;overflow-y:auto">
+      <div id="up-pensyarah-conflict-wrap" style="display:none;padding:.75rem 1.25rem;border-bottom:var(--border);background:var(--red-bg)">
+        <div style="color:var(--red-text);font-size:13px;margin-bottom:8px">&#9888; <strong>Terdapat rekod konflik</strong> — nama sepadan dengan pengguna sedia ada tetapi e-mel berbeza. Baris konflik akan dilangkau semasa upload.</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--red-text);cursor:pointer">
+          <input type="checkbox" id="up-pensyarah-conflict-cb"> Saya faham dan ingin teruskan juga baris konflik sebagai rekod baharu
+        </label>
+      </div>
+      <div class="um-table-wrap" style="max-height:340px;overflow-y:auto">
         <table class="print-table">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Nama Penuh</th>
-              <th>No Staf</th>
-              <th>Jabatan</th>
-              <th>Email</th>
-              <th>Status</th>
-            </tr>
+            <tr><th>#</th><th>Nama Penuh</th><th>No Staf</th><th>Jabatan</th><th>Email</th><th>Status</th></tr>
           </thead>
           <tbody id="up-pensyarah-tbody"></tbody>
         </table>
@@ -688,19 +728,24 @@
       <button class="modal-close" onclick="closeUploadPelajarModal()">&#10005;</button>
     </div>
     <div class="modal-body" style="padding:0">
-      <div style="padding:.875rem 1.25rem;border-bottom:var(--border)">
-        <span id="up-pelajar-count" style="font-size:13px;color:var(--text2)"></span>
+      <div style="padding:.75rem 1.25rem;border-bottom:var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span id="up-pelajar-count" style="font-size:13px;color:var(--text2);flex:1"></span>
+        <span style="font-size:11.5px;color:var(--text3)">
+          <span class="upload-badge upload-badge-baru">Baru</span> rekod baharu &nbsp;
+          <span class="upload-badge upload-badge-kemaskini">Kemaskini</span> kemas kini &nbsp;
+          <span class="upload-badge upload-badge-konflik">Konflik</span> dup. nama
+        </span>
       </div>
-      <div class="um-table-wrap" style="max-height:380px;overflow-y:auto">
+      <div id="up-pelajar-conflict-wrap" style="display:none;padding:.75rem 1.25rem;border-bottom:var(--border);background:var(--red-bg)">
+        <div style="color:var(--red-text);font-size:13px;margin-bottom:8px">&#9888; <strong>Terdapat rekod konflik</strong> — nama pelajar sepadan dengan rekod sedia ada tetapi No Matrik berbeza. Baris konflik akan dilangkau semasa upload.</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--red-text);cursor:pointer">
+          <input type="checkbox" id="up-pelajar-conflict-cb"> Saya faham dan ingin teruskan juga baris konflik sebagai rekod baharu
+        </label>
+      </div>
+      <div class="um-table-wrap" style="max-height:340px;overflow-y:auto">
         <table class="print-table">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Nama Pelajar</th>
-              <th>No Matrik</th>
-              <th>Nama Program</th>
-              <th>Status</th>
-            </tr>
+            <tr><th>#</th><th>Nama Pelajar</th><th>No Matrik</th><th>Nama Program</th><th>Status</th></tr>
           </thead>
           <tbody id="up-pelajar-tbody"></tbody>
         </table>
@@ -709,6 +754,34 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeUploadPelajarModal()">Batal</button>
       <button class="btn-primary" id="up-pelajar-confirm-btn" onclick="confirmUploadPelajar()">Sahkan Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PENSYARAH MODAL -->
+<div class="modal-overlay" id="ep-modal" style="display:none">
+  <div class="modal-card" style="max-width:480px">
+    <div class="modal-header">
+      <span>Edit Pensyarah</span>
+      <button class="modal-close" onclick="closeEpModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-key">
+      <div class="field"><label>Nama Penuh</label><input type="text" id="ep-name" placeholder="Nama penuh"></div>
+      <div class="field-row">
+        <div class="field"><label>No Staf</label><input type="text" id="ep-nostaf" placeholder="No staf"></div>
+        <div class="field"><label>Jabatan</label><input type="text" id="ep-jabatan" placeholder="Jabatan / unit"></div>
+      </div>
+      <div class="field"><label>E-mel</label><input type="email" id="ep-email" placeholder="email@utem.edu.my"></div>
+      <div class="field">
+        <label>Status</label>
+        <div class="check-group"><label class="check-opt"><input type="checkbox" id="ep-active"> Aktif</label></div>
+      </div>
+      <div class="modal-msg modal-err" id="ep-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeEpModal()">Batal</button>
+      <button class="btn-primary" onclick="saveEpModal()">Simpan Perubahan</button>
     </div>
   </div>
 </div>

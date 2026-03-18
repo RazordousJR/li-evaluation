@@ -86,8 +86,8 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 - **Content area**: scrollable, renders selected page
 - Mobile responsive: sidebar collapses off-screen, opens via hamburger button with overlay backdrop
 - CSS variable: `--sidebar-bg: #1e3a8a`; `--sidebar-width: 240px`
-- Management nav items (`admin-sep`, `admin-label`, `admin-nav-item`, `uruspelajar-nav-item`) have `style="display:none"` inline; shown by role in `applyRoleRestrictions()`
-  - `uruspelajar-nav-item` shown for ADMIN and AJK_LI
+- Management nav items (`admin-sep`, `admin-label`, `admin-nav-item`, `uruspelajar-nav-item`, `uruspensyarah-nav-item`) have `style="display:none"` inline; shown by role in `applyRoleRestrictions()`
+  - `uruspelajar-nav-item` and `uruspensyarah-nav-item` shown for ADMIN and AJK_LI
   - `admin-nav-item` shown for ADMIN only
 
 ## User Management Panel (ADMIN only — IMPLEMENTED)
@@ -95,12 +95,6 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 - Page ID: `#page-usermgmt`
 - **Users table**: shows Nama Penuh, E-mel, Peranan (role badges), Status (Aktif/Tidak Aktif), Tindakan
 - **Add user form**: Nama Penuh, E-mel, Kata Laluan, Peranan checkboxes (ADMIN/AJK_LI/PENSYARAH)
-- **Upload Pensyarah** button alongside "Tambah Pengguna":
-  - Accepts .xlsx or .csv with columns: Nama Penuh, No Staf, Jabatan, Email
-  - Parses with SheetJS (XLSX global)
-  - Shows preview modal with row validation before confirming
-  - On confirm: upserts into `public.users` with `roles: ['PENSYARAH']`, `password_hash: 'utem1234'`
-  - Reports success/error count via alert
 - **Tindakan per user** (keyed by email, not array index):
   - Edit — opens modal to change name, email, roles (async Supabase update)
   - Reset PW — opens modal to set new password, min 4 chars (async Supabase update)
@@ -110,15 +104,29 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 - Edit modal updates session + sidebar if admin edits their own profile
 - Deactivated accounts cannot log in
 
+## Urus Pensyarah Panel (ADMIN + AJK_LI — IMPLEMENTED)
+- Accessible via "Urus Pensyarah" sidebar nav item (ADMIN and AJK_LI)
+- Page ID: `#page-uruspensyarah`
+- **Upload Pensyarah** button:
+  - Accepts .xlsx or .csv with columns: Nama Penuh, No Staf, Jabatan, Email
+  - Parses with SheetJS; checks for duplicates before showing preview
+  - **Duplicate detection** (see below) before confirming
+  - On confirm: upserts into `public.users` with `roles: ['PENSYARAH']`, `password_hash: 'utem1234'`
+  - Reports success/skipped/error count via alert
+- **Pensyarah table**: Nama Penuh, No Staf, Jabatan, Email, Status, Tindakan
+  - Tindakan: Edit (opens `ep-modal` with no_staf/jabatan/email/is_active) + Reset PW (reuses existing `um-pw-modal`)
+  - `ep-modal` — edit pensyarah modal with fields: Nama Penuh, No Staf, Jabatan, E-mel, Status checkbox
+- **Search/filter**: text input filters table client-side by Nama or Jabatan; `filterPensyarah()` + `renderPensyarahTable()`
+
 ## Urus Pelajar Panel (ADMIN + AJK_LI — IMPLEMENTED)
 - Accessible via "Urus Pelajar" sidebar nav item (ADMIN and AJK_LI)
 - Page ID: `#page-uruspelajar`
 - **Upload Pelajar** button:
   - Accepts .xlsx or .csv with columns: Nama Pelajar, No Matrik, Nama Program
   - "Nama Program" maps to `kursus` column in students table
-  - Shows preview modal before confirming
+  - **Duplicate detection** (see below) before confirming
   - On confirm: upserts into `public.students` (unique key: `matric_no`)
-  - Reports success/error count via alert
+  - Reports success/skipped/error count via alert
 - **Students table**: No Matrik, Nama Pelajar, Program, SVF Ditetapkan, Tukar SVF
   - SVF Ditetapkan shows pensyarah full_name (green badge) or red "Belum Assign" badge if `svf_email` is null
   - Tukar SVF: dropdown per row populated from `public.users` where `'PENSYARAH' = ANY(roles)`; changing triggers immediate `assignSVF()` call
@@ -127,10 +135,22 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
   - `bulkAssignSVF()` updates all selected students' `svf_email` in parallel
 - **PENSYARAH role**: if a PENSYARAH accesses this page, only students where `svf_email = their email` are shown
 
+## Upload Duplicate Detection (Upload Pensyarah & Upload Pelajar)
+Both upload flows perform duplicate checking against Supabase before showing the preview modal:
+- **Baru** (green) — no match found in existing records; will be inserted
+- **Kemaskini** (amber) — exact key match (email for pensyarah, matric_no for pelajar); will be updated via upsert
+- **Konflik** (red) — name matches existing record but key is different (possible duplicate data entry error)
+- **Tidak Sah** (red) — invalid format (pensyarah only: invalid email); always skipped
+- If any Konflik rows are detected, a warning banner appears in the preview modal with a checkbox
+  "Saya faham dan ingin teruskan juga baris konflik"
+- Baris konflik are **skipped by default**; checkbox must be ticked to include them
+- `prepareUploadPensyarahPreview()` and `prepareUploadPelajarPreview()` — async functions that fetch existing
+  records then classify each row before showing preview modal
+
 ## Navigation
 - `showTab(t)` in app.js handles page switching, updates sidebar nav active state and topbar title
 - `openSidebar()` / `closeSidebar()` handle mobile sidebar toggle
-- Tab names: `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`
+- Tab names: `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`
 
 ## Tech Stack
 - Vanilla HTML, CSS, JavaScript only (no frameworks, no build tools)

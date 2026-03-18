@@ -86,19 +86,19 @@ function showApp(user) {
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
   // Always reset management sidebar items to hidden first
-  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item'].forEach(function(id) {
+  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   if (eff === 'ADMIN') {
-    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
     return;
   }
   if (eff === 'AJK_LI') {
-    ['admin-sep', 'admin-label', 'uruspelajar-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'uruspelajar-nav-item', 'uruspensyarah-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
@@ -134,7 +134,8 @@ var TAB_TITLES = {
   report: 'Laporan LI',
   summary: 'Ringkasan & Gred',
   usermgmt: 'Pengurusan Pengguna',
-  uruspelajar: 'Urus Pelajar'
+  uruspelajar: 'Urus Pelajar',
+  uruspensyarah: 'Urus Pensyarah'
 };
 
 function showTab(t) {
@@ -147,6 +148,7 @@ function showTab(t) {
   if (t === 'summary') calcSummary();
   if (t === 'usermgmt') loadUserMgmt();
   if (t === 'uruspelajar') loadUruspelajar();
+  if (t === 'uruspensyarah') loadUruspensyarah();
   closeSidebar();
   window.scrollTo(0, 0);
 }
@@ -591,6 +593,19 @@ function parseUploadFile(file, callback) {
   reader.onerror = function() { callback(new Error('Gagal membaca fail.'), null); };
   reader.readAsArrayBuffer(file);
 }
+
+function normalizeRow(r) {
+  var n = {};
+  Object.keys(r).forEach(function(k) { n[k.trim().toLowerCase()] = String(r[k]).trim(); });
+  return n;
+}
+
+function uploadStatusBadge(status) {
+  if (status === 'baru')      return '<span class="upload-badge upload-badge-baru">Baru</span>';
+  if (status === 'kemaskini') return '<span class="upload-badge upload-badge-kemaskini">Kemaskini</span>';
+  if (status === 'konflik')   return '<span class="upload-badge upload-badge-konflik">Konflik</span>';
+  return '<span class="upload-badge upload-badge-konflik">Tidak Sah</span>';
+}
 // ===== END UPLOAD HELPERS =====
 
 // ===== UPLOAD PENSYARAH =====
@@ -604,55 +619,85 @@ function handleUploadPensyarah(input) {
     if (err) { alert('Ralat membaca fail: ' + err.message); return; }
     if (!rows || !rows.length) { alert('Fail kosong atau format tidak dikenali.'); return; }
 
-    // Validate columns
-    var sample = rows[0];
-    var hasRequired = ('Nama Penuh' in sample || 'nama penuh' in sample) &&
-                      ('Email' in sample || 'email' in sample);
-    if (!hasRequired) {
+    var keys = Object.keys(rows[0]).map(function(k) { return k.trim().toLowerCase(); });
+    if (keys.indexOf('nama penuh') === -1 || keys.indexOf('email') === -1) {
       alert('Lajur tidak lengkap. Diperlukan: Nama Penuh, No Staf, Jabatan, Email');
       return;
     }
 
-    // Normalize keys
     _uploadPensyarahRows = rows.map(function(r) {
-      var normalized = {};
-      Object.keys(r).forEach(function(k) { normalized[k.trim()] = String(r[k]).trim(); });
+      var n = normalizeRow(r);
       return {
-        full_name: normalized['Nama Penuh'] || normalized['nama penuh'] || '',
-        no_staf:   normalized['No Staf']   || normalized['no staf']   || normalized['NoStaf']   || '',
-        jabatan:   normalized['Jabatan']   || normalized['jabatan']   || '',
-        email:     (normalized['Email']    || normalized['email']     || '').toLowerCase()
+        full_name: n['nama penuh'] || '',
+        no_staf:   n['no staf'] || n['nostaf'] || '',
+        jabatan:   n['jabatan'] || '',
+        email:     (n['email'] || '').toLowerCase()
       };
-    }).filter(function(r) { return r.email && r.full_name; });
+    }).filter(function(r) { return r.full_name && r.email; });
 
     if (!_uploadPensyarahRows.length) {
-      alert('Tiada baris data yang sah ditemui. Semak semula fail anda.');
+      alert('Tiada baris data yang sah. Semak semula fail anda.');
       return;
     }
-
-    // Build preview
-    var html = '';
-    _uploadPensyarahRows.forEach(function(r, i) {
-      var emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email);
-      var statusHtml = emailValid
-        ? '<span class="status-badge status-active">OK</span>'
-        : '<span class="status-badge status-inactive">E-mel tidak sah</span>';
-      html += '<tr>' +
-        '<td style="color:var(--text3)">' + (i + 1) + '</td>' +
-        '<td>' + escHtml(r.full_name) + '</td>' +
-        '<td>' + escHtml(r.no_staf) + '</td>' +
-        '<td>' + escHtml(r.jabatan) + '</td>' +
-        '<td style="font-size:12px">' + escHtml(r.email) + '</td>' +
-        '<td>' + statusHtml + '</td>' +
-        '</tr>';
-    });
-    document.getElementById('up-pensyarah-tbody').innerHTML = html;
-    document.getElementById('up-pensyarah-count').textContent =
-      _uploadPensyarahRows.length + ' rekod dijumpai. Semak sebelum mengesahkan.';
-
-    var modal = document.getElementById('up-pensyarah-modal');
-    modal.style.display = 'flex'; modal.classList.add('open');
+    prepareUploadPensyarahPreview();
   });
+}
+
+async function prepareUploadPensyarahPreview() {
+  var resp = await sb.from('users').select('email, full_name');
+  var existing = resp.data || [];
+  var emailSet = {}, nameToEmail = {};
+  existing.forEach(function(u) {
+    emailSet[u.email.toLowerCase()] = true;
+    nameToEmail[(u.full_name || '').toLowerCase()] = u.email.toLowerCase();
+  });
+
+  var counts = { baru: 0, kemaskini: 0, konflik: 0, invalid: 0 };
+  var hasConflict = false;
+  _uploadPensyarahRows.forEach(function(r) {
+    var emailLow = r.email.toLowerCase();
+    var nameLow  = r.full_name.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) {
+      r._status = 'invalid';
+    } else if (emailSet[emailLow]) {
+      r._status = 'kemaskini';
+    } else if (nameToEmail[nameLow] && nameToEmail[nameLow] !== emailLow) {
+      r._status = 'konflik';
+      hasConflict = true;
+    } else {
+      r._status = 'baru';
+    }
+    counts[r._status]++;
+  });
+
+  var html = '';
+  _uploadPensyarahRows.forEach(function(r, i) {
+    html += '<tr>' +
+      '<td style="color:var(--text3)">' + (i + 1) + '</td>' +
+      '<td>' + escHtml(r.full_name) + '</td>' +
+      '<td>' + escHtml(r.no_staf) + '</td>' +
+      '<td>' + escHtml(r.jabatan) + '</td>' +
+      '<td style="font-size:12px">' + escHtml(r.email) + '</td>' +
+      '<td>' + uploadStatusBadge(r._status) + '</td>' +
+      '</tr>';
+  });
+  document.getElementById('up-pensyarah-tbody').innerHTML = html;
+
+  var parts = [];
+  if (counts.baru)      parts.push(counts.baru + ' baru');
+  if (counts.kemaskini) parts.push(counts.kemaskini + ' kemaskini');
+  if (counts.konflik)   parts.push(counts.konflik + ' konflik');
+  if (counts.invalid)   parts.push(counts.invalid + ' tidak sah');
+  document.getElementById('up-pensyarah-count').textContent =
+    _uploadPensyarahRows.length + ' rekod: ' + parts.join(', ') + '.';
+
+  var cw = document.getElementById('up-pensyarah-conflict-wrap');
+  if (cw) { cw.style.display = hasConflict ? 'block' : 'none'; }
+  var cb = document.getElementById('up-pensyarah-conflict-cb');
+  if (cb) cb.checked = false;
+
+  var modal = document.getElementById('up-pensyarah-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
 }
 
 function closeUploadPensyarahModal() {
@@ -663,29 +708,29 @@ function closeUploadPensyarahModal() {
 
 async function confirmUploadPensyarah() {
   if (!_uploadPensyarahRows.length) return;
+  var includeConflicts = document.getElementById('up-pensyarah-conflict-cb').checked;
   var btn = document.getElementById('up-pensyarah-confirm-btn');
   btn.disabled = true; btn.textContent = 'Memproses...';
 
-  var success = 0, errors = 0;
+  var success = 0, skipped = 0, errors = 0;
   for (var i = 0; i < _uploadPensyarahRows.length; i++) {
     var r = _uploadPensyarahRows[i];
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) { errors++; continue; }
+    if (r._status === 'invalid')                        { skipped++; continue; }
+    if (r._status === 'konflik' && !includeConflicts)   { skipped++; continue; }
     var resp = await sb.from('users').upsert({
-      full_name:     r.full_name,
-      no_staf:       r.no_staf,
-      jabatan:       r.jabatan,
-      email:         r.email,
-      password_hash: 'utem1234',
-      roles:         ['PENSYARAH'],
-      is_active:     true
+      full_name: r.full_name, no_staf: r.no_staf, jabatan: r.jabatan,
+      email: r.email, password_hash: 'utem1234', roles: ['PENSYARAH'], is_active: true
     }, { onConflict: 'email' });
     if (resp.error) { errors++; } else { success++; }
   }
 
   btn.disabled = false; btn.textContent = 'Sahkan Upload';
   closeUploadPensyarahModal();
-  alert('Upload selesai: ' + success + ' berjaya, ' + errors + ' gagal.');
-  loadUserMgmt();
+  var msg = 'Upload selesai: ' + success + ' berjaya';
+  if (skipped) msg += ', ' + skipped + ' dilangkau';
+  if (errors)  msg += ', ' + errors + ' gagal';
+  alert(msg + '.');
+  loadUruspensyarah();
 }
 // ===== END UPLOAD PENSYARAH =====
 
@@ -700,45 +745,80 @@ function handleUploadPelajar(input) {
     if (err) { alert('Ralat membaca fail: ' + err.message); return; }
     if (!rows || !rows.length) { alert('Fail kosong atau format tidak dikenali.'); return; }
 
-    var sample = rows[0];
-    var hasRequired = ('No Matrik' in sample || 'no matrik' in sample || 'Matrik' in sample);
-    if (!hasRequired) {
+    var keys = Object.keys(rows[0]).map(function(k) { return k.trim().toLowerCase(); });
+    var hasMatric = keys.indexOf('no matrik') !== -1 || keys.indexOf('matrik') !== -1;
+    if (!hasMatric) {
       alert('Lajur tidak lengkap. Diperlukan: Nama Pelajar, No Matrik, Nama Program');
       return;
     }
 
     _uploadPelajarRows = rows.map(function(r) {
-      var normalized = {};
-      Object.keys(r).forEach(function(k) { normalized[k.trim()] = String(r[k]).trim(); });
+      var n = normalizeRow(r);
       return {
-        name:      normalized['Nama Pelajar'] || normalized['nama pelajar'] || normalized['Nama']    || '',
-        matric_no: normalized['No Matrik']    || normalized['no matrik']    || normalized['Matrik']  || '',
-        kursus:    normalized['Nama Program'] || normalized['nama program'] || normalized['Program'] || ''
+        name:      n['nama pelajar'] || n['nama'] || '',
+        matric_no: n['no matrik']    || n['matrik'] || '',
+        kursus:    n['nama program'] || n['program'] || ''
       };
     }).filter(function(r) { return r.matric_no && r.name; });
 
     if (!_uploadPelajarRows.length) {
-      alert('Tiada baris data yang sah ditemui. Semak semula fail anda.');
+      alert('Tiada baris data yang sah. Semak semula fail anda.');
       return;
     }
-
-    var html = '';
-    _uploadPelajarRows.forEach(function(r, i) {
-      html += '<tr>' +
-        '<td style="color:var(--text3)">' + (i + 1) + '</td>' +
-        '<td>' + escHtml(r.name) + '</td>' +
-        '<td>' + escHtml(r.matric_no) + '</td>' +
-        '<td>' + escHtml(r.kursus) + '</td>' +
-        '<td><span class="status-badge status-active">OK</span></td>' +
-        '</tr>';
-    });
-    document.getElementById('up-pelajar-tbody').innerHTML = html;
-    document.getElementById('up-pelajar-count').textContent =
-      _uploadPelajarRows.length + ' rekod dijumpai. Semak sebelum mengesahkan.';
-
-    var modal = document.getElementById('up-pelajar-modal');
-    modal.style.display = 'flex'; modal.classList.add('open');
+    prepareUploadPelajarPreview();
   });
+}
+
+async function prepareUploadPelajarPreview() {
+  var resp = await sb.from('students').select('matric_no, name');
+  var existing = resp.data || [];
+  var matricSet = {}, nameToMatric = {};
+  existing.forEach(function(s) {
+    matricSet[s.matric_no] = true;
+    nameToMatric[(s.name || '').toLowerCase()] = s.matric_no;
+  });
+
+  var counts = { baru: 0, kemaskini: 0, konflik: 0 };
+  var hasConflict = false;
+  _uploadPelajarRows.forEach(function(r) {
+    var nameLow = r.name.toLowerCase();
+    if (matricSet[r.matric_no]) {
+      r._status = 'kemaskini';
+    } else if (nameToMatric[nameLow] && nameToMatric[nameLow] !== r.matric_no) {
+      r._status = 'konflik';
+      hasConflict = true;
+    } else {
+      r._status = 'baru';
+    }
+    counts[r._status]++;
+  });
+
+  var html = '';
+  _uploadPelajarRows.forEach(function(r, i) {
+    html += '<tr>' +
+      '<td style="color:var(--text3)">' + (i + 1) + '</td>' +
+      '<td>' + escHtml(r.name) + '</td>' +
+      '<td>' + escHtml(r.matric_no) + '</td>' +
+      '<td>' + escHtml(r.kursus) + '</td>' +
+      '<td>' + uploadStatusBadge(r._status) + '</td>' +
+      '</tr>';
+  });
+  document.getElementById('up-pelajar-tbody').innerHTML = html;
+
+  var parts = [];
+  if (counts.baru)      parts.push(counts.baru + ' baru');
+  if (counts.kemaskini) parts.push(counts.kemaskini + ' kemaskini');
+  if (counts.konflik)   parts.push(counts.konflik + ' konflik');
+  document.getElementById('up-pelajar-count').textContent =
+    _uploadPelajarRows.length + ' rekod: ' + parts.join(', ') + '.';
+
+  var cw = document.getElementById('up-pelajar-conflict-wrap');
+  if (cw) { cw.style.display = hasConflict ? 'block' : 'none'; }
+  var cb = document.getElementById('up-pelajar-conflict-cb');
+  if (cb) cb.checked = false;
+
+  var modal = document.getElementById('up-pelajar-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
 }
 
 function closeUploadPelajarModal() {
@@ -749,23 +829,26 @@ function closeUploadPelajarModal() {
 
 async function confirmUploadPelajar() {
   if (!_uploadPelajarRows.length) return;
+  var includeConflicts = document.getElementById('up-pelajar-conflict-cb').checked;
   var btn = document.getElementById('up-pelajar-confirm-btn');
   btn.disabled = true; btn.textContent = 'Memproses...';
 
-  var success = 0, errors = 0;
+  var success = 0, skipped = 0, errors = 0;
   for (var i = 0; i < _uploadPelajarRows.length; i++) {
     var r = _uploadPelajarRows[i];
+    if (r._status === 'konflik' && !includeConflicts) { skipped++; continue; }
     var resp = await sb.from('students').upsert({
-      matric_no: r.matric_no,
-      name:      r.name,
-      kursus:    r.kursus
+      matric_no: r.matric_no, name: r.name, kursus: r.kursus
     }, { onConflict: 'matric_no' });
     if (resp.error) { errors++; } else { success++; }
   }
 
   btn.disabled = false; btn.textContent = 'Sahkan Upload';
   closeUploadPelajarModal();
-  alert('Upload selesai: ' + success + ' berjaya, ' + errors + ' gagal.');
+  var msg = 'Upload selesai: ' + success + ' berjaya';
+  if (skipped) msg += ', ' + skipped + ' dilangkau';
+  if (errors)  msg += ', ' + errors + ' gagal';
+  alert(msg + '.');
   loadUruspelajar();
 }
 // ===== END UPLOAD PELAJAR =====
@@ -778,11 +861,9 @@ async function loadUruspelajar() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
 
-  // Load pensyarah list for dropdowns
   var prResp = await sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name');
   _pensyarahList = prResp.data || [];
 
-  // Populate bulk assign dropdown
   var bulkSel = document.getElementById('bulk-svf-select');
   if (bulkSel) {
     bulkSel.innerHTML = '<option value="">-- Pilih SVF (Bulk Assign) --</option>';
@@ -791,11 +872,9 @@ async function loadUruspelajar() {
     });
   }
 
-  // Build lookup map
   var pensyarahMap = {};
   _pensyarahList.forEach(function(p) { pensyarahMap[p.email] = p.full_name; });
 
-  // Load students
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
   var query = sb.from('students').select('id, matric_no, name, kursus, svf_email').order('name');
@@ -814,12 +893,6 @@ async function loadUruspelajar() {
     return;
   }
 
-  // Build SVF dropdown options string
-  var basePensyarahOpts = '<option value="">-- Nyahaktif SVF --</option>';
-  _pensyarahList.forEach(function(p) {
-    basePensyarahOpts += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
-  });
-
   var html = '';
   students.forEach(function(s) {
     var assignedName = s.svf_email ? (pensyarahMap[s.svf_email] || s.svf_email) : null;
@@ -827,7 +900,6 @@ async function loadUruspelajar() {
       ? '<span class="status-badge status-active">' + escHtml(assignedName) + '</span>'
       : '<span class="belum-assign-badge">Belum Assign</span>';
 
-    // Build per-row dropdown with correct selected value
     var opts = '<option value="">-- Nyahaktif SVF --</option>';
     _pensyarahList.forEach(function(p) {
       opts += '<option value="' + escHtml(p.email) + '"' +
@@ -847,7 +919,6 @@ async function loadUruspelajar() {
   });
   tbody.innerHTML = html;
 
-  // Reset select-all checkbox
   var selectAll = document.getElementById('select-all-students');
   if (selectAll) selectAll.checked = false;
 }
@@ -857,8 +928,7 @@ function toggleAllStudents(cb) {
 }
 
 async function assignSVF(matricNo, svfEmail) {
-  var payload = { svf_email: svfEmail || null };
-  await sb.from('students').update(payload).eq('matric_no', matricNo);
+  await sb.from('students').update({ svf_email: svfEmail || null }).eq('matric_no', matricNo);
   loadUruspelajar();
 }
 
@@ -874,5 +944,110 @@ async function bulkAssignSVF() {
   loadUruspelajar();
 }
 // ===== END URUS PELAJAR =====
+
+// ===== URUS PENSYARAH =====
+var _allPensyarahRows = [];
+
+async function loadUruspensyarah() {
+  var tbody = document.getElementById('pensyarah-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
+
+  var resp = await sb.from('users').select('full_name, no_staf, jabatan, email, is_active, roles')
+    .contains('roles', ['PENSYARAH']).order('full_name');
+  if (resp.error) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;padding:1.5rem">Ralat memuatkan data.</td></tr>';
+    return;
+  }
+  _allPensyarahRows = resp.data || [];
+
+  var filterEl = document.getElementById('pensyarah-filter');
+  if (filterEl) filterEl.value = '';
+  renderPensyarahTable(_allPensyarahRows);
+}
+
+function filterPensyarah() {
+  var q = (document.getElementById('pensyarah-filter').value || '').toLowerCase().trim();
+  if (!q) { renderPensyarahTable(_allPensyarahRows); return; }
+  renderPensyarahTable(_allPensyarahRows.filter(function(p) {
+    return (p.full_name || '').toLowerCase().indexOf(q) !== -1 ||
+           (p.jabatan   || '').toLowerCase().indexOf(q) !== -1;
+  }));
+}
+
+function renderPensyarahTable(rows) {
+  var tbody = document.getElementById('pensyarah-tbody');
+  if (!tbody) return;
+  var session = getSession();
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pensyarah.</td></tr>';
+    return;
+  }
+  var html = '';
+  rows.forEach(function(u) {
+    var isActive = u.is_active !== false;
+    var eid = escHtml(u.email);
+    html += '<tr>' +
+      '<td>' + escHtml(u.full_name || '') + '</td>' +
+      '<td>' + escHtml(u.no_staf || '') + '</td>' +
+      '<td>' + escHtml(u.jabatan || '') + '</td>' +
+      '<td style="font-size:12px">' + eid + '</td>' +
+      '<td><span class="status-badge ' + (isActive ? 'status-active' : 'status-inactive') + '">' + (isActive ? 'Aktif' : 'Tidak Aktif') + '</span></td>' +
+      '<td><div class="um-actions">' +
+        '<button class="btn-sm btn-sm-edit" onclick="openEpModal(\'' + eid + '\')">Edit</button>' +
+        '<button class="btn-sm btn-sm-reset" onclick="openPwModal(\'' + eid + '\')">Reset PW</button>' +
+      '</div></td>' +
+      '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+async function openEpModal(email) {
+  var resp = await sb.from('users').select('*').eq('email', email).single();
+  if (resp.error || !resp.data) return;
+  var u = resp.data;
+  document.getElementById('ep-key').value      = u.email;
+  document.getElementById('ep-name').value     = u.full_name || '';
+  document.getElementById('ep-nostaf').value   = u.no_staf || '';
+  document.getElementById('ep-jabatan').value  = u.jabatan || '';
+  document.getElementById('ep-email').value    = u.email;
+  document.getElementById('ep-active').checked = u.is_active !== false;
+  document.getElementById('ep-error').style.display = 'none';
+  var modal = document.getElementById('ep-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
+}
+
+function closeEpModal() {
+  var modal = document.getElementById('ep-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+}
+
+async function saveEpModal() {
+  var origEmail = document.getElementById('ep-key').value;
+  var name      = document.getElementById('ep-name').value.trim();
+  var noStaf    = document.getElementById('ep-nostaf').value.trim();
+  var jabatan   = document.getElementById('ep-jabatan').value.trim();
+  var email     = document.getElementById('ep-email').value.trim().toLowerCase();
+  var isActive  = document.getElementById('ep-active').checked;
+  var errEl     = document.getElementById('ep-error');
+  errEl.style.display = 'none';
+
+  if (!name || !email) {
+    errEl.textContent = 'Nama dan e-mel diperlukan.'; errEl.style.display = 'block'; return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Format e-mel tidak sah.'; errEl.style.display = 'block'; return;
+  }
+  var resp = await sb.from('users').update({
+    full_name: name, no_staf: noStaf, jabatan: jabatan, email: email, is_active: isActive
+  }).eq('email', origEmail);
+  if (resp.error) {
+    errEl.textContent = resp.error.code === '23505' ? 'E-mel sudah digunakan.' : 'Ralat: ' + resp.error.message;
+    errEl.style.display = 'block'; return;
+  }
+  closeEpModal();
+  loadUruspensyarah();
+}
+// ===== END URUS PENSYARAH =====
 
 initAuth();
