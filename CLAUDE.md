@@ -20,8 +20,8 @@ Covers two courses: BITU3926 (Latihan Industri) and BITU3946 (Laporan Latihan In
 ## User Roles (IMPLEMENTED)
 - A user can hold multiple roles stored as an array (e.g. `roles: ['AJK_LI', 'PENSYARAH']`)
 - Effective access is the highest privilege role: ADMIN > AJK_LI > PENSYARAH
-- ADMIN — full access to everything including user management panel
-- AJK_LI — can key in marks AND view/print OBE reports; cannot manage users
+- ADMIN — full access to everything including user management panel and Urus Pelajar
+- AJK_LI — can key in marks, view/print OBE reports, access Urus Pelajar; cannot manage users
 - PENSYARAH — can key in marks only; Ringkasan & Gred is view-only (Reset button hidden)
 
 ## Login System (v4.0 — Supabase Backend)
@@ -29,8 +29,9 @@ Covers two courses: BITU3926 (Latihan Industri) and BITU3946 (Laporan Latihan In
 - Login identifier is **email** (type=email input)
 - **Sessions stored in `li_session` (localStorage)** — only `{email, roles, displayName}` (no sensitive data)
 - **Users list stored in Supabase `public.users` table** (replaces `li_users` localStorage)
-- Supabase user row format: `{id, full_name, email, password_hash, roles:text[], is_active, created_at}`
+- Supabase user row format: `{id, full_name, email, password_hash, roles:text[], is_active, no_staf, jabatan, created_at}`
   - `is_active: false` disables login for that account
+  - `no_staf` and `jabatan` are optional fields for staff info (pensyarah)
 - Default accounts seeded via `supabase/schema.sql`:
   - admin@utem.edu.my / admin123 (ADMIN)
   - ajkli@utem.edu.my / ajkli123 (AJK_LI)
@@ -44,19 +45,24 @@ Covers two courses: BITU3926 (Latihan Industri) and BITU3946 (Laporan Latihan In
 - URL: `https://lvbtzoqkgmjztolwdchi.supabase.co`
 - Key: publishable anon key (visible in app.js — internal tool, RLS disabled)
 - CDN: `@supabase/supabase-js@2` via jsdelivr (no npm/build step)
+- SheetJS CDN: `xlsx@0.18.5` via jsdelivr (for .xlsx/.csv upload parsing)
 - Client initialized as `sb` global in `initAuth()`
 - RLS disabled on all tables; anon role granted full access
 - **Setup**: Run `supabase/schema.sql` once in Supabase Dashboard → SQL Editor
+- **Upgrade existing DB**: The migration section at the bottom of schema.sql has `ALTER TABLE IF NOT EXISTS` statements to add new columns
 
 ## Database Tables
 ### `public.users`
-Columns: `id` (uuid PK), `full_name`, `email` (unique), `password_hash`, `roles` (text[]), `is_active`, `created_at`
+Columns: `id` (uuid PK), `full_name`, `email` (unique), `password_hash`, `roles` (text[]), `is_active`, `no_staf`, `jabatan`, `created_at`
 - Replaces `li_users` localStorage
 - All user management CRUD goes through this table
+- `no_staf` and `jabatan` populated via Upload Pensyarah feature
 
 ### `public.students`
-Columns: `id` (uuid PK), `name`, `matric_no` (unique), `kursus`, `semester`, `sesi`, `organisasi`, `svf_name`, `svi_name`, `created_at`
+Columns: `id` (uuid PK), `name`, `matric_no` (unique), `kursus`, `semester`, `sesi`, `organisasi`, `svf_name`, `svi_name`, `svf_email`, `created_at`
 - Created/updated on every auto-save (upsert by `matric_no`)
+- `svf_email` — links to `public.users.email` for SVF assignment in Urus Pelajar panel
+- Bulk-uploadable via Urus Pelajar → Upload Pelajar
 
 ### `public.marks`
 Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `section`, `data` (jsonb), `submitted_at`, `updated_at`
@@ -75,18 +81,26 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 - Save status indicator in topbar: `● Belum disimpan` / `↑ Menyimpan...` / `✓ Tersimpan` / `✗ Ralat simpan`
 
 ## Layout (v3.0 — Sidebar Navigation)
-- **Sidebar** (left, fixed 240px): dark blue (#1e3a8a), app logo/title, nav menu items, admin-only "Pengurusan Pengguna" section at bottom, user name + role badge in footer
+- **Sidebar** (left, fixed 240px): dark blue (#1e3a8a), app logo/title, nav menu items, management section at bottom, user name + role badge in footer
 - **Topbar** (right, sticky): hamburger (mobile), page title, BITU badges, save-status indicator, logout button
 - **Content area**: scrollable, renders selected page
 - Mobile responsive: sidebar collapses off-screen, opens via hamburger button with overlay backdrop
 - CSS variable: `--sidebar-bg: #1e3a8a`; `--sidebar-width: 240px`
-- Admin nav items (`admin-sep`, `admin-label`, `admin-nav-item`) have `style="display:none"` inline; shown by ID in JS
+- Management nav items (`admin-sep`, `admin-label`, `admin-nav-item`, `uruspelajar-nav-item`) have `style="display:none"` inline; shown by role in `applyRoleRestrictions()`
+  - `uruspelajar-nav-item` shown for ADMIN and AJK_LI
+  - `admin-nav-item` shown for ADMIN only
 
 ## User Management Panel (ADMIN only — IMPLEMENTED)
 - Accessible via "Pengurusan Pengguna" sidebar nav item (admin-only)
 - Page ID: `#page-usermgmt`
 - **Users table**: shows Nama Penuh, E-mel, Peranan (role badges), Status (Aktif/Tidak Aktif), Tindakan
 - **Add user form**: Nama Penuh, E-mel, Kata Laluan, Peranan checkboxes (ADMIN/AJK_LI/PENSYARAH)
+- **Upload Pensyarah** button alongside "Tambah Pengguna":
+  - Accepts .xlsx or .csv with columns: Nama Penuh, No Staf, Jabatan, Email
+  - Parses with SheetJS (XLSX global)
+  - Shows preview modal with row validation before confirming
+  - On confirm: upserts into `public.users` with `roles: ['PENSYARAH']`, `password_hash: 'utem1234'`
+  - Reports success/error count via alert
 - **Tindakan per user** (keyed by email, not array index):
   - Edit — opens modal to change name, email, roles (async Supabase update)
   - Reset PW — opens modal to set new password, min 4 chars (async Supabase update)
@@ -96,14 +110,32 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 - Edit modal updates session + sidebar if admin edits their own profile
 - Deactivated accounts cannot log in
 
+## Urus Pelajar Panel (ADMIN + AJK_LI — IMPLEMENTED)
+- Accessible via "Urus Pelajar" sidebar nav item (ADMIN and AJK_LI)
+- Page ID: `#page-uruspelajar`
+- **Upload Pelajar** button:
+  - Accepts .xlsx or .csv with columns: Nama Pelajar, No Matrik, Nama Program
+  - "Nama Program" maps to `kursus` column in students table
+  - Shows preview modal before confirming
+  - On confirm: upserts into `public.students` (unique key: `matric_no`)
+  - Reports success/error count via alert
+- **Students table**: No Matrik, Nama Pelajar, Program, SVF Ditetapkan, Tukar SVF
+  - SVF Ditetapkan shows pensyarah full_name (green badge) or red "Belum Assign" badge if `svf_email` is null
+  - Tukar SVF: dropdown per row populated from `public.users` where `'PENSYARAH' = ANY(roles)`; changing triggers immediate `assignSVF()` call
+- **Bulk assign**: checkboxes per row + "Assign SVF Terpilih" button + bulk SVF dropdown
+  - `toggleAllStudents()` selects/deselects all via header checkbox
+  - `bulkAssignSVF()` updates all selected students' `svf_email` in parallel
+- **PENSYARAH role**: if a PENSYARAH accesses this page, only students where `svf_email = their email` are shown
+
 ## Navigation
 - `showTab(t)` in app.js handles page switching, updates sidebar nav active state and topbar title
 - `openSidebar()` / `closeSidebar()` handle mobile sidebar toggle
-- Tab names: `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`
+- Tab names: `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`
 
 ## Tech Stack
 - Vanilla HTML, CSS, JavaScript only (no frameworks, no build tools)
 - Supabase JS v2 via CDN (`jsdelivr`) for database backend
+- SheetJS (xlsx@0.18.5) via CDN for .xlsx/.csv file parsing
 - Session persisted in `localStorage` (`li_session` key only)
 - Hosted on GitHub Pages
 
