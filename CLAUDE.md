@@ -333,6 +333,11 @@ Both upload flows perform duplicate checking against Supabase before showing the
   - `a1` → `a1_admin`, `a2` → `a1_tech`, `a3` → `a2_admin`, `a4` → `a2_tech`, `a5` → `a3`
 - Migration only triggers when old `a1` key present and new `a1_admin` key absent
 
+## Null-Safe DOM Helpers (v4.8 bugfix)
+- `v(id)` — updated to null-safe: `var el = getElementById(id); return el ? parseInt(el.value)||0 : 0;`
+- `setBar(id, val, max)` — updated to null-safe: checks element exists before setting width
+- `calcSVF()` — all `getElementById` display updates wrapped with null checks to prevent crashes when SVF page elements are queried before the section is rendered
+
 ## Important Rules
 - Never combine back into single file
 - Always maintain separate html/css/js structure
