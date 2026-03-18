@@ -235,6 +235,14 @@ textarea{resize:vertical;min-height:70px}
 .esb-field{display:flex;flex-direction:column;gap:1px;min-width:70px}
 .esb-label{font-size:10px;font-weight:600;color:rgba(26,86,219,.55);text-transform:uppercase;letter-spacing:.06em}
 .esb-val{font-size:13px;font-weight:500;color:var(--blue-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.esb-field-editable{min-width:120px}
+.esb-input{font-size:13px;font-weight:500;color:var(--blue-text);border:1.5px solid rgba(26,86,219,.35);border-radius:6px;padding:3px 7px;background:#fff;width:140px;outline:none}
+.esb-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(26,86,219,.15)}
+.esb-kemaskini-group{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.esb-kemaskini-btn{font-size:12.5px;padding:5px 12px;white-space:nowrap}
+.esb-kemaskini-feedback{font-size:12px;font-weight:600;white-space:nowrap}
+.esb-kmk-success{color:var(--green-text)}
+.esb-kmk-error{color:#dc2626}
 
 /* ===== CLICKABLE DASHBOARD ROWS ===== */
 .dash-row-clickable{cursor:pointer;transition:background .1s}

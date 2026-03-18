@@ -100,8 +100,12 @@
     <div class="esb-field"><span class="esb-label">Matrik</span><span id="esb-matrik" class="esb-val">—</span></div>
     <div class="esb-field"><span class="esb-label">Program</span><span id="esb-kursus" class="esb-val">—</span></div>
     <div class="esb-field"><span class="esb-label">SVF</span><span id="esb-svf" class="esb-val">—</span></div>
-    <div class="esb-field"><span class="esb-label">SVI</span><span id="esb-svi" class="esb-val">—</span></div>
-    <div class="esb-field"><span class="esb-label">Syarikat</span><span id="esb-org" class="esb-val">—</span></div>
+    <div class="esb-field esb-field-editable"><span class="esb-label">SVI</span><input type="text" id="esb-svi" class="esb-input" placeholder="Nama SVI"></div>
+    <div class="esb-field esb-field-editable"><span class="esb-label">Syarikat</span><input type="text" id="esb-org" class="esb-input" placeholder="Nama Syarikat"></div>
+  </div>
+  <div class="esb-kemaskini-group">
+    <button class="btn-primary esb-kemaskini-btn" onclick="kemaskiniSviOrg()">Kemaskini</button>
+    <span id="esb-kemaskini-feedback" class="esb-kemaskini-feedback"></span>
   </div>
   <button class="btn-secondary" style="white-space:nowrap;flex-shrink:0" onclick="goBackToDashboard()">&#8592; Kembali</button>
 </div>
@@ -398,11 +402,11 @@
   </div>
   <div class="confirm-section">
     <label class="confirm-label">
-      <input type="checkbox" id="svi-confirm-cb" onchange="updateSimpanBtn('svi')">
+      <input type="checkbox" id="svi-confirm-cb" onchange="onConfirmChange('svi')">
       <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
     </label>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('info')">&#8592; Kembali</button><button class="btn-primary" id="svi-simpan-btn" onclick="simpanSection('svi')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('svf')">Seterusnya: SVF &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('info')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('svf')">Seterusnya: SVF &rarr;</button></div>
 </div>
 
 <!-- SVF -->
@@ -449,11 +453,11 @@
   </div>
   <div class="confirm-section">
     <label class="confirm-label">
-      <input type="checkbox" id="svf-confirm-cb" onchange="updateSimpanBtn('svf')">
+      <input type="checkbox" id="svf-confirm-cb" onchange="onConfirmChange('svf')">
       <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
     </label>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svi')">&#8592; Kembali</button><button class="btn-primary" id="svf-simpan-btn" onclick="simpanSection('svf')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('logbook')">Seterusnya: e-Logbook &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svi')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('logbook')">Seterusnya: e-Logbook &rarr;</button></div>
 </div>
 
 <!-- LOGBOOK -->
@@ -475,11 +479,11 @@
   </div>
   <div class="confirm-section">
     <label class="confirm-label">
-      <input type="checkbox" id="logbook-confirm-cb" onchange="updateSimpanBtn('logbook')">
+      <input type="checkbox" id="logbook-confirm-cb" onchange="onConfirmChange('logbook')">
       <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
     </label>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svf')">&#8592; Kembali</button><button class="btn-primary" id="logbook-simpan-btn" onclick="simpanSection('logbook')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('presentation')">Seterusnya: Pembentangan &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('svf')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('presentation')">Seterusnya: Pembentangan &rarr;</button></div>
 </div>
 
 <!-- PRESENTATION -->
@@ -520,11 +524,11 @@
   </div>
   <div class="confirm-section">
     <label class="confirm-label">
-      <input type="checkbox" id="presentation-confirm-cb" onchange="updateSimpanBtn('presentation')">
+      <input type="checkbox" id="presentation-confirm-cb" onchange="onConfirmChange('presentation')">
       <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
     </label>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('logbook')">&#8592; Kembali</button><button class="btn-primary" id="presentation-simpan-btn" onclick="simpanSection('presentation')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('report')">Seterusnya: Laporan LI &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('logbook')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('report')">Seterusnya: Laporan LI &rarr;</button></div>
 </div>
 
 <!-- REPORT -->
@@ -560,11 +564,11 @@
   </div>
   <div class="confirm-section">
     <label class="confirm-label">
-      <input type="checkbox" id="report-confirm-cb" onchange="updateSimpanBtn('report')">
+      <input type="checkbox" id="report-confirm-cb" onchange="onConfirmChange('report')">
       <span>Saya sahkan bahawa semua markah di atas adalah muktamad</span>
     </label>
   </div>
-  <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" id="report-simpan-btn" onclick="simpanSection('report')" disabled>Simpan</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
+  <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
 </div>
 
 <!-- SUMMARY -->
