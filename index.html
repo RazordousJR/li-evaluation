@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistem Penilaian Latihan Industri — UTeM FTMK</title>
 <link rel="stylesheet" href="css/style.css?v=3">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -82,6 +83,7 @@
         <span class="badge badge-green">BITU3946</span>
         <span class="badge badge-gray">v3.0</span>
       </div>
+      <span class="save-status" id="save-status"></span>
       <button class="btn-logout" onclick="doLogout()">Log Keluar</button>
     </div>
 
@@ -93,12 +95,12 @@
   <div class="section">
     <div class="section-title">Maklumat Pelajar</div>
     <div class="field-row">
-      <div class="field"><label>Nama Pelajar</label><input type="text" id="nama_pelajar" placeholder="Nama penuh pelajar"></div>
-      <div class="field"><label>No. Matrik</label><input type="text" id="no_matrik" placeholder="cth: B022310001"></div>
+      <div class="field"><label>Nama Pelajar</label><input type="text" id="nama_pelajar" placeholder="Nama penuh pelajar" oninput="scheduleSave()"></div>
+      <div class="field"><label>No. Matrik</label><div class="matric-load-row"><input type="text" id="no_matrik" placeholder="cth: B022310001" oninput="scheduleSave()"><button class="btn-load-matric" onclick="loadByMatric(document.getElementById('no_matrik').value.trim())" title="Muatkan rekod sedia ada">Muat</button></div></div>
     </div>
     <div class="field-row three">
       <div class="field"><label>Kursus</label>
-        <select id="kursus">
+        <select id="kursus" onchange="scheduleSave()">
           <option value="">-- Pilih Kursus --</option>
           <option>BITC - Kejuruteraan Komputer</option>
           <option>BITD - Keselamatan Digital</option>
@@ -108,15 +110,15 @@
           <option>BITE - Kejuruteraan Perisian</option>
           <option>BITZ - Rangkaian Komputer</option>
         </select></div>
-      <div class="field"><label>Semester</label><select id="semester"><option value="1">Semester 1</option><option value="2">Semester 2</option></select></div>
+      <div class="field"><label>Semester</label><select id="semester" onchange="scheduleSave()"><option value="1">Semester 1</option><option value="2">Semester 2</option></select></div>
       <div class="field"><label>Sesi Akademik</label>
-        <select id="sesi">
+        <select id="sesi" onchange="scheduleSave()">
           <option>2024/2025</option><option>2025/2026</option><option>2026/2027</option><option>2027/2028</option>
         </select></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Nama Penyelia Fakulti (SVF)</label>
-        <select id="svf_name">
+        <select id="svf_name" onchange="scheduleSave()">
           <option value="">-- Pilih Pensyarah --</option>
           <option>ABDUL AZIM BIN ABDUL RASHID</option>
           <option>ABDUL KARIM BIN MOHAMAD, Ts. DR</option>
@@ -221,10 +223,10 @@
           <option>ZURINA BINTI SAAYA, DR</option>
         </select>
       </div>
-      <div class="field"><label>Nama Penyelia Industri (SVI)</label><input type="text" id="svi_name" placeholder="Nama penyelia industri"></div>
+      <div class="field"><label>Nama Penyelia Industri (SVI)</label><input type="text" id="svi_name" placeholder="Nama penyelia industri" oninput="scheduleSave()"></div>
     </div>
     <div class="field-row full">
-      <div class="field"><label>Nama Organisasi / Syarikat</label><input type="text" id="organisasi" placeholder="Nama syarikat tempat LI"></div>
+      <div class="field"><label>Nama Organisasi / Syarikat</label><input type="text" id="organisasi" placeholder="Nama syarikat tempat LI" oninput="scheduleSave()"></div>
     </div>
     <hr class="divider">
     <div class="field-row">
@@ -271,7 +273,7 @@
   </div>
   <div class="section">
     <div class="section-title">Bahagian C: Ulasan Keseluruhan</div>
-    <div class="field-row full"><div class="field"><label>a) Ulasan prestasi kerja, sahsiah &amp; potensi pelatih</label><textarea id="svi_ulasan" placeholder="Masukkan ulasan..."></textarea></div></div>
+    <div class="field-row full"><div class="field"><label>a) Ulasan prestasi kerja, sahsiah &amp; potensi pelatih</label><textarea id="svi_ulasan" placeholder="Masukkan ulasan..." oninput="scheduleSave()"></textarea></div></div>
     <div class="field-row"><div class="field"><label>b) Penilaian keseluruhan pelajar</label>
       <div class="radio-group">
         <div class="radio-opt" onclick="selectR('svi_rating','Sangat Baik',this)">Sangat Baik</div>
@@ -309,7 +311,7 @@
   </div>
   <div class="section">
     <div class="section-title">Bahagian D: Ulasan Keseluruhan</div>
-    <div class="field-row full"><div class="field"><label>a) Ulasan keseluruhan prestasi kerja, sahsiah &amp; potensi pelatih</label><textarea id="svf_ulasan" placeholder="Masukkan ulasan..."></textarea></div></div>
+    <div class="field-row full"><div class="field"><label>a) Ulasan keseluruhan prestasi kerja, sahsiah &amp; potensi pelatih</label><textarea id="svf_ulasan" placeholder="Masukkan ulasan..." oninput="scheduleSave()"></textarea></div></div>
     <div class="field-row">
       <div class="field"><label>b) Penilaian keseluruhan pelajar</label>
         <div class="radio-group">
@@ -419,7 +421,7 @@
   </div>
   <div class="section">
     <div class="section-title">Bahagian C: Ulasan</div>
-    <div class="field-row full"><div class="field"><label>Ulasan keseluruhan laporan LI</label><textarea id="rep_ulasan" placeholder="Masukkan ulasan..."></textarea></div></div>
+    <div class="field-row full"><div class="field"><label>Ulasan keseluruhan laporan LI</label><textarea id="rep_ulasan" placeholder="Masukkan ulasan..." oninput="scheduleSave()"></textarea></div></div>
   </div>
   <div class="btn-row"><button class="btn-secondary" onclick="showTab('presentation')">&#8592; Kembali</button><button class="btn-primary" onclick="showTab('summary')">Lihat Ringkasan &amp; Gred &rarr;</button></div>
 </div>
@@ -556,7 +558,7 @@
       <button class="modal-close" onclick="closeEditModal()">&#10005;</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="um-edit-idx">
+      <input type="hidden" id="um-edit-key">
       <div class="field"><label>Nama Penuh</label><input type="text" id="um-edit-name" placeholder="Nama penuh"></div>
       <div class="field"><label>E-mel</label><input type="email" id="um-edit-email" placeholder="email@utem.edu.my"></div>
       <div class="field"><label>Peranan</label>
@@ -583,7 +585,7 @@
       <button class="modal-close" onclick="closePwModal()">&#10005;</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="um-pw-idx">
+      <input type="hidden" id="um-pw-key">
       <div class="field"><label id="um-pw-label">Kata Laluan Baharu untuk pengguna</label><input type="password" id="um-new-pw" placeholder="Kata laluan baharu"></div>
       <div class="modal-msg modal-err" id="um-pw-error"></div>
     </div>

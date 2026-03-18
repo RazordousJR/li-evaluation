@@ -139,6 +139,15 @@ textarea{resize:vertical;min-height:70px}
 .role-PENSYARAH{background:var(--blue-bg);color:var(--blue-text)}
 .btn-logout{background:none;border:var(--border2);color:var(--text2);padding:5px 12px;border-radius:var(--radius);font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0}
 .btn-logout:hover{background:var(--bg2)}
+.save-status{font-size:11.5px;flex-shrink:0;padding:3px 8px;border-radius:var(--radius);font-weight:500}
+.save-pending{color:#92400e;background:#fef3c7}
+.save-saving{color:#1e40af;background:#dbeafe}
+.save-saved{color:#065f46;background:#d1fae5}
+.save-error{color:#991b1b;background:#fee2e2}
+.matric-load-row{display:flex;gap:6px;align-items:center}
+.matric-load-row input{flex:1}
+.btn-load-matric{background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:var(--radius);font-size:12.5px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.btn-load-matric:hover{opacity:.88}
 
 /* ===== ROLE RESTRICTIONS ===== */
 .input-disabled{background:var(--bg2)!important;cursor:not-allowed!important;opacity:.65!important;pointer-events:none!important}
