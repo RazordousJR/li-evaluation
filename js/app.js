@@ -88,6 +88,11 @@ function showApp(user) {
 
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
+  // Always reset admin sidebar items to hidden first
+  ['admin-sep', 'admin-label', 'admin-nav-item'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
   // ADMIN — show admin sidebar items, no other restrictions
   if (eff === 'ADMIN') {
     ['admin-sep', 'admin-label', 'admin-nav-item'].forEach(function(id) {
