@@ -197,11 +197,24 @@ function clamp(el, max) { var vv = parseInt(el.value); if (isNaN(vv) || vv < 0) 
 function selectPilihan(n) { pilihan = n; document.getElementById("opt-p1").classList.toggle("selected", n === 1); document.getElementById("opt-p2").classList.toggle("selected", n === 2); document.getElementById("rep_p1_wrap").style.display = n === 1 ? "" : "none"; document.getElementById("rep_p2_wrap").style.display = n === 2 ? "" : "none"; document.getElementById("pilihan-note").innerHTML = "Menggunakan <strong>Pilihan " + n + "</strong> &mdash; " + (n === 1 ? "Tugasan Teknikal 80% (max 40m) + Pentadbiran 20% (max 10m)" : "Tugasan Teknikal 60% (max 30m) + Pentadbiran 40% (max 20m)"); calcReport(); scheduleSave(); }
 function selectHadir(n) { hadir = n; scheduleSave(); }
 function selectR(id, val, el) { document.getElementById(id).value = val; el.closest(".radio-group").querySelectorAll(".radio-opt").forEach(function(r) { r.classList.remove("selected"); }); el.classList.add("selected"); scheduleSave(); }
-function v(id) { return Math.max(0, parseInt(document.getElementById(id).value) || 0); }
-function setBar(id, val, max) { document.getElementById(id).style.width = Math.min(100, Math.round(val / max * 100)) + "%"; }
+function v(id) { var el = document.getElementById(id); return el ? Math.max(0, parseInt(el.value) || 0) : 0; }
+function setBar(id, val, max) { var el = document.getElementById(id); if (el) el.style.width = Math.min(100, Math.round(val / max * 100)) + "%"; }
 function fmt(n) { return parseFloat(n.toFixed(1)); }
 function calcSVI() { var a = v("svi_a1") + v("svi_a2") + v("svi_a3") + v("svi_a4"); var b = v("svi_b1") + v("svi_b2") + v("svi_b3") + v("svi_b4") + v("svi_b5") + v("svi_b6") + v("svi_b7") + v("svi_b8") + v("svi_b9") + v("svi_b10"); document.getElementById("svi_a_total").textContent = a + " / 50"; document.getElementById("svi_b_total").textContent = b + " / 50"; document.getElementById("svi_total").textContent = (a + b) + " / 100"; setBar("svi_a_bar", a, 50); setBar("svi_b_bar", b, 50); scheduleSave(); }
-function calcSVF() { var a1 = v("svf_a1_admin") + v("svf_a1_tech"); var a2 = v("svf_a2_admin") + v("svf_a2_tech"); var a3 = v("svf_a3"); var a = a1 + a2 + a3; var b = v("svf_b1"), c = v("svf_c1"); document.getElementById("svf_a1_subtotal").textContent = a1 + " / 30"; document.getElementById("svf_a2_subtotal").textContent = a2 + " / 30"; document.getElementById("svf_a_total").textContent = a + " / 90"; document.getElementById("svf_ab_total").textContent = (a + b) + " / 100"; document.getElementById("svf_total").textContent = (a + b + c) + " / 110"; setBar("svf_a_bar", a, 90); scheduleSave(); }
+function calcSVF() {
+  var a1 = v("svf_a1_admin") + v("svf_a1_tech");
+  var a2 = v("svf_a2_admin") + v("svf_a2_tech");
+  var a3 = v("svf_a3");
+  var a = a1 + a2 + a3;
+  var b = v("svf_b1"), c = v("svf_c1");
+  var elA1sub = document.getElementById("svf_a1_subtotal"); if (elA1sub) elA1sub.textContent = a1 + " / 30";
+  var elA2sub = document.getElementById("svf_a2_subtotal"); if (elA2sub) elA2sub.textContent = a2 + " / 30";
+  var elAtot = document.getElementById("svf_a_total"); if (elAtot) elAtot.textContent = a + " / 90";
+  var elABtot = document.getElementById("svf_ab_total"); if (elABtot) elABtot.textContent = (a + b) + " / 100";
+  var elTot = document.getElementById("svf_total"); if (elTot) elTot.textContent = (a + b + c) + " / 110";
+  setBar("svf_a_bar", a, 90);
+  scheduleSave();
+}
 function calcLog() { var a = v("log_a1"), b = v("log_b1"), c = v("log_c1"); document.getElementById("log_a_total").textContent = a + " / 40"; document.getElementById("log_b_total").textContent = b + " / 20"; document.getElementById("log_total").textContent = (a + b + c) + " / 70"; setBar("log_a_bar", a, 40); setBar("log_b_bar", b, 20); scheduleSave(); }
 function calcPres() { var svf = v("psvf_a") + v("psvf_b1") + v("psvf_b2") + v("psvf_b3") + v("psvf_b4") + v("psvf_b5") + v("psvf_c1") + v("psvf_c2") + v("psvf_c3") + v("psvf_d1") + v("psvf_d2") + v("psvf_d3") + v("psvf_d4"); var svi = v("psvi_a") + v("psvi_b1") + v("psvi_b2") + v("psvi_b3") + v("psvi_b4") + v("psvi_b5") + v("psvi_c1") + v("psvi_c2") + v("psvi_c3") + v("psvi_d1") + v("psvi_d2") + v("psvi_d3") + v("psvi_d4"); document.getElementById("psvf_total").textContent = svf + " / 100"; document.getElementById("psvi_total").textContent = svi + " / 100"; setBar("psvf_bar", svf, 100); setBar("psvi_bar", svi, 100); scheduleSave(); }
 function calcReport() { var a4 = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a4_admin_p1")) : (v("rep_a4_tech_p2") + v("rep_a4_admin_p2")); var a = v("rep_a1") + v("rep_a2") + v("rep_a3") + a4 + v("rep_a5") + v("rep_a6") + v("rep_a7"); var b = v("rep_b1") + v("rep_b2") + v("rep_b3") + v("rep_b4"); document.getElementById("rep_a_total").textContent = a + " / 60"; document.getElementById("rep_b_total").textContent = b + " / 40"; document.getElementById("rep_total").textContent = (a + b) + " / 100"; setBar("rep_a_bar", a, 60); scheduleSave(); }
