@@ -241,6 +241,16 @@ textarea{resize:vertical;min-height:70px}
 .dash-row-clickable:hover td{background:var(--bg2)}
 
 /* ===== PRINT ===== */
+/* ===== CONFIRMATION CHECKBOX ===== */
+.confirm-section{background:var(--green-bg);border:1px solid rgba(10,124,78,.25);border-radius:var(--radius);padding:.75rem 1rem;margin:.75rem 0 0}
+.confirm-label{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--green-text);cursor:pointer;user-select:none}
+.confirm-label input[type=checkbox]{width:17px;height:17px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.confirm-nav-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:999px;background:rgba(74,222,128,.35);color:#fff;margin-left:4px;display:none;vertical-align:middle}
+.btn-primary:disabled,.btn-primary[disabled]{opacity:.45;cursor:not-allowed}
+/* ===== SVI/SYARIKAT INDICATOR ===== */
+.svi-org-indicator{background:var(--green-bg);border:1px solid rgba(10,124,78,.25);border-radius:var(--radius);padding:7px 14px;font-size:12.5px;color:var(--green-text);font-weight:500;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.875rem;display:none}
+.svi-org-sep{opacity:.4;font-size:14px}
+
 @media print{
   body{background:white}
   .sidebar,.topbar,.btn-row,.login-overlay,.sidebar-overlay{display:none!important}
