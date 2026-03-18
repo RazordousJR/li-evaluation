@@ -66,17 +66,22 @@ function doLogout() {
 }
 
 function showApp(user) {
-  document.getElementById('login-overlay').style.display = 'none';
-  document.getElementById('main-app').style.display = 'flex';
+  var loginEl = document.getElementById('login-overlay');
+  if (loginEl) loginEl.style.display = 'none';
+  var appEl = document.getElementById('main-app');
+  if (appEl) appEl.style.display = 'block';
 
   var effectiveRole = getEffectiveRole(user.roles);
   var roleLabels = {ADMIN:'Admin', AJK_LI:'AJK LI', PENSYARAH:'Pensyarah'};
 
   // Sidebar user info
-  document.getElementById('sidebar-user-name').textContent = user.displayName || user.email;
+  var nameEl = document.getElementById('sidebar-user-name');
+  if (nameEl) nameEl.textContent = user.displayName || user.email;
   var sidebarBadge = document.getElementById('sidebar-role-badge');
-  sidebarBadge.className = 'role-badge role-' + effectiveRole;
-  sidebarBadge.textContent = roleLabels[effectiveRole] || effectiveRole;
+  if (sidebarBadge) {
+    sidebarBadge.className = 'role-badge role-' + effectiveRole;
+    sidebarBadge.textContent = roleLabels[effectiveRole] || effectiveRole;
+  }
 
   applyRoleRestrictions(user.roles);
 }
@@ -257,11 +262,15 @@ function openEditModal(idx) {
   document.getElementById('um-edit-r-ajk').checked   = (u.roles || []).indexOf('AJK_LI') !== -1;
   document.getElementById('um-edit-r-psy').checked   = (u.roles || []).indexOf('PENSYARAH') !== -1;
   document.getElementById('um-edit-error').style.display = 'none';
-  document.getElementById('um-edit-modal').classList.add('open');
+  var modal = document.getElementById('um-edit-modal');
+  modal.style.display = 'flex';
+  modal.classList.add('open');
 }
 
 function closeEditModal() {
-  document.getElementById('um-edit-modal').classList.remove('open');
+  var modal = document.getElementById('um-edit-modal');
+  modal.style.display = 'none';
+  modal.classList.remove('open');
 }
 
 function saveEditUser() {
@@ -320,11 +329,15 @@ function openPwModal(idx) {
   document.getElementById('um-pw-label').textContent = 'Kata Laluan Baharu untuk ' + (u.displayName || u.email);
   document.getElementById('um-new-pw').value = '';
   document.getElementById('um-pw-error').style.display = 'none';
-  document.getElementById('um-pw-modal').classList.add('open');
+  var modal = document.getElementById('um-pw-modal');
+  modal.style.display = 'flex';
+  modal.classList.add('open');
 }
 
 function closePwModal() {
-  document.getElementById('um-pw-modal').classList.remove('open');
+  var modal = document.getElementById('um-pw-modal');
+  modal.style.display = 'none';
+  modal.classList.remove('open');
 }
 
 function saveResetPw() {
