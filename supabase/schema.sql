@@ -178,3 +178,13 @@ DROP TRIGGER IF EXISTS trg_mark_audit ON public.marks;
 CREATE TRIGGER trg_mark_audit
   AFTER UPDATE ON public.marks
   FOR EACH ROW EXECUTE FUNCTION log_mark_changes();
+
+-- ============================================================
+-- Approval Workflow (Phase 1)
+-- Run these in Supabase SQL Editor to add approval tracking.
+-- approval_status is on public.students (student-level, NOT marks-level)
+-- ============================================================
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS approval_status TEXT DEFAULT 'draft';
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS submitted_at   TIMESTAMPTZ;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS approved_at    TIMESTAMPTZ;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS approved_by    TEXT;

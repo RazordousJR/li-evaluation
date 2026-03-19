@@ -9,6 +9,7 @@ var _pendingStudentEval = null;
 var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
 var _currentEvalEmail = null; // evaluator email used for save/load marks
+var _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
 
 // ===== PASSWORD HASHING =====
 async function hashPassword(pw) {
@@ -271,7 +272,7 @@ function calcLog() { var a = v("log_a1"), b = v("log_b1"), c = v("log_c1"); docu
 function calcPres() { var svf = v("psvf_a") + v("psvf_b1") + v("psvf_b2") + v("psvf_b3") + v("psvf_b4") + v("psvf_b5") + v("psvf_c1") + v("psvf_c2") + v("psvf_c3") + v("psvf_d1") + v("psvf_d2") + v("psvf_d3") + v("psvf_d4"); var svi = v("psvi_a") + v("psvi_b1") + v("psvi_b2") + v("psvi_b3") + v("psvi_b4") + v("psvi_b5") + v("psvi_c1") + v("psvi_c2") + v("psvi_c3") + v("psvi_d1") + v("psvi_d2") + v("psvi_d3") + v("psvi_d4"); document.getElementById("psvf_total").textContent = svf + " / 100"; document.getElementById("psvi_total").textContent = svi + " / 100"; setBar("psvf_bar", svf, 100); setBar("psvi_bar", svi, 100); scheduleSave(); }
 function calcReport() { var a4 = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a4_admin_p1")) : (v("rep_a4_tech_p2") + v("rep_a4_admin_p2")); var a = v("rep_a1") + v("rep_a2") + v("rep_a3") + a4 + v("rep_a5") + v("rep_a6") + v("rep_a7"); var b = v("rep_b1") + v("rep_b2") + v("rep_b3") + v("rep_b4"); document.getElementById("rep_a_total").textContent = a + " / 60"; document.getElementById("rep_b_total").textContent = b + " / 40"; document.getElementById("rep_total").textContent = (a + b) + " / 100"; setBar("rep_a_bar", a, 60); scheduleSave(); }
 function getGrade(m) { if (m >= 80) return { g: "A", cls: "grade-A" }; if (m >= 75) return { g: "A-", cls: "grade-A" }; if (m >= 70) return { g: "B+", cls: "grade-B" }; if (m >= 65) return { g: "B", cls: "grade-B" }; if (m >= 60) return { g: "B-", cls: "grade-B" }; if (m >= 55) return { g: "C+", cls: "grade-C" }; if (m >= 50) return { g: "C", cls: "grade-C" }; if (m >= 47) return { g: "C-", cls: "grade-C" }; if (m >= 44) return { g: "D+", cls: "grade-D" }; if (m >= 40) return { g: "D", cls: "grade-D" }; return { g: "E", cls: "grade-E" }; }
-function calcSummary() { document.getElementById("s_nama").textContent = document.getElementById("nama_pelajar").value || "\u2014"; document.getElementById("s_matrik").textContent = document.getElementById("no_matrik").value || "\u2014"; document.getElementById("s_kursus").textContent = document.getElementById("kursus").value || "\u2014"; document.getElementById("s_sesi").textContent = document.getElementById("sesi").value + " Sem " + document.getElementById("semester").value; document.getElementById("s_svf").textContent = document.getElementById("svf_name").value || "\u2014"; document.getElementById("s_svi").textContent = document.getElementById("svi_name").value || "\u2014"; document.getElementById("s_org").textContent = document.getElementById("organisasi").value || "\u2014"; document.getElementById("s_svi_rating").textContent = document.getElementById("svi_rating").value || "\u2014"; document.getElementById("s_svf_rating").textContent = document.getElementById("svf_rating").value || "\u2014"; document.getElementById("s_svf_status").textContent = document.getElementById("svf_status").value || "\u2014"; var sviA = v("svi_a1") + v("svi_a2") + v("svi_a3") + v("svi_a4"); var sviB = v("svi_b1") + v("svi_b2") + v("svi_b3") + v("svi_b4") + v("svi_b5") + v("svi_b6") + v("svi_b7") + v("svi_b8") + v("svi_b9") + v("svi_b10"); var svfA = v("svf_a1_admin") + v("svf_a1_tech") + v("svf_a2_admin") + v("svf_a2_tech") + v("svf_a3"); var logT = v("log_a1") + v("log_b1") + v("log_c1"); var psvfT = v("psvf_a") + v("psvf_b1") + v("psvf_b2") + v("psvf_b3") + v("psvf_b4") + v("psvf_b5") + v("psvf_c1") + v("psvf_c2") + v("psvf_c3") + v("psvf_d1") + v("psvf_d2") + v("psvf_d3") + v("psvf_d4"); var psviT = v("psvi_a") + v("psvi_b1") + v("psvi_b2") + v("psvi_b3") + v("psvi_b4") + v("psvi_b5") + v("psvi_c1") + v("psvi_c2") + v("psvi_c3") + v("psvi_d1") + v("psvi_d2") + v("psvi_d3") + v("psvi_d4"); var a4rep = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a4_admin_p1")) : (v("rep_a4_tech_p2") + v("rep_a4_admin_p2")); var repA = v("rep_a1") + v("rep_a2") + v("rep_a3") + a4rep + v("rep_a5") + v("rep_a6") + v("rep_a7"); var repB = v("rep_b1") + v("rep_b2") + v("rep_b3") + v("rep_b4"); var repT = repA + repB; document.getElementById("sum_svi_a").textContent = sviA; document.getElementById("sum_svi_b").textContent = sviB; document.getElementById("sum_svf_a").textContent = svfA; document.getElementById("sum_log").textContent = logT; document.getElementById("sum_rep").textContent = repT; document.getElementById("sum_psvf").textContent = psvfT; document.getElementById("sum_psvi").textContent = psviT; document.getElementById("sum_soft").textContent = sviB; var sviA1 = v("svi_a1") + v("svi_a2"); var sviA23 = v("svi_a3") + v("svi_a4"); var svfA1 = v("svf_a1_admin") + v("svf_a1_tech"); var svfA23 = v("svf_a2_admin") + v("svf_a2_tech") + v("svf_a3"); var prj1 = fmt(sviA1 / 30 * 15); var prj2 = fmt(sviA23 / 20 * 15); var prj3 = fmt(svfA1 / 30 * 15); var prj4 = fmt(svfA23 / 60 * 15); var lr1 = fmt(logT / 70 * 20); var pr11_svfb = v("svf_b1"); var pr11_svib = fmt(sviB / 5); var pr11 = fmt(pr11_svfb + pr11_svib); var b3926 = fmt(prj1 + prj2 + prj3 + prj4 + lr1 + pr11); document.getElementById("r_prj1r").textContent = sviA1; document.getElementById("r_prj1").textContent = prj1; document.getElementById("r_prj2r").textContent = sviA23; document.getElementById("r_prj2").textContent = prj2; document.getElementById("r_prj3r").textContent = svfA1; document.getElementById("r_prj3").textContent = prj3; document.getElementById("r_prj4r").textContent = svfA23; document.getElementById("r_prj4").textContent = prj4; document.getElementById("r_lr1r").textContent = logT; document.getElementById("r_lr1").textContent = lr1; document.getElementById("r_pr11_svfb_raw").textContent = pr11_svfb; document.getElementById("r_pr11_svfb").textContent = pr11_svfb + " / 10"; document.getElementById("r_pr11_svib_raw").textContent = sviB; document.getElementById("r_pr11_svib").textContent = pr11_svib + " / 10"; document.getElementById("r_pr11").textContent = pr11 + " / 20"; document.getElementById("sum_3926_total").textContent = b3926; var g1 = getGrade(b3926); var gb1 = document.getElementById("sum_3926_grade"); gb1.textContent = g1.g; gb1.className = "grade-pill " + g1.cls; var tr1_lapa = fmt(repA / 2); var tr1_lapb = fmt(repB / 40 * 10); var tr1_svfc = v("svf_c1"); var tr1_logc = v("log_c1"); var tr1 = fmt(tr1_lapa + tr1_lapb + tr1_svfc + tr1_logc); var pr11_pbt = fmt((psvfT + psviT) / 200 * 20); var pr12 = fmt(sviB / 50 * 10); var b3946 = fmt(tr1 + pr11_pbt + pr12); document.getElementById("r2_tr1_lapa_raw").textContent = repA; document.getElementById("r2_tr1_lapa").textContent = tr1_lapa + " / 40"; document.getElementById("r2_tr1_lapb_raw").textContent = repB; document.getElementById("r2_tr1_lapb").textContent = tr1_lapb + " / 10"; document.getElementById("r2_tr1_svfc_raw").textContent = tr1_svfc; document.getElementById("r2_tr1_svfc").textContent = tr1_svfc + " / 10"; document.getElementById("r2_tr1_logc_raw").textContent = tr1_logc; document.getElementById("r2_tr1_logc").textContent = tr1_logc + " / 10"; document.getElementById("r2_tr1").textContent = tr1 + " / 70"; document.getElementById("r2_pr11_psvf_raw").textContent = psvfT; document.getElementById("r2_pr11_psvf").textContent = psvfT; document.getElementById("r2_pr11_psvi_raw").textContent = psviT; document.getElementById("r2_pr11_psvi").textContent = psviT; document.getElementById("r2_pr11").textContent = pr11_pbt + " / 20"; document.getElementById("r2_pr12r").textContent = sviB; document.getElementById("r2_pr12").textContent = pr12; document.getElementById("sum_3946_total").textContent = b3946; var g2 = getGrade(b3946); var gb2 = document.getElementById("sum_3946_grade"); gb2.textContent = g2.g; gb2.className = "grade-pill " + g2.cls; }
+function calcSummary() { document.getElementById("s_nama").textContent = document.getElementById("nama_pelajar").value || "\u2014"; document.getElementById("s_matrik").textContent = document.getElementById("no_matrik").value || "\u2014"; document.getElementById("s_kursus").textContent = document.getElementById("kursus").value || "\u2014"; document.getElementById("s_sesi").textContent = document.getElementById("sesi").value + " Sem " + document.getElementById("semester").value; document.getElementById("s_svf").textContent = document.getElementById("svf_name").value || "\u2014"; document.getElementById("s_svi").textContent = document.getElementById("svi_name").value || "\u2014"; document.getElementById("s_org").textContent = document.getElementById("organisasi").value || "\u2014"; document.getElementById("s_svi_rating").textContent = document.getElementById("svi_rating").value || "\u2014"; document.getElementById("s_svf_rating").textContent = document.getElementById("svf_rating").value || "\u2014"; document.getElementById("s_svf_status").textContent = document.getElementById("svf_status").value || "\u2014"; var sviA = v("svi_a1") + v("svi_a2") + v("svi_a3") + v("svi_a4"); var sviB = v("svi_b1") + v("svi_b2") + v("svi_b3") + v("svi_b4") + v("svi_b5") + v("svi_b6") + v("svi_b7") + v("svi_b8") + v("svi_b9") + v("svi_b10"); var svfA = v("svf_a1_admin") + v("svf_a1_tech") + v("svf_a2_admin") + v("svf_a2_tech") + v("svf_a3"); var logT = v("log_a1") + v("log_b1") + v("log_c1"); var psvfT = v("psvf_a") + v("psvf_b1") + v("psvf_b2") + v("psvf_b3") + v("psvf_b4") + v("psvf_b5") + v("psvf_c1") + v("psvf_c2") + v("psvf_c3") + v("psvf_d1") + v("psvf_d2") + v("psvf_d3") + v("psvf_d4"); var psviT = v("psvi_a") + v("psvi_b1") + v("psvi_b2") + v("psvi_b3") + v("psvi_b4") + v("psvi_b5") + v("psvi_c1") + v("psvi_c2") + v("psvi_c3") + v("psvi_d1") + v("psvi_d2") + v("psvi_d3") + v("psvi_d4"); var a4rep = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a4_admin_p1")) : (v("rep_a4_tech_p2") + v("rep_a4_admin_p2")); var repA = v("rep_a1") + v("rep_a2") + v("rep_a3") + a4rep + v("rep_a5") + v("rep_a6") + v("rep_a7"); var repB = v("rep_b1") + v("rep_b2") + v("rep_b3") + v("rep_b4"); var repT = repA + repB; document.getElementById("sum_svi_a").textContent = sviA; document.getElementById("sum_svi_b").textContent = sviB; document.getElementById("sum_svf_a").textContent = svfA; document.getElementById("sum_log").textContent = logT; document.getElementById("sum_rep").textContent = repT; document.getElementById("sum_psvf").textContent = psvfT; document.getElementById("sum_psvi").textContent = psviT; document.getElementById("sum_soft").textContent = sviB; var sviA1 = v("svi_a1") + v("svi_a2"); var sviA23 = v("svi_a3") + v("svi_a4"); var svfA1 = v("svf_a1_admin") + v("svf_a1_tech"); var svfA23 = v("svf_a2_admin") + v("svf_a2_tech") + v("svf_a3"); var prj1 = fmt(sviA1 / 30 * 15); var prj2 = fmt(sviA23 / 20 * 15); var prj3 = fmt(svfA1 / 30 * 15); var prj4 = fmt(svfA23 / 60 * 15); var lr1 = fmt(logT / 70 * 20); var pr11_svfb = v("svf_b1"); var pr11_svib = fmt(sviB / 5); var pr11 = fmt(pr11_svfb + pr11_svib); var b3926 = fmt(prj1 + prj2 + prj3 + prj4 + lr1 + pr11); document.getElementById("r_prj1r").textContent = sviA1; document.getElementById("r_prj1").textContent = prj1; document.getElementById("r_prj2r").textContent = sviA23; document.getElementById("r_prj2").textContent = prj2; document.getElementById("r_prj3r").textContent = svfA1; document.getElementById("r_prj3").textContent = prj3; document.getElementById("r_prj4r").textContent = svfA23; document.getElementById("r_prj4").textContent = prj4; document.getElementById("r_lr1r").textContent = logT; document.getElementById("r_lr1").textContent = lr1; document.getElementById("r_pr11_svfb_raw").textContent = pr11_svfb; document.getElementById("r_pr11_svfb").textContent = pr11_svfb + " / 10"; document.getElementById("r_pr11_svib_raw").textContent = sviB; document.getElementById("r_pr11_svib").textContent = pr11_svib + " / 10"; document.getElementById("r_pr11").textContent = pr11 + " / 20"; document.getElementById("sum_3926_total").textContent = b3926; var g1 = getGrade(b3926); var gb1 = document.getElementById("sum_3926_grade"); gb1.textContent = g1.g; gb1.className = "grade-pill " + g1.cls; var tr1_lapa = fmt(repA / 2); var tr1_lapb = fmt(repB / 40 * 10); var tr1_svfc = v("svf_c1"); var tr1_logc = v("log_c1"); var tr1 = fmt(tr1_lapa + tr1_lapb + tr1_svfc + tr1_logc); var pr11_pbt = fmt((psvfT + psviT) / 200 * 20); var pr12 = fmt(sviB / 50 * 10); var b3946 = fmt(tr1 + pr11_pbt + pr12); document.getElementById("r2_tr1_lapa_raw").textContent = repA; document.getElementById("r2_tr1_lapa").textContent = tr1_lapa + " / 40"; document.getElementById("r2_tr1_lapb_raw").textContent = repB; document.getElementById("r2_tr1_lapb").textContent = tr1_lapb + " / 10"; document.getElementById("r2_tr1_svfc_raw").textContent = tr1_svfc; document.getElementById("r2_tr1_svfc").textContent = tr1_svfc + " / 10"; document.getElementById("r2_tr1_logc_raw").textContent = tr1_logc; document.getElementById("r2_tr1_logc").textContent = tr1_logc + " / 10"; document.getElementById("r2_tr1").textContent = tr1 + " / 70"; document.getElementById("r2_pr11_psvf_raw").textContent = psvfT; document.getElementById("r2_pr11_psvf").textContent = psvfT; document.getElementById("r2_pr11_psvi_raw").textContent = psviT; document.getElementById("r2_pr11_psvi").textContent = psviT; document.getElementById("r2_pr11").textContent = pr11_pbt + " / 20"; document.getElementById("r2_pr12r").textContent = sviB; document.getElementById("r2_pr12").textContent = pr12; document.getElementById("sum_3946_total").textContent = b3946; var g2 = getGrade(b3946); var gb2 = document.getElementById("sum_3946_grade"); gb2.textContent = g2.g; gb2.className = "grade-pill " + g2.cls; refreshApprovalStatusBar(); }
 function exportCSV() { var nama = document.getElementById("nama_pelajar").value || ""; var matrik = document.getElementById("no_matrik").value || ""; var sviA = v("svi_a1") + v("svi_a2") + v("svi_a3") + v("svi_a4"); var sviB = v("svi_b1") + v("svi_b2") + v("svi_b3") + v("svi_b4") + v("svi_b5") + v("svi_b6") + v("svi_b7") + v("svi_b8") + v("svi_b9") + v("svi_b10"); var logT = v("log_a1") + v("log_b1") + v("log_c1"); var psvfT = v("psvf_a") + v("psvf_b1") + v("psvf_b2") + v("psvf_b3") + v("psvf_b4") + v("psvf_b5") + v("psvf_c1") + v("psvf_c2") + v("psvf_c3") + v("psvf_d1") + v("psvf_d2") + v("psvf_d3") + v("psvf_d4"); var psviT = v("psvi_a") + v("psvi_b1") + v("psvi_b2") + v("psvi_b3") + v("psvi_b4") + v("psvi_b5") + v("psvi_c1") + v("psvi_c2") + v("psvi_c3") + v("psvi_d1") + v("psvi_d2") + v("psvi_d3") + v("psvi_d4"); var a4rep = pilihan === 1 ? (v("rep_a4_tech_p1") + v("rep_a4_admin_p1")) : (v("rep_a4_tech_p2") + v("rep_a4_admin_p2")); var repT = v("rep_a1") + v("rep_a2") + v("rep_a3") + a4rep + v("rep_a5") + v("rep_a6") + v("rep_a7") + v("rep_b1") + v("rep_b2") + v("rep_b3") + v("rep_b4"); var rows = [["Field", "Value"], ["Nama Pelajar", nama], ["No Matrik", matrik], ["Kursus", document.getElementById("kursus").value], ["Semester", document.getElementById("semester").value], ["Sesi", document.getElementById("sesi").value], ["SVF", document.getElementById("svf_name").value], ["SVI", document.getElementById("svi_name").value], ["Organisasi", document.getElementById("organisasi").value], ["Pilihan Tugasan", "Pilihan " + pilihan], ["---", "--- SVI ---"], ["SVI A1", v("svi_a1")], ["SVI A2", v("svi_a2")], ["SVI A3", v("svi_a3")], ["SVI A4", v("svi_a4")], ["SVI Bah A", sviA], ["SVI Bah B", sviB], ["SVI Total", sviA + sviB], ["SVI Penilaian", document.getElementById("svi_rating").value], ["---", "--- SVF ---"], ["SVF A1 Admin", v("svf_a1_admin")], ["SVF A1 Tech", v("svf_a1_tech")], ["SVF A2 Admin", v("svf_a2_admin")], ["SVF A2 Tech", v("svf_a2_tech")], ["SVF A3", v("svf_a3")], ["SVF B", v("svf_b1")], ["SVF Komitmen", v("svf_c1")], ["SVF Penilaian", document.getElementById("svf_rating").value], ["SVF Status", document.getElementById("svf_status").value], ["---", "--- Logbook ---"], ["Logbook Kandungan", v("log_a1")], ["Logbook Persembahan", v("log_b1")], ["Logbook Penghantaran", v("log_c1")], ["Logbook Total", logT], ["---", "--- Pembentangan ---"], ["Pembentangan SVF", psvfT], ["Pembentangan SVI", psviT], ["---", "--- Laporan LI ---"], ["Laporan LI Total", repT], ["---", "--- Gred Akhir ---"], ["BITU3926 Markah", document.getElementById("sum_3926_total").textContent], ["BITU3926 Gred", document.getElementById("sum_3926_grade").textContent], ["BITU3946 Markah", document.getElementById("sum_3946_total").textContent], ["BITU3946 Gred", document.getElementById("sum_3946_grade").textContent]]; var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\n"); var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "LI_" + (matrik || "pelajar") + "_" + new Date().toISOString().slice(0, 10) + ".csv"; a.click(); }
 function resetAll() { if (!confirm("Reset semua data? Tindakan ini tidak boleh diundo.")) return; document.querySelectorAll("input[type=number]").forEach(function(i) { i.value = 0; }); document.querySelectorAll("input[type=text]").forEach(function(i) { i.value = ""; }); document.querySelectorAll("textarea").forEach(function(i) { i.value = ""; }); document.querySelectorAll("select").forEach(function(i) { i.selectedIndex = 0; }); document.querySelectorAll("input[type=hidden]").forEach(function(i) { i.value = ""; }); document.querySelectorAll(".radio-opt").forEach(function(i) { i.classList.remove("selected"); }); pilihan = 1; hadir = 1; document.getElementById("opt-p1").classList.add("selected"); document.getElementById("rep_p1_wrap").style.display = ""; document.getElementById("rep_p2_wrap").style.display = "none"; ['svi','svf','logbook','presentation','report'].forEach(function(sec) { var cb = document.getElementById(sec + '-confirm-cb'); if (cb) cb.checked = false; updateSimpanBtn(sec); }); calcSVI(); calcSVF(); calcLog(); calcPres(); calcReport(); showTab("info"); currentStudentId = null; setSaveStatus(''); }
 
@@ -466,6 +467,7 @@ function updateSimpanBtn(section) {
 
 function onConfirmChange(section) {
   updateSimpanBtn(section);
+  refreshApprovalStatusBar();
   clearTimeout(saveTimer);
   saveAll();
 }
@@ -516,6 +518,18 @@ async function saveAll() {
       .upsert(upserts, { onConflict: 'student_id,evaluator_email,section' });
 
     if (mResp.error) throw mResp.error;
+
+    // Auto-reset approval status: if AJK_LI/ADMIN edits an approved student, reset to 'submitted'
+    var _saveSession = getSession();
+    var _saveEff = getEffectiveRole(_saveSession ? _saveSession.roles : []);
+    if (currentStudentId && _studentApprovalStatus.status === 'approved' &&
+        (_saveEff === 'ADMIN' || _saveEff === 'AJK_LI')) {
+      await sb.from('students').update({ approval_status: 'submitted' }).eq('id', currentStudentId);
+      _studentApprovalStatus.status = 'submitted';
+      refreshApprovalStatusBar();
+      showApprovalToast("Status kelulusan telah ditetapkan semula kepada 'Menunggu Kelulusan'.", 'warning');
+    }
+
     setSaveStatus('saved');
   } catch(e) {
     console.error('Save error:', e);
@@ -1080,19 +1094,19 @@ async function loadUruspelajar() {
 
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
-  var query = sb.from('students').select('id, matric_no, name, kursus, svf_email').order('name');
+  var query = sb.from('students').select('id, matric_no, name, kursus, svf_email, approval_status').order('name');
   if (eff === 'PENSYARAH' && session) {
     query = query.eq('svf_email', session.email);
   }
   var stResp = await query;
   if (stResp.error) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red;padding:1.5rem">Ralat memuatkan data.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:red;padding:1.5rem">Ralat memuatkan data.</td></tr>';
     return;
   }
   var students = stResp.data || [];
 
   if (!students.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pelajar. Muat naik senarai pelajar terlebih dahulu.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pelajar. Muat naik senarai pelajar terlebih dahulu.</td></tr>';
     return;
   }
 
@@ -1114,6 +1128,15 @@ async function loadUruspelajar() {
 
     var mid = escHtml(s.matric_no);
     var sname = escHtml(s.name || '');
+    var apSt = s.approval_status || 'draft';
+    var approvalBadge;
+    if (apSt === 'approved') {
+      approvalBadge = '<span class="approval-badge-approved" style="font-size:11px;padding:2px 9px">&#10003; Diluluskan</span>';
+    } else if (apSt === 'submitted') {
+      approvalBadge = '<span class="approval-badge-submitted" style="font-size:11px;padding:2px 9px">Menunggu Kelulusan</span>';
+    } else {
+      approvalBadge = '<span class="approval-badge-draft" style="font-size:11px;padding:2px 9px">Draf</span>';
+    }
     var actionBtns = showDelete
       ? '<button class="btn-sm btn-sm-edit" onclick="openEditPelajarModal(' + i + ')" style="margin-right:4px">Edit</button>' +
         '<button class="btn-sm btn-sm-del" onclick="deleteStudent(\'' + mid + '\',\'' + sname.replace(/'/g, "\\'") + '\')">Padam</button>'
@@ -1124,6 +1147,7 @@ async function loadUruspelajar() {
       '<td>' + sname + '</td>' +
       '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
       '<td>' + svfBadge + '</td>' +
+      '<td>' + approvalBadge + '</td>' +
       '<td><select class="svf-assign-select" onchange="assignSVF(\'' + mid + '\',this.value)" style="font-size:12px;padding:4px 6px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit;max-width:220px">' + opts + '</select></td>' +
       '<td>' + actionBtns + '</td>' +
       '</tr>';
@@ -1773,6 +1797,9 @@ async function loadStudentForEval(student) {
   if (document.getElementById('svi_name'))     document.getElementById('svi_name').value     = student.svi_name || '';
   _suppressSave = false;
 
+  // Reset approval status before loading new student
+  _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
+
   // Load marks for this student
   setSaveStatus('saving');
   try {
@@ -1786,7 +1813,26 @@ async function loadStudentForEval(student) {
       mResp.data.forEach(function(row) { populateSection(row.section, row.data); });
       _suppressSave = false;
     }
+
+    // Fetch approval status for this student
+    var stApprovalResp = await sb.from('students')
+      .select('approval_status, submitted_at, approved_at, approved_by')
+      .eq('id', student.id)
+      .single();
+    if (!stApprovalResp.error && stApprovalResp.data) {
+      _studentApprovalStatus = {
+        status:       stApprovalResp.data.approval_status || 'draft',
+        submitted_at: stApprovalResp.data.submitted_at    || null,
+        approved_at:  stApprovalResp.data.approved_at     || null,
+        approved_by:  stApprovalResp.data.approved_by     || null
+      };
+    }
+
     setSaveStatus('saved');
+
+    // Apply lock based on role + approval status
+    applyApprovalLock();
+    refreshApprovalStatusBar();
 
     // Load and render audit trail
     var auditRows = await loadAuditTrail(student.id);
@@ -1807,14 +1853,20 @@ async function loadStudentForEval(student) {
 
 function goBackToDashboard() {
   currentStudent = null;
+  _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
   // Hide SVI/Org indicator
   var sviOrgEl = document.getElementById('svi-org-indicator');
   if (sviOrgEl) sviOrgEl.style.display = 'none';
+  // Hide approval status bar
+  var appBar = document.getElementById('approval-status-bar');
+  if (appBar) appBar.style.display = 'none';
   // Reset all confirmation badges
   ['svi', 'svf', 'logbook', 'presentation', 'report'].forEach(function(sec) {
     var badge = document.getElementById(sec + '-confirm-badge');
     if (badge) badge.style.display = 'none';
   });
+  // Unlock any locked inputs when navigating away
+  applyApprovalLock();
   showDefaultSidebar();
   showTab('dashboard');
 }
@@ -1919,6 +1971,187 @@ function toggleAuditTrail() {
 }
 
 // ===== END AUDIT TRAIL =====
+
+// ===== APPROVAL WORKFLOW =====
+
+function showApprovalToast(msg, type) {
+  var existing = document.getElementById('approval-toast');
+  if (existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.id = 'approval-toast';
+  var bg = type === 'success' ? '#065f46' : type === 'warning' ? '#92400e' : '#1e3a8a';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + bg + ';color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:99998;box-shadow:0 4px 20px rgba(0,0,0,.3);max-width:90vw;text-align:center';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
+}
+
+function formatApprovalDateTime(isoStr) {
+  if (!isoStr) return '—';
+  var d = new Date(isoStr);
+  return d.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' })
+       + ' ' + d.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' });
+}
+
+function countConfirmedSections() {
+  return ['svi', 'svf', 'logbook', 'presentation', 'report'].filter(function(sec) {
+    return getCbVal(sec + '-confirm-cb');
+  }).length;
+}
+
+// applyApprovalLock() — disables/enables all mark inputs based on approval status + role.
+// PENSYARAH with status 'submitted' or 'approved': all eval inputs disabled.
+// AJK_LI / ADMIN: never disabled (function returns early).
+// Null-safe: checks elements exist before modifying.
+function applyApprovalLock() {
+  var session = getSession();
+  var eff = getEffectiveRole(session ? session.roles : []);
+
+  // ADMIN and AJK_LI are never locked out
+  if (eff === 'ADMIN' || eff === 'AJK_LI') return;
+
+  var status = (_studentApprovalStatus && _studentApprovalStatus.status) || 'draft';
+  var shouldLock = (status === 'submitted' || status === 'approved');
+
+  var evalPageIds = ['page-svi', 'page-svf', 'page-logbook', 'page-presentation', 'page-report', 'page-info'];
+  evalPageIds.forEach(function(pageId) {
+    var page = document.getElementById(pageId);
+    if (!page) return;
+    var inputs = page.querySelectorAll('input[type=number], input[type=text], input[type=checkbox], input[type=radio], textarea, select');
+    inputs.forEach(function(el) {
+      el.disabled = shouldLock;
+    });
+  });
+}
+
+// refreshApprovalStatusBar() — renders the approval status section in Ringkasan & Gred.
+// Must be called whenever approval status or confirmation state may have changed.
+function refreshApprovalStatusBar() {
+  var barEl = document.getElementById('approval-status-bar');
+  if (!barEl) return;
+
+  if (!currentStudent) {
+    barEl.style.display = 'none';
+    return;
+  }
+
+  var session = getSession();
+  var eff = getEffectiveRole(session ? session.roles : []);
+  var status = (_studentApprovalStatus && _studentApprovalStatus.status) || 'draft';
+  var submittedAt = _studentApprovalStatus ? _studentApprovalStatus.submitted_at : null;
+  var approvedAt  = _studentApprovalStatus ? _studentApprovalStatus.approved_at  : null;
+  var approvedBy  = _studentApprovalStatus ? _studentApprovalStatus.approved_by  : null;
+
+  var isPensyarah = (eff === 'PENSYARAH');
+  var html = '<div class="approval-status-bar">';
+
+  if (status === 'draft') {
+    html += '<span class="approval-badge-draft">Draf</span>';
+    if (isPensyarah) {
+      var confirmed = countConfirmedSections();
+      var complete = (confirmed === 5);
+      html += '<span class="approval-info">Semua bahagian perlu disahkan sebelum menghantar.</span>';
+      html += '<div class="approval-actions">';
+      html += '<button class="btn-approve" onclick="submitStudent()"' + (complete ? '' : ' disabled') + '>Hantar untuk Kelulusan</button>';
+      html += '<span class="approval-lock-message">' + confirmed + '/5 bahagian telah disahkan</span>';
+      html += '</div>';
+    } else {
+      html += '<span class="approval-info">Markah belum dihantar untuk kelulusan.</span>';
+    }
+  } else if (status === 'submitted') {
+    html += '<span class="approval-badge-submitted">Menunggu Kelulusan</span>';
+    html += '<span class="approval-info">Dihantar pada: ' + formatApprovalDateTime(submittedAt) + '</span>';
+    if (isPensyarah) {
+      html += '<p class="approval-lock-message">Markah anda telah dihantar. Hubungi AJK LI untuk sebarang perubahan.</p>';
+    } else {
+      html += '<div class="approval-actions">';
+      html += '<button class="btn-approve" onclick="approveStudent()">&#10003; Luluskan</button>';
+      html += '<button class="btn-unlock-edit" onclick="unlockForEdit()">Edit</button>';
+      html += '</div>';
+    }
+  } else if (status === 'approved') {
+    html += '<span class="approval-badge-approved">&#10003; Diluluskan</span>';
+    html += '<span class="approval-info">Diluluskan pada: ' + formatApprovalDateTime(approvedAt) + ' &middot; Diluluskan oleh: ' + escHtml(approvedBy || '—') + '</span>';
+    if (isPensyarah) {
+      html += '<p class="approval-lock-message">Markah telah diluluskan dan dikunci.</p>';
+    } else {
+      html += '<div class="approval-actions">';
+      html += '<button class="btn-unlock-edit" onclick="unlockForEdit()">Edit</button>';
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+  barEl.innerHTML = html;
+  barEl.style.display = 'block';
+}
+
+// submitStudent() — PENSYARAH submits marks for approval.
+// Requires all 5 sections confirmed. Locks form after submit.
+async function submitStudent() {
+  var sections = collectSections();
+  if (!isStudentComplete(sections)) {
+    var unconfirmed = ['svi', 'svf', 'logbook', 'presentation', 'report'].filter(function(sec) {
+      return !(sections[sec] && sections[sec].confirmed);
+    });
+    var labels = { svi: 'Penyelia Industri (SVI)', svf: 'Penyelia Fakulti (SVF)',
+                   logbook: 'e-Logbook', presentation: 'Pembentangan', report: 'Laporan LI' };
+    alert('Bahagian berikut belum disahkan:\n' + unconfirmed.map(function(s) { return '• ' + labels[s]; }).join('\n'));
+    return;
+  }
+  if (!currentStudentId) { alert('Tiada pelajar dipilih.'); return; }
+
+  var resp = await sb.from('students')
+    .update({ approval_status: 'submitted', submitted_at: new Date().toISOString() })
+    .eq('id', currentStudentId);
+  if (resp.error) { alert('Ralat menghantar: ' + resp.error.message); return; }
+
+  _studentApprovalStatus.status = 'submitted';
+  _studentApprovalStatus.submitted_at = new Date().toISOString();
+  applyApprovalLock();
+  refreshApprovalStatusBar();
+  showApprovalToast('Markah telah dihantar untuk kelulusan.', 'success');
+}
+
+// approveStudent() — AJK_LI / ADMIN approves and locks the student's marks.
+async function approveStudent() {
+  if (!currentStudentId) { alert('Tiada pelajar dipilih.'); return; }
+  var session = getSession();
+  var now = new Date().toISOString();
+
+  var resp = await sb.from('students')
+    .update({ approval_status: 'approved', approved_at: now, approved_by: session ? session.email : '' })
+    .eq('id', currentStudentId);
+  if (resp.error) { alert('Ralat meluluskan: ' + resp.error.message); return; }
+
+  _studentApprovalStatus.status = 'approved';
+  _studentApprovalStatus.approved_at = now;
+  _studentApprovalStatus.approved_by = session ? session.email : '';
+  applyApprovalLock();
+  refreshApprovalStatusBar();
+  showApprovalToast('Markah pelajar telah diluluskan dan dikunci.', 'success');
+
+  // Refresh Urus Pelajar list if currently visible
+  var upPage = document.getElementById('page-uruspelajar');
+  if (upPage && upPage.classList.contains('active')) loadUruspelajar();
+}
+
+// unlockForEdit() — AJK_LI / ADMIN resets approval to 'submitted' to allow editing.
+async function unlockForEdit() {
+  if (!currentStudentId) return;
+
+  var resp = await sb.from('students')
+    .update({ approval_status: 'submitted' })
+    .eq('id', currentStudentId);
+  if (resp.error) { alert('Ralat membuka semula: ' + resp.error.message); return; }
+
+  _studentApprovalStatus.status = 'submitted';
+  applyApprovalLock();
+  refreshApprovalStatusBar();
+  showApprovalToast('Markah dibuka semula untuk pengeditan.', 'info');
+}
+
+// ===== END APPROVAL WORKFLOW =====
 
 // ===== END STUDENT EVAL WORKFLOW =====
 
