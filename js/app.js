@@ -10,6 +10,55 @@ var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
 var _currentEvalEmail = null; // evaluator email used for save/load marks
 
+// ===== PASSWORD HASHING =====
+async function hashPassword(pw) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+// ===== END PASSWORD HASHING =====
+
+// ===== SESSION TIMEOUT =====
+var _idleTimer = null;
+var _idleListenerAttached = false;
+var IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minit
+
+function resetIdleTimer() {
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(function() {
+    var toast = document.getElementById('idle-toast');
+    if (toast) { toast.style.display = 'flex'; }
+    setTimeout(function() { doLogout(); }, 3000);
+  }, IDLE_TIMEOUT_MS);
+}
+
+function startIdleWatch() {
+  if (!document.getElementById('idle-toast')) {
+    var toast = document.createElement('div');
+    toast.id = 'idle-toast';
+    toast.style.cssText = 'display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e3a8a;color:#fff;padding:14px 28px;border-radius:10px;font-size:15px;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.35);align-items:center;gap:10px;';
+    toast.innerHTML = '<span>&#x23F1;</span> <span>Sesi tamat kerana tidak aktif. Log masuk semula...</span>';
+    document.body.appendChild(toast);
+  }
+  if (!_idleListenerAttached) {
+    ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(function(evt) {
+      document.addEventListener(evt, resetIdleTimer, { passive: true });
+    });
+    _idleListenerAttached = true;
+  }
+  resetIdleTimer();
+}
+
+function stopIdleWatch() {
+  clearTimeout(_idleTimer);
+  if (_idleListenerAttached) {
+    ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(function(evt) {
+      document.removeEventListener(evt, resetIdleTimer);
+    });
+    _idleListenerAttached = false;
+  }
+}
+// ===== END SESSION TIMEOUT =====
+
 // ===== AUTH =====
 function getEffectiveRole(roles) {
   if (!roles || roles.length === 0) return 'PENSYARAH';
@@ -41,13 +90,14 @@ async function doLogin() {
   btn.textContent = 'Mengesahkan...';
 
   try {
+    var passHash = await hashPassword(pass);
     var resp = await sb.from('users')
       .select('email, full_name, roles, is_active, password_hash')
       .eq('email', email)
       .single();
 
     var user = resp.data;
-    if (resp.error || !user || user.password_hash !== pass || user.is_active === false) {
+    if (resp.error || !user || user.password_hash !== passHash || user.is_active === false) {
       errEl.textContent = 'E-mel atau kata laluan tidak sah.';
       errEl.style.display = 'block';
       return;
@@ -66,6 +116,7 @@ async function doLogin() {
 }
 
 function doLogout() {
+  stopIdleWatch();
   localStorage.removeItem('li_session');
   location.reload();
 }
@@ -88,6 +139,7 @@ function showApp(user) {
   }
 
   applyRoleRestrictions(user.roles);
+  startIdleWatch();
   showTab('dashboard');
 }
 
@@ -589,8 +641,9 @@ async function addUser() {
     errEl.textContent = 'Pilih sekurang-kurangnya satu peranan.'; errEl.style.display = 'block'; return;
   }
 
+  var pwHash = await hashPassword(pw);
   var resp = await sb.from('users').insert({
-    full_name: name, email: email, password_hash: pw, roles: roles, is_active: true
+    full_name: name, email: email, password_hash: pwHash, roles: roles, is_active: true
   });
   if (resp.error) {
     errEl.textContent = resp.error.code === '23505' ? 'E-mel sudah digunakan.' : 'Ralat: ' + resp.error.message;
@@ -698,7 +751,8 @@ async function saveResetPw() {
   if (!pw || pw.length < 4) {
     errEl.textContent = 'Kata laluan mestilah sekurang-kurangnya 4 aksara.'; errEl.style.display = 'block'; return;
   }
-  var resp = await sb.from('users').update({ password_hash: pw }).eq('email', email);
+  var pwHash = await hashPassword(pw);
+  var resp = await sb.from('users').update({ password_hash: pwHash }).eq('email', email);
   if (resp.error) {
     errEl.textContent = 'Ralat: ' + resp.error.message; errEl.style.display = 'block'; return;
   }
@@ -860,13 +914,14 @@ async function confirmUploadPensyarah() {
   btn.disabled = true; btn.textContent = 'Memproses...';
 
   var success = 0, skipped = 0, errors = 0;
+  var defaultHash = await hashPassword('utem1234');
   for (var i = 0; i < _uploadPensyarahRows.length; i++) {
     var r = _uploadPensyarahRows[i];
     if (r._status === 'invalid')                        { skipped++; continue; }
     if (r._status === 'konflik' && !includeConflicts)   { skipped++; continue; }
     var resp = await sb.from('users').upsert({
       full_name: r.full_name, no_staf: r.no_staf, jabatan: r.jabatan,
-      email: r.email, password_hash: 'utem1234', roles: ['PENSYARAH'], is_active: true
+      email: r.email, password_hash: defaultHash, roles: ['PENSYARAH'], is_active: true
     }, { onConflict: 'email' });
     if (resp.error) { errors++; } else { success++; }
   }
@@ -1291,9 +1346,10 @@ async function saveAddPensyarah() {
     errEl.textContent = 'E-mel mesti berakhir dengan @utem.edu.my.'; errEl.style.display = 'block'; return;
   }
 
+  var pwHash = await hashPassword(pw);
   var resp = await sb.from('users').insert({
     full_name: name, no_staf: noStaf, jabatan: jabatan,
-    email: email, password_hash: pw, roles: ['PENSYARAH'], is_active: true
+    email: email, password_hash: pwHash, roles: ['PENSYARAH'], is_active: true
   });
   if (resp.error) {
     errEl.textContent = resp.error.code === '23505' ? 'E-mel sudah digunakan.' : 'Ralat: ' + resp.error.message;
