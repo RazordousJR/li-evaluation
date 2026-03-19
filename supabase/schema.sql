@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   id           UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
   full_name    TEXT        NOT NULL,
   email        TEXT        UNIQUE NOT NULL,
-  password_hash TEXT       NOT NULL,   -- stored as plaintext for now; hash in production
+  password_hash TEXT       NOT NULL,   -- SHA-256 hex digest; use encode(digest(pw,'sha256'),'hex') in SQL or hashPassword() in JS
   roles        TEXT[]      NOT NULL DEFAULT '{PENSYARAH}',
   is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
   no_staf      TEXT,
