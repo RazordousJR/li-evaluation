@@ -369,7 +369,7 @@ BITU3946 OBE components:
   - Ringkasan display IDs: `r2_pr12r`, `r2_pr12`
 - BITU3946 total: `tr1 + pr11_pbt + pr12` (70 + 20 + 10 = 100)
 
-## Security (v4.11)
+## Security (v4.14)
 - **Password Hashing**: `hashPassword(pw)` — async SHA-256 via Web Crypto API (`crypto.subtle.digest`)
   - All password saves (login compare, reset PW, add user, add pensyarah, bulk upload) go through `hashPassword()` first
   - Default password `'utem1234'` for bulk upload is hashed before upsert
@@ -381,12 +381,31 @@ BITU3946 OBE components:
   - Toast element: `#idle-toast` injected into DOM by `startIdleWatch()`
 - **Migration**: Run pgcrypto migration in `supabase/schema.sql` to hash existing plaintext passwords in DB
 
+## Row-Level Security (v4.14)
+- **Approach**: Custom session variable RLS — app does NOT use Supabase Auth (`auth.uid()` unavailable)
+- **Mechanism**: Before any major Supabase query, JS calls `set_app_session()` RPC to write the user's email + effective role into connection-level PostgreSQL GUCs:
+  - `app.user_email` — current user's email
+  - `app.user_role` — effective role: `ADMIN` | `AJK_LI` | `PENSYARAH`
+- **Helper SQL functions** (defined in `supabase/schema.sql`):
+  - `get_session_email()` — returns `current_setting('app.user_email', true)`
+  - `get_session_role()` — returns `current_setting('app.user_role', true)`
+  - `set_app_session(p_email TEXT, p_role TEXT)` — SECURITY DEFINER RPC that calls `set_config()` for both GUCs
+- **JS function**: `setSupabaseSession()` — async; calls `getSession()` then `sb.rpc('set_app_session', {...})`
+  - Called in: `initAuth()` (if session exists in localStorage), `doLogin()` (after writing session), `loadStudentForEval()`, `saveAll()`, `loadUruspelajar()`, `loadUserMgmt()`, `loadAuditTrail()`
+- **Policy summary**:
+  - `public.users`: own row SELECT for all; SELECT all for ADMIN/AJK_LI; INSERT/UPDATE/DELETE ADMIN only
+  - `public.students`: SELECT all for ADMIN/AJK_LI; SELECT own (`svf_email`) for PENSYARAH; INSERT/UPDATE for ADMIN/AJK_LI; DELETE ADMIN only
+  - `public.marks`: SELECT/INSERT/UPDATE for own rows or ADMIN/AJK_LI; DELETE ADMIN only
+  - `public.mark_audit`: SELECT for ADMIN/AJK_LI or own rows; INSERT open (trigger inserts); no UPDATE/DELETE
+- **Both required**: `GRANT ALL ... TO anon` (table-level access) + RLS policies (row-level visibility)
+- **Setup**: Run the "RLS Policies (Phase 1)" block in `supabase/schema.sql` in Supabase Dashboard → SQL Editor
+
 ## Audit Trail (Phase 1 — v4.12)
 
 ### Database Table: `public.mark_audit`
 Columns: `id` (uuid PK), `student_id` (uuid FK → students, CASCADE DELETE), `section` (text), `field_key` (text), `old_value` (text), `new_value` (text), `changed_by_email` (text), `changed_at` (timestamptz, default now())
 - One row per field-level change; recorded automatically via Postgres trigger
-- RLS disabled; anon role granted full access (consistent with other tables)
+- RLS enabled; anon role granted table-level access via GRANT; row visibility controlled by policies
 
 ### Trigger: `trg_mark_audit` on `public.marks`
 - Fires AFTER UPDATE FOR EACH ROW
@@ -425,7 +444,7 @@ Track of planned improvements. Tick when done.
 ### Security
 - [x] Password hashing proper (SHA-256 via Web Crypto API)
 - [x] Session timeout bila idle (5 minit)
-- [ ] Enable RLS (Row-Level Security) di Supabase dengan proper policies
+- [x] Enable RLS (Row-Level Security) di Supabase dengan proper policies
 
 ### Export & Reporting
 - [ ] Export PDF terus dari sistem (sekarang CSV je)

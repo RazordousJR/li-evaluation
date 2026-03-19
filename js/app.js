@@ -60,6 +60,19 @@ function stopIdleWatch() {
 }
 // ===== END SESSION TIMEOUT =====
 
+// ===== SUPABASE SESSION (RLS custom session variables) =====
+// Sets app.user_email and app.user_role GUCs on the Supabase connection
+// so RLS policies can enforce row visibility without Supabase Auth.
+// Must be called before any major Supabase query.
+async function setSupabaseSession() {
+  if (!sb) return;
+  var sess = getSession();
+  if (!sess || !sess.email) return;
+  var role = getEffectiveRole(sess.roles);
+  await sb.rpc('set_app_session', { p_email: sess.email, p_role: role });
+}
+// ===== END SUPABASE SESSION =====
+
 // ===== AUTH =====
 function getEffectiveRole(roles) {
   if (!roles || roles.length === 0) return 'PENSYARAH';
@@ -76,6 +89,7 @@ async function initAuth() {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   var session = getSession();
   if (session && session.email && session.roles) {
+    await setSupabaseSession();
     showApp(session);
   }
 }
@@ -106,6 +120,7 @@ async function doLogin() {
 
     var sess = { email: user.email, roles: user.roles, displayName: user.full_name };
     localStorage.setItem('li_session', JSON.stringify(sess));
+    await setSupabaseSession();
     showApp(sess);
   } catch(e) {
     errEl.textContent = 'Ralat sambungan. Cuba semula.';
@@ -477,6 +492,7 @@ async function saveAll() {
   if (!sb) return;
   var session = getSession();
   if (!session) return;
+  await setSupabaseSession();
   var matric = document.getElementById('no_matrik').value.trim();
   if (!matric) { setSaveStatus(''); return; }
 
@@ -589,6 +605,7 @@ function escHtml(s) {
 }
 
 async function loadUserMgmt() {
+  await setSupabaseSession();
   var tbody = document.getElementById('um-tbody');
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
 
@@ -1074,6 +1091,7 @@ var _pensyarahList = [];
 var _pelajarStudentsCache = [];
 
 async function loadUruspelajar() {
+  await setSupabaseSession();
   var tbody = document.getElementById('pelajar-tbody');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
@@ -1746,6 +1764,7 @@ async function saveStudentProfile() {
 }
 
 async function loadStudentForEval(student) {
+  await setSupabaseSession();
   currentStudent   = student;
   currentStudentId = student.id;
 
@@ -1914,6 +1933,7 @@ async function kemaskiniSviOrg() {
 // ===== AUDIT TRAIL =====
 
 async function loadAuditTrail(studentId) {
+  await setSupabaseSession();
   try {
     var resp = await sb.from('mark_audit')
       .select('*')
