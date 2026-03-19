@@ -444,8 +444,68 @@ Track of planned improvements. Tick when done.
 - [ ] Mobile input UX yang lebih baik
 
 ### Workflow
-- [ ] Approval flow: pensyarah submit → AJK_LI approve → lock markah
+- [x] Approval flow: pensyarah submit → AJK_LI approve → lock markah
 - [ ] History/versioning markah (boleh tengok versi sebelum edit)
+
+## Student Approval Workflow (v4.13)
+
+### Overview
+- Pensyarah fills all 5 sections → confirms each (checkbox) → all confirmed → "Hantar untuk Kelulusan" button appears in Ringkasan & Gred
+- After Pensyarah submits → their inputs are locked (cannot edit anymore)
+- AJK_LI / ADMIN can always edit regardless of status
+- AJK_LI / ADMIN reviews Ringkasan & Gred → clicks "Luluskan" (student-level)
+- After approval → all inputs locked for PENSYARAH; AJK_LI/ADMIN remain editable
+- AJK_LI / ADMIN has "Edit" button in Ringkasan to unlock; editing auto-resets status to 'submitted'
+
+### Database Columns (public.students — NOT public.marks)
+- `approval_status` TEXT DEFAULT 'draft' — `'draft'` | `'submitted'` | `'approved'`
+- `submitted_at` TIMESTAMPTZ — when PENSYARAH submitted
+- `approved_at` TIMESTAMPTZ — when AJK_LI/ADMIN approved
+- `approved_by` TEXT — email of approver
+- **Setup**: Run "Approval Workflow (Phase 1)" block in `supabase/schema.sql`
+
+### `_studentApprovalStatus` Global Object
+- Structure: `{ status: 'draft'|'submitted'|'approved', submitted_at, approved_at, approved_by }`
+- Set in `loadStudentForEval()` after fresh fetch from Supabase
+- Reset to `{ status: 'draft', ...null }` in `goBackToDashboard()`
+
+### Key Functions
+- `submitStudent()` — PENSYARAH only; checks all 5 sections confirmed via `isStudentComplete(collectSections())`; updates `public.students`; calls `applyApprovalLock()` and `refreshApprovalStatusBar()`
+- `approveStudent()` — AJK_LI/ADMIN only; sets `approval_status='approved'`; locks form; shows toast
+- `unlockForEdit()` — AJK_LI/ADMIN only; resets to `'submitted'`; allows re-editing; shows toast
+- `applyApprovalLock()` — disables/enables eval form inputs based on role + status:
+  - PENSYARAH + status `'submitted'` or `'approved'`: disables all inputs in eval pages (svi/svf/logbook/presentation/report/info)
+  - AJK_LI / ADMIN: returns immediately (never locked)
+  - Null-safe: checks page elements exist before modifying
+  - Called from: `loadStudentForEval()`, `submitStudent()`, `approveStudent()`, `unlockForEdit()`, `goBackToDashboard()`
+- `refreshApprovalStatusBar()` — renders `#approval-status-bar` section with badge, timestamps, and action buttons
+  - Draft + PENSYARAH: "Hantar untuk Kelulusan" button (disabled until all 5 confirmed), "X/5 bahagian" count
+  - Submitted + AJK_LI/ADMIN: "Luluskan" + "Edit" buttons
+  - Approved + AJK_LI/ADMIN: "Edit" button only
+  - Called from: `calcSummary()`, `onConfirmChange()`, `submitStudent()`, `approveStudent()`, `unlockForEdit()`, `loadStudentForEval()`
+- `showApprovalToast(msg, type)` — transient toast notification; type: 'success'|'warning'|'info'
+- `formatApprovalDateTime(isoStr)` — formats ISO timestamp for display
+- `countConfirmedSections()` — returns count (0–5) of currently confirmed section checkboxes
+
+### Auto-Reset on Edit (saveAll() modification)
+- If AJK_LI/ADMIN saves marks on an `'approved'` student, `saveAll()` auto-updates `approval_status` to `'submitted'`
+- Updates `_studentApprovalStatus.status`, shows subtle warning toast, calls `refreshApprovalStatusBar()`
+- Only triggers when status is `'approved'` (not on subsequent saves after reset)
+
+### UI — Ringkasan & Gred
+- `#approval-status-bar` — `<div class="section">` inserted between `.btn-row` and the audit trail section
+- Content rendered dynamically by `refreshApprovalStatusBar()`; hidden when no student selected
+
+### UI — Urus Pelajar
+- "Status Kelulusan" column added (8 columns total)
+- Badges: grey "Draf", amber "Menunggu Kelulusan", green "✓ Diluluskan"
+- `loadUruspelajar()` now selects `approval_status` from `public.students`
+
+### CSS Classes
+- `.approval-status-bar` — flex container for the status row
+- `.approval-badge-draft` / `.approval-badge-submitted` / `.approval-badge-approved` — pill badges
+- `.btn-approve` — green submit/approve button; `.btn-unlock-edit` — grey outline edit button
+- `.approval-info` — muted timestamp text; `.approval-lock-message` — italic locked message
 
 ## Important Rules
 - Never combine back into single file
