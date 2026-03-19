@@ -52,6 +52,150 @@ ALTER TABLE public.users    DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.marks    DISABLE ROW LEVEL SECURITY;
 
+-- ============================================================
+-- RLS Policies (Phase 1)
+-- Custom session variable approach — app does NOT use Supabase Auth.
+-- Before any Supabase query, the JS calls set_app_session() RPC to
+-- write the user's email + effective role into connection-level GUCs:
+--   app.user_email  — current user's email
+--   app.user_role   — effective role: ADMIN | AJK_LI | PENSYARAH
+-- All RLS policies then use get_session_email() / get_session_role()
+-- to enforce row visibility without auth.uid().
+-- ============================================================
+
+-- Helper: return current session email (set via set_app_session RPC)
+CREATE OR REPLACE FUNCTION get_session_email() RETURNS TEXT AS $$
+  SELECT current_setting('app.user_email', true);
+$$ LANGUAGE sql STABLE;
+
+-- Helper: return current session role
+CREATE OR REPLACE FUNCTION get_session_role() RETURNS TEXT AS $$
+  SELECT current_setting('app.user_role', true);
+$$ LANGUAGE sql STABLE;
+
+-- RPC called by JS before every major Supabase query to set session context
+CREATE OR REPLACE FUNCTION set_app_session(p_email TEXT, p_role TEXT)
+RETURNS void AS $$
+BEGIN
+  PERFORM set_config('app.user_email', p_email, false);
+  PERFORM set_config('app.user_role',  p_role,  false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Enable RLS on all tables
+ALTER TABLE public.users      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.marks      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mark_audit ENABLE ROW LEVEL SECURITY;
+
+-- ---- public.users policies ----
+-- Drop existing policies first (idempotent re-runs)
+DROP POLICY IF EXISTS "users: read own row"    ON public.users;
+DROP POLICY IF EXISTS "users: admin_ajkli read all" ON public.users;
+DROP POLICY IF EXISTS "users: admin write"     ON public.users;
+DROP POLICY IF EXISTS "users: admin insert"    ON public.users;
+DROP POLICY IF EXISTS "users: admin delete"    ON public.users;
+
+-- Any authenticated session can read their own user row
+CREATE POLICY "users: read own row"
+  ON public.users FOR SELECT
+  USING (email = get_session_email());
+
+-- ADMIN and AJK_LI can read all user rows
+CREATE POLICY "users: admin_ajkli read all"
+  ON public.users FOR SELECT
+  USING (get_session_role() IN ('ADMIN', 'AJK_LI'));
+
+-- Only ADMIN can insert/update/delete users
+CREATE POLICY "users: admin insert"
+  ON public.users FOR INSERT
+  WITH CHECK (get_session_role() = 'ADMIN');
+
+CREATE POLICY "users: admin write"
+  ON public.users FOR UPDATE
+  USING (get_session_role() = 'ADMIN');
+
+CREATE POLICY "users: admin delete"
+  ON public.users FOR DELETE
+  USING (get_session_role() = 'ADMIN');
+
+-- ---- public.students policies ----
+DROP POLICY IF EXISTS "students: admin_ajkli read all"  ON public.students;
+DROP POLICY IF EXISTS "students: pensyarah read own"    ON public.students;
+DROP POLICY IF EXISTS "students: admin_ajkli insert"    ON public.students;
+DROP POLICY IF EXISTS "students: admin_ajkli update"    ON public.students;
+DROP POLICY IF EXISTS "students: admin delete"          ON public.students;
+
+-- ADMIN / AJK_LI can read all students
+CREATE POLICY "students: admin_ajkli read all"
+  ON public.students FOR SELECT
+  USING (get_session_role() IN ('ADMIN', 'AJK_LI'));
+
+-- PENSYARAH can only read their own assigned students
+CREATE POLICY "students: pensyarah read own"
+  ON public.students FOR SELECT
+  USING (get_session_role() = 'PENSYARAH' AND svf_email = get_session_email());
+
+-- ADMIN / AJK_LI can insert and update students
+CREATE POLICY "students: admin_ajkli insert"
+  ON public.students FOR INSERT
+  WITH CHECK (get_session_role() IN ('ADMIN', 'AJK_LI'));
+
+CREATE POLICY "students: admin_ajkli update"
+  ON public.students FOR UPDATE
+  USING (get_session_role() IN ('ADMIN', 'AJK_LI'));
+
+-- Only ADMIN can delete students
+CREATE POLICY "students: admin delete"
+  ON public.students FOR DELETE
+  USING (get_session_role() = 'ADMIN');
+
+-- ---- public.marks policies ----
+DROP POLICY IF EXISTS "marks: own or admin_ajkli read"   ON public.marks;
+DROP POLICY IF EXISTS "marks: own or admin_ajkli insert" ON public.marks;
+DROP POLICY IF EXISTS "marks: own or admin_ajkli update" ON public.marks;
+DROP POLICY IF EXISTS "marks: admin delete"              ON public.marks;
+
+-- SELECT: own rows or ADMIN/AJK_LI
+CREATE POLICY "marks: own or admin_ajkli read"
+  ON public.marks FOR SELECT
+  USING (evaluator_email = get_session_email()
+         OR get_session_role() IN ('ADMIN', 'AJK_LI'));
+
+-- INSERT: own rows or ADMIN/AJK_LI
+CREATE POLICY "marks: own or admin_ajkli insert"
+  ON public.marks FOR INSERT
+  WITH CHECK (evaluator_email = get_session_email()
+              OR get_session_role() IN ('ADMIN', 'AJK_LI'));
+
+-- UPDATE: own rows or ADMIN/AJK_LI
+CREATE POLICY "marks: own or admin_ajkli update"
+  ON public.marks FOR UPDATE
+  USING (evaluator_email = get_session_email()
+         OR get_session_role() IN ('ADMIN', 'AJK_LI'));
+
+-- DELETE: ADMIN only
+CREATE POLICY "marks: admin delete"
+  ON public.marks FOR DELETE
+  USING (get_session_role() = 'ADMIN');
+
+-- ---- public.mark_audit policies ----
+DROP POLICY IF EXISTS "audit: admin_ajkli or own read" ON public.mark_audit;
+DROP POLICY IF EXISTS "audit: anon insert"             ON public.mark_audit;
+
+-- SELECT: ADMIN/AJK_LI or rows changed by self
+CREATE POLICY "audit: admin_ajkli or own read"
+  ON public.mark_audit FOR SELECT
+  USING (get_session_role() IN ('ADMIN', 'AJK_LI')
+         OR changed_by_email = get_session_email());
+
+-- INSERT: allow anon (trigger inserts audit rows, not users directly)
+CREATE POLICY "audit: anon insert"
+  ON public.mark_audit FOR INSERT
+  WITH CHECK (true);
+
+-- No UPDATE or DELETE policies on mark_audit (immutable audit log)
+
 -- Allow anon role full access (required when RLS is disabled but
 -- the table was created with RLS ON previously, or for future-proofing)
 GRANT ALL ON public.users    TO anon;
@@ -135,7 +279,8 @@ CREATE TABLE IF NOT EXISTS public.mark_audit (
   changed_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE public.mark_audit DISABLE ROW LEVEL SECURITY;
+-- RLS on mark_audit is enabled in the RLS Policies section below
+-- ALTER TABLE public.mark_audit DISABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.mark_audit TO anon;
 
 -- Trigger function: compare OLD.data vs NEW.data and log each differing field
