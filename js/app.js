@@ -106,12 +106,10 @@ async function doLogin() {
 
   try {
     var passHash = await hashPassword(pass);
-    var resp = await sb.from('users')
-      .select('email, full_name, roles, is_active, password_hash')
-      .eq('email', email)
-      .single();
+    // Use SECURITY DEFINER RPC to bypass RLS for the pre-session login lookup
+    var resp = await sb.rpc('get_user_for_login', { p_email: email });
 
-    var user = resp.data;
+    var user = resp.data?.[0];
     if (resp.error || !user || user.password_hash !== passHash || user.is_active === false) {
       errEl.textContent = 'E-mel atau kata laluan tidak sah.';
       errEl.style.display = 'block';

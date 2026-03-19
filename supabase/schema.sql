@@ -88,6 +88,26 @@ ALTER TABLE public.students   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.marks      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mark_audit ENABLE ROW LEVEL SECURITY;
 
+-- Login RPC: bypasses RLS so unauthenticated login queries can read the
+-- matching user row. SECURITY DEFINER runs as the function owner (postgres),
+-- which is exempt from RLS. Only returns the single row matching p_email.
+DROP FUNCTION IF EXISTS public.get_user_for_login(TEXT);
+CREATE OR REPLACE FUNCTION public.get_user_for_login(p_email TEXT)
+RETURNS TABLE(
+  email         TEXT,
+  full_name     TEXT,
+  roles         TEXT[],
+  is_active     BOOLEAN,
+  password_hash TEXT
+)
+LANGUAGE sql SECURITY DEFINER AS $$
+  SELECT email, full_name, roles, is_active, password_hash
+  FROM public.users
+  WHERE email = p_email
+  LIMIT 1;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_user_for_login(TEXT) TO anon;
+
 -- ---- public.users policies ----
 -- Drop existing policies first (idempotent re-runs)
 DROP POLICY IF EXISTS "users: read own row"    ON public.users;
