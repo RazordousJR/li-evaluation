@@ -369,6 +369,46 @@ BITU3946 OBE components:
   - Ringkasan display IDs: `r2_pr12r`, `r2_pr12`
 - BITU3946 total: `tr1 + pr11_pbt + pr12` (70 + 20 + 10 = 100)
 
+## Security (v4.11)
+- **Password Hashing**: `hashPassword(pw)` — async SHA-256 via Web Crypto API (`crypto.subtle.digest`)
+  - All password saves (login compare, reset PW, add user, add pensyarah, bulk upload) go through `hashPassword()` first
+  - Default password `'utem1234'` for bulk upload is hashed before upsert
+- **Session Timeout**: 5-minute idle auto-logout
+  - `startIdleWatch()` — called after login; attaches `mousemove`, `keydown`, `click`, `touchstart`, `scroll` listeners
+  - `resetIdleTimer()` — resets 5-min countdown on each interaction
+  - `stopIdleWatch()` — called on logout; clears timer and removes listeners
+  - On timeout: shows toast notification, then calls `doLogout()` after 3 seconds
+  - Toast element: `#idle-toast` injected into DOM by `startIdleWatch()`
+- **Migration**: Run pgcrypto migration in `supabase/schema.sql` to hash existing plaintext passwords in DB
+
+## Future Upgrade Checklist
+Track of planned improvements. Tick when done.
+
+### Security
+- [x] Password hashing proper (SHA-256 via Web Crypto API)
+- [x] Session timeout bila idle (5 minit)
+- [ ] Enable RLS (Row-Level Security) di Supabase dengan proper policies
+
+### Export & Reporting
+- [ ] Export PDF terus dari sistem (sekarang CSV je)
+- [ ] Generate borang penilaian akhir auto (surat rasmi)
+- [ ] OBE report yang boleh print cantik
+
+### Notifikasi
+- [ ] Email reminder kat pensyarah yang belum confirm markah
+- [ ] Alert bila deadline nak dekat
+
+### Audit Trail
+- [ ] Log siapa edit markah, bila, dari berapa ke berapa
+
+### Dashboard & UX
+- [ ] Chart/graf — % pelajar lengkap, distribution markah
+- [ ] Mobile input UX yang lebih baik
+
+### Workflow
+- [ ] Approval flow: pensyarah submit → AJK_LI approve → lock markah
+- [ ] History/versioning markah (boleh tengok versi sebelum edit)
+
 ## Important Rules
 - Never combine back into single file
 - Always maintain separate html/css/js structure

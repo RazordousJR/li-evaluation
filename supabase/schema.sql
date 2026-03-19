@@ -90,10 +90,31 @@ BEGIN
 END $$;
 
 -- ============================================================
+-- v4.11 Migration: Hash plaintext passwords using pgcrypto (SHA-256)
+-- Run this BEFORE seeding new accounts if upgrading existing DB
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Hash any password that is NOT already a 64-char hex SHA-256 string
+UPDATE public.users
+SET password_hash = encode(digest(password_hash, 'sha256'), 'hex')
+WHERE password_hash !~ '^[0-9a-f]{64}$';
+
+-- ============================================================
 -- Seed default accounts (skip if already exist)
+-- SHA-256 hashes of default passwords:
+--   admin123     → 240be518fabd2724ddb6f04eeb1da5967448d7e831186421d73c2c2e39f6b0d5
+--   ajkli123     → a8f9e35700a5e01268fc9a4bbcbcdf66f93c27da0f79bb21e9b7a455f3e2ae7b
+--   pensyarah123 → 3b17d31bebb0d26e3e0e1a2e8c56bde78f5e87ddf8b17c7f88a78dd6c4e7a19e
+-- Note: hashes above are illustrative — the migration UPDATE above will
+--       compute correct hashes from the schema.sql seed values automatically.
+--       If seeding fresh, use the pre-hashed values from the migration output.
 -- ============================================================
 INSERT INTO public.users (full_name, email, password_hash, roles, is_active) VALUES
-  ('Administrator',        'admin@utem.edu.my',      'admin123',      '{ADMIN}',     TRUE),
-  ('AJK Latihan Industri', 'ajkli@utem.edu.my',      'ajkli123',      '{AJK_LI}',   TRUE),
-  ('Pensyarah',            'pensyarah@utem.edu.my',  'pensyarah123',  '{PENSYARAH}', TRUE)
+  ('Administrator',        'admin@utem.edu.my',
+   encode(digest('admin123', 'sha256'), 'hex'),      '{ADMIN}',     TRUE),
+  ('AJK Latihan Industri', 'ajkli@utem.edu.my',
+   encode(digest('ajkli123', 'sha256'), 'hex'),      '{AJK_LI}',   TRUE),
+  ('Pensyarah',            'pensyarah@utem.edu.my',
+   encode(digest('pensyarah123', 'sha256'), 'hex'),  '{PENSYARAH}', TRUE)
 ON CONFLICT (email) DO NOTHING;
