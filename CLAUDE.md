@@ -43,11 +43,11 @@ Covers two courses: BITU3926 (Latihan Industri) and BITU3946 (Laporan Latihan In
 
 ## Supabase Configuration
 - URL: `https://lvbtzoqkgmjztolwdchi.supabase.co`
-- Key: publishable anon key (visible in app.js — internal tool, RLS disabled)
+- Key: publishable anon key (visible in app.js — internal tool, RLS intentionally disabled; see §Application-Layer Security)
 - CDN: `@supabase/supabase-js@2` via jsdelivr (no npm/build step)
 - SheetJS CDN: `xlsx@0.18.5` via jsdelivr (for .xlsx/.csv upload parsing)
 - Client initialized as `sb` global in `initAuth()`
-- RLS disabled on all tables; anon role granted full access
+- RLS disabled on all tables; anon role granted full access; access control enforced at app layer
 - **Setup**: Run `supabase/schema.sql` once in Supabase Dashboard → SQL Editor
 - **Upgrade existing DB**: The migration section at the bottom of schema.sql has `ALTER TABLE IF NOT EXISTS` statements to add new columns
 
@@ -369,7 +369,7 @@ BITU3946 OBE components:
   - Ringkasan display IDs: `r2_pr12r`, `r2_pr12`
 - BITU3946 total: `tr1 + pr11_pbt + pr12` (70 + 20 + 10 = 100)
 
-## Security (v4.14)
+## Security (v4.15)
 - **Password Hashing**: `hashPassword(pw)` — async SHA-256 via Web Crypto API (`crypto.subtle.digest`)
   - All password saves (login compare, reset PW, add user, add pensyarah, bulk upload) go through `hashPassword()` first
   - Default password `'utem1234'` for bulk upload is hashed before upsert
@@ -381,31 +381,29 @@ BITU3946 OBE components:
   - Toast element: `#idle-toast` injected into DOM by `startIdleWatch()`
 - **Migration**: Run pgcrypto migration in `supabase/schema.sql` to hash existing plaintext passwords in DB
 
-## Row-Level Security (v4.14)
-- **Approach**: Custom session variable RLS — app does NOT use Supabase Auth (`auth.uid()` unavailable)
-- **Mechanism**: Before any major Supabase query, JS calls `set_app_session()` RPC to write the user's email + effective role into connection-level PostgreSQL GUCs:
-  - `app.user_email` — current user's email
-  - `app.user_role` — effective role: `ADMIN` | `AJK_LI` | `PENSYARAH`
-- **Helper SQL functions** (defined in `supabase/schema.sql`):
-  - `get_session_email()` — returns `current_setting('app.user_email', true)`
-  - `get_session_role()` — returns `current_setting('app.user_role', true)`
-  - `set_app_session(p_email TEXT, p_role TEXT)` — SECURITY DEFINER RPC that calls `set_config()` for both GUCs
-- **JS function**: `setSupabaseSession()` — async; calls `getSession()` then `sb.rpc('set_app_session', {...})`
-  - Called in: `initAuth()` (if session exists in localStorage), `doLogin()` (after writing session), `loadStudentForEval()`, `saveAll()`, `loadUruspelajar()`, `loadUserMgmt()`, `loadAuditTrail()`
-- **Policy summary**:
-  - `public.users`: own row SELECT for all; SELECT all for ADMIN/AJK_LI; INSERT/UPDATE/DELETE ADMIN only
-  - `public.students`: SELECT all for ADMIN/AJK_LI; SELECT own (`svf_email`) for PENSYARAH; INSERT/UPDATE for ADMIN/AJK_LI; DELETE ADMIN only
-  - `public.marks`: SELECT/INSERT/UPDATE for own rows or ADMIN/AJK_LI; DELETE ADMIN only
-  - `public.mark_audit`: SELECT for ADMIN/AJK_LI or own rows; INSERT open (trigger inserts); no UPDATE/DELETE
-- **Both required**: `GRANT ALL ... TO anon` (table-level access) + RLS policies (row-level visibility)
-- **Setup**: Run the "RLS Policies (Phase 1)" block in `supabase/schema.sql` in Supabase Dashboard → SQL Editor
+## Application-Layer Security (v4.15 — replaces RLS)
+- **RLS was attempted (v4.14) but reverted**: PostgreSQL GUC-based RLS (`set_config`/`current_setting`) is
+  unreliable with Supabase's PgBouncer connection pooler in transaction mode. GUCs are connection-scoped;
+  when connections are reused from the pool, GUCs from previous sessions can persist or be absent, causing
+  inconsistent row visibility across queries. Retries and `_sessionReady` flags could not reliably solve this.
+- **Decision**: RLS disabled on all tables. Access control enforced entirely in JavaScript query layer.
+- **RLS is OFF**: `DISABLE ROW LEVEL SECURITY` on all 4 tables. GUC helper functions (`get_session_email`,
+  `get_session_role`, `set_app_session`) and all policies dropped from `supabase/schema.sql`.
+- **`get_user_for_login(p_email)`** SECURITY DEFINER RPC retained — still needed for pre-session login lookup.
+- **App-layer enforcement rules** (implemented in `js/app.js`):
+  - `loadPensyarahDashboard()` — queries `students` with `.eq('svf_email', session.email)`; marks with `.eq('evaluator_email', session.email)`
+  - `loadUruspelajar()` — PENSYARAH: adds `.eq('svf_email', session.email)` to student query
+  - `loadStudentForEval()` — PENSYARAH: checks `student.svf_email === session.email` before loading; shows alert and returns if mismatch
+  - `loadAuditTrail()` — PENSYARAH: adds `.eq('changed_by_email', session.email)` to query
+  - `marks` queries already filtered by `evaluator_email` throughout (unchanged)
+  - ADMIN/AJK_LI: no additional filters; all rows visible
 
 ## Audit Trail (Phase 1 — v4.12)
 
 ### Database Table: `public.mark_audit`
 Columns: `id` (uuid PK), `student_id` (uuid FK → students, CASCADE DELETE), `section` (text), `field_key` (text), `old_value` (text), `new_value` (text), `changed_by_email` (text), `changed_at` (timestamptz, default now())
 - One row per field-level change; recorded automatically via Postgres trigger
-- RLS enabled; anon role granted table-level access via GRANT; row visibility controlled by policies
+- RLS disabled (see §Application-Layer Security); anon role granted full table access via GRANT
 
 ### Trigger: `trg_mark_audit` on `public.marks`
 - Fires AFTER UPDATE FOR EACH ROW
@@ -444,7 +442,7 @@ Track of planned improvements. Tick when done.
 ### Security
 - [x] Password hashing proper (SHA-256 via Web Crypto API)
 - [x] Session timeout bila idle (5 minit)
-- [x] Enable RLS (Row-Level Security) di Supabase dengan proper policies
+- [ ] Enable RLS (Row-Level Security) di Supabase — attempted v4.14, reverted v4.15 due to PgBouncer GUC persistence; app-layer filtering used instead
 
 ### Export & Reporting
 - [ ] Export PDF terus dari sistem (sekarang CSV je)
