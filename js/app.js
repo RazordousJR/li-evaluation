@@ -10,6 +10,7 @@ var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
 var _currentEvalEmail = null; // evaluator email used for save/load marks
 var _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
+var _sessionReady = false; // set true only after setSupabaseSession() confirms success
 
 // ===== PASSWORD HASHING =====
 async function hashPassword(pw) {
@@ -64,12 +65,35 @@ function stopIdleWatch() {
 // Sets app.user_email and app.user_role GUCs on the Supabase connection
 // so RLS policies can enforce row visibility without Supabase Auth.
 // Must be called before any major Supabase query.
+// Retries up to 3 times with 500ms delay on failure; sets _sessionReady on confirmed success.
 async function setSupabaseSession() {
   if (!sb) return;
   var sess = getSession();
   if (!sess || !sess.email) return;
   var role = getEffectiveRole(sess.roles);
-  await sb.rpc('set_app_session', { p_email: sess.email, p_role: role });
+  var attempts = 0;
+  while (attempts < 3) {
+    var result = await sb.rpc('set_app_session', { p_email: sess.email, p_role: role });
+    if (!result.error) {
+      _sessionReady = true;
+      return;
+    }
+    attempts++;
+    console.warn('[setSupabaseSession] attempt ' + attempts + ' failed:', result.error);
+    if (attempts < 3) await new Promise(function(r) { setTimeout(r, 500); });
+  }
+  console.error('[setSupabaseSession] all retries exhausted — RLS GUC not set');
+}
+
+// Waits until _sessionReady is true (set by setSupabaseSession).
+// Times out after 10 seconds to avoid infinite hang; logs warning.
+async function waitForSession() {
+  var waited = 0;
+  while (!_sessionReady && waited < 10000) {
+    await new Promise(function(r) { setTimeout(r, 200); });
+    waited += 200;
+  }
+  if (!_sessionReady) console.warn('[waitForSession] timed out after 10s — proceeding without confirmed session');
 }
 // ===== END SUPABASE SESSION =====
 
@@ -137,6 +161,7 @@ async function doLogin() {
 }
 
 function doLogout() {
+  _sessionReady = false;
   stopIdleWatch();
   localStorage.removeItem('li_session');
   location.reload();
@@ -1096,6 +1121,7 @@ var _pensyarahList = [];
 var _pelajarStudentsCache = [];
 
 async function loadUruspelajar() {
+  await waitForSession();
   await setSupabaseSession();
   var tbody = document.getElementById('pelajar-tbody');
   if (!tbody) return;
@@ -1503,6 +1529,10 @@ async function deletePensyarah(email, name) {
 async function loadDashboard() {
   var session = getSession();
   if (!session) return;
+  // Clear any stale pending student eval so the profile modal cannot fire on dashboard load
+  _pendingStudentEval = null;
+  await waitForSession();
+  await setSupabaseSession();
   var eff = getEffectiveRole(session.roles);
 
   document.getElementById('dash-admin').style.display     = (eff === 'ADMIN')                    ? 'block' : 'none';
@@ -1685,6 +1715,7 @@ async function openStudentEval(student) {
   if (!student) return;
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
+  await waitForSession();
 
   // Direct Supabase query by id to get fresh svi_name and organisasi
   var freshSviName = student.svi_name || '';
@@ -1769,6 +1800,7 @@ async function saveStudentProfile() {
 }
 
 async function loadStudentForEval(student) {
+  await waitForSession();
   await setSupabaseSession();
   currentStudent   = student;
   currentStudentId = student.id;
