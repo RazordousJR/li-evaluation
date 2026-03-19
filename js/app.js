@@ -10,7 +10,6 @@ var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
 var _currentEvalEmail = null; // evaluator email used for save/load marks
 var _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
-var _sessionReady = false; // set true only after setSupabaseSession() confirms success
 
 // ===== PASSWORD HASHING =====
 async function hashPassword(pw) {
@@ -61,40 +60,9 @@ function stopIdleWatch() {
 }
 // ===== END SESSION TIMEOUT =====
 
-// ===== SUPABASE SESSION (RLS custom session variables) =====
-// Sets app.user_email and app.user_role GUCs on the Supabase connection
-// so RLS policies can enforce row visibility without Supabase Auth.
-// Must be called before any major Supabase query.
-// Retries up to 3 times with 500ms delay on failure; sets _sessionReady on confirmed success.
-async function setSupabaseSession() {
-  if (!sb) return;
-  var sess = getSession();
-  if (!sess || !sess.email) return;
-  var role = getEffectiveRole(sess.roles);
-  var attempts = 0;
-  while (attempts < 3) {
-    var result = await sb.rpc('set_app_session', { p_email: sess.email, p_role: role });
-    if (!result.error) {
-      _sessionReady = true;
-      return;
-    }
-    attempts++;
-    console.warn('[setSupabaseSession] attempt ' + attempts + ' failed:', result.error);
-    if (attempts < 3) await new Promise(function(r) { setTimeout(r, 500); });
-  }
-  console.error('[setSupabaseSession] all retries exhausted — RLS GUC not set');
-}
-
-// Waits until _sessionReady is true (set by setSupabaseSession).
-// Times out after 10 seconds to avoid infinite hang; logs warning.
-async function waitForSession() {
-  var waited = 0;
-  while (!_sessionReady && waited < 10000) {
-    await new Promise(function(r) { setTimeout(r, 200); });
-    waited += 200;
-  }
-  if (!_sessionReady) console.warn('[waitForSession] timed out after 10s — proceeding without confirmed session');
-}
+// ===== SUPABASE SESSION =====
+// Security is enforced at the application layer (JS query filtering).
+// RLS was attempted (v4.14) but reverted — see CLAUDE.md §Security (v4.15).
 // ===== END SUPABASE SESSION =====
 
 // ===== AUTH =====
@@ -113,7 +81,6 @@ async function initAuth() {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   var session = getSession();
   if (session && session.email && session.roles) {
-    await setSupabaseSession();
     showApp(session);
   }
 }
@@ -149,7 +116,6 @@ async function doLogin() {
 
     var sess = { email: user.email, roles: user.roles, displayName: user.full_name };
     localStorage.setItem('li_session', JSON.stringify(sess));
-    await setSupabaseSession();
     showApp(sess);
   } catch(e) {
     errEl.textContent = 'Ralat sambungan. Cuba semula.';
@@ -161,7 +127,6 @@ async function doLogin() {
 }
 
 function doLogout() {
-  _sessionReady = false;
   stopIdleWatch();
   localStorage.removeItem('li_session');
   location.reload();
@@ -522,7 +487,6 @@ async function saveAll() {
   if (!sb) return;
   var session = getSession();
   if (!session) return;
-  await setSupabaseSession();
   var matric = document.getElementById('no_matrik').value.trim();
   if (!matric) { setSaveStatus(''); return; }
 
@@ -635,7 +599,6 @@ function escHtml(s) {
 }
 
 async function loadUserMgmt() {
-  await setSupabaseSession();
   var tbody = document.getElementById('um-tbody');
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
 
@@ -1121,8 +1084,6 @@ var _pensyarahList = [];
 var _pelajarStudentsCache = [];
 
 async function loadUruspelajar() {
-  await waitForSession();
-  await setSupabaseSession();
   var tbody = document.getElementById('pelajar-tbody');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
@@ -1531,8 +1492,6 @@ async function loadDashboard() {
   if (!session) return;
   // Clear any stale pending student eval so the profile modal cannot fire on dashboard load
   _pendingStudentEval = null;
-  await waitForSession();
-  await setSupabaseSession();
   var eff = getEffectiveRole(session.roles);
 
   document.getElementById('dash-admin').style.display     = (eff === 'ADMIN')                    ? 'block' : 'none';
@@ -1715,7 +1674,6 @@ async function openStudentEval(student) {
   if (!student) return;
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
-  await waitForSession();
 
   // Direct Supabase query by id to get fresh svi_name and organisasi
   var freshSviName = student.svi_name || '';
@@ -1800,8 +1758,13 @@ async function saveStudentProfile() {
 }
 
 async function loadStudentForEval(student) {
-  await waitForSession();
-  await setSupabaseSession();
+  var _lsSessionPre = getSession();
+  var _lsEffPre = getEffectiveRole(_lsSessionPre ? _lsSessionPre.roles : []);
+  // App-layer access guard: PENSYARAH may only open students assigned to them
+  if (_lsEffPre === 'PENSYARAH' && _lsSessionPre && student.svf_email !== _lsSessionPre.email) {
+    alert('Anda tidak dibenarkan mengakses pelajar ini.');
+    return;
+  }
   currentStudent   = student;
   currentStudentId = student.id;
 
@@ -1970,12 +1933,18 @@ async function kemaskiniSviOrg() {
 // ===== AUDIT TRAIL =====
 
 async function loadAuditTrail(studentId) {
-  await setSupabaseSession();
+  var _auditSession = getSession();
+  var _auditEff = getEffectiveRole(_auditSession ? _auditSession.roles : []);
   try {
-    var resp = await sb.from('mark_audit')
+    var query = sb.from('mark_audit')
       .select('*')
       .eq('student_id', studentId)
       .order('changed_at', { ascending: false });
+    // PENSYARAH sees only their own audit entries
+    if (_auditEff === 'PENSYARAH' && _auditSession) {
+      query = query.eq('changed_by_email', _auditSession.email);
+    }
+    var resp = await query;
     return (!resp.error && resp.data) ? resp.data : [];
   } catch(e) {
     console.error('loadAuditTrail error:', e);
