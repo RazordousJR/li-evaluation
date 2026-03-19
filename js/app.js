@@ -581,8 +581,11 @@ async function loadByMatric(matric) {
     var mResp = await marksQ;
     if (!mResp.error && mResp.data) {
       _suppressSave = true;
-      mResp.data.forEach(function(row) { populateSection(row.section, row.data); });
-      _suppressSave = false;
+      try {
+        mResp.data.forEach(function(row) { populateSection(row.section, row.data); });
+      } finally {
+        _suppressSave = false;
+      }
     }
 
     setSaveStatus('saved');
@@ -1515,7 +1518,7 @@ async function renderAdminDashboard() {
   var results = await Promise.all([
     sb.from('students').select('id, svf_email'),
     sb.from('users').select('id', { count: 'exact', head: true }).contains('roles', ['PENSYARAH']),
-    sb.from('marks').select('student_id, section, data')
+    sb.from('marks').select('student_id, evaluator_email, section, data')
   ]);
   var stData   = results[0].data || [];
   var psCount  = results[1].count || 0;
@@ -1524,8 +1527,16 @@ async function renderAdminDashboard() {
   var totalPelajar = stData.length;
   var belumAssign  = stData.filter(function(s) { return !s.svf_email; }).length;
 
+  // Build svf_email lookup keyed by student id for deterministic completion check
+  var svfByStudentId = {};
+  stData.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
+
+  // Only count marks from the assigned SVF evaluator per student so the completion
+  // status is deterministic even when multiple evaluator rows exist for the same section
   var marksDataByStudent = {};
   mrData.forEach(function(m) {
+    var svfEmail = svfByStudentId[m.student_id];
+    if (svfEmail && m.evaluator_email !== svfEmail) return;
     if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
     marksDataByStudent[m.student_id][m.section] = m.data;
   });
@@ -1547,7 +1558,7 @@ async function loadAjkliDashboard() {
   var results = await Promise.all([
     sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
     sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name').order('name'),
-    sb.from('marks').select('student_id, section, data')
+    sb.from('marks').select('student_id, evaluator_email, section, data')
   ]);
   var pensyarahList = results[0].data || [];
   _ajkliStudents    = results[1].data || [];
@@ -1564,8 +1575,16 @@ async function loadAjkliDashboard() {
     });
   }
 
+  // Build svf_email lookup keyed by student id for deterministic completion check
+  var svfByStudentId = {};
+  _ajkliStudents.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
+
+  // Only count marks from the assigned SVF evaluator per student so the completion
+  // status is deterministic even when multiple evaluator rows exist for the same section
   var marksDataByStudent = {};
   mrData.forEach(function(m) {
+    var svfEmail = svfByStudentId[m.student_id];
+    if (svfEmail && m.evaluator_email !== svfEmail) return;
     if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
     marksDataByStudent[m.student_id][m.section] = m.data;
   });
@@ -1605,12 +1624,14 @@ function renderAjkliTable(students) {
     return;
   }
   var html = '';
-  students.forEach(function(s, i) {
+  students.forEach(function(s) {
     var svfName = s.svf_email ? (_ajkliPensyarahMap[s.svf_email] || s.svf_email) : '—';
     var badge = s._lengkap
       ? '<span class="status-badge status-active">Lengkap</span>'
       : '<span class="status-badge status-inactive">Belum Lengkap</span>';
-    html += '<tr class="dash-row-clickable" onclick="openStudentEval(_ajkliStudents[' + i + '])">' +
+    // Use indexOf on the global array so the correct student is opened even when a filter is active
+    var globalIdx = _ajkliStudents.indexOf(s);
+    html += '<tr class="dash-row-clickable" onclick="openStudentEval(_ajkliStudents[' + globalIdx + '])">' +
       '<td>' + escHtml(s.matric_no) + '</td>' +
       '<td>' + escHtml(s.name || '') + '</td>' +
       '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
@@ -1829,8 +1850,11 @@ async function loadStudentForEval(student) {
     var mResp = await marksQuery;
     if (!mResp.error && mResp.data) {
       _suppressSave = true;
-      mResp.data.forEach(function(row) { populateSection(row.section, row.data); });
-      _suppressSave = false;
+      try {
+        mResp.data.forEach(function(row) { populateSection(row.section, row.data); });
+      } finally {
+        _suppressSave = false;
+      }
     }
 
     // Fetch approval status for this student
@@ -1871,7 +1895,11 @@ async function loadStudentForEval(student) {
 }
 
 function goBackToDashboard() {
+  // Cancel any pending debounce save so it doesn't fire after navigation
+  clearTimeout(saveTimer);
+  saveTimer = null;
   currentStudent = null;
+  currentStudentId = null;
   _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
   // Hide SVI/Org indicator
   var sviOrgEl = document.getElementById('svi-org-indicator');

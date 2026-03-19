@@ -436,6 +436,54 @@ Columns: `id` (uuid PK), `student_id` (uuid FK → students, CASCADE DELETE), `s
 - Section badges styled with `.audit-section-badge` (blue pill)
 - **Setup**: Run the "Audit Trail (Phase 1)" block in `supabase/schema.sql` in Supabase SQL Editor
 
+## Dashboard Consistency Fixes (v4.16)
+
+Four bugs causing inconsistent completion status were found and fixed in `js/app.js`:
+
+### Bug 1 (Critical) — Non-deterministic marks overwrite in dashboard queries
+- **Root cause**: `renderAdminDashboard()` and `loadAjkliDashboard()` fetched marks without `evaluator_email`.
+  When a student has multiple marks records for the same section (e.g. after SVF reassignment), the
+  `marksDataByStudent[student_id][section]` was overwritten by whichever record Supabase happened to
+  return last — non-deterministic across page loads.
+- **Fix**: Added `evaluator_email` to both marks selects. Before building `marksDataByStudent`, a
+  `svfByStudentId` lookup is built from the student rows. Marks records where
+  `evaluator_email !== student.svf_email` are skipped. Students with no SVF assigned accept any
+  evaluator's marks (fallback behaviour unchanged).
+- **Rule reinforced**: "Lengkap" is determined solely by `confirmed: true` in all 5 sections of the
+  SVF's marks. `approval_status` plays no part in the completion check.
+
+### Bug 2 — renderAjkliTable opens wrong student when a filter is active
+- **Root cause**: `renderAjkliTable(students)` received a filtered subset of `_ajkliStudents` but the
+  inline `onclick` handler used `_ajkliStudents[i]` where `i` was the index inside the filtered array,
+  not the global array. With any filter active, clicking a row opened a different student.
+- **Fix**: Replaced `i` with `_ajkliStudents.indexOf(s)` (works because `filter` returns the same object
+  references). The `i` parameter was removed from the `forEach` callback.
+
+### Bug 3 — `_suppressSave` permanently stuck on `true` after populateSection error
+- **Root cause**: `_suppressSave = false` was placed inline after the `forEach` call. If `populateSection`
+  threw an exception, execution jumped to the outer `catch` block, leaving `_suppressSave = true` for
+  the rest of the session — permanently disabling auto-save.
+- **Fix**: Wrapped both occurrences (`loadStudentForEval` and `loadByMatric`) in `try/finally` so
+  `_suppressSave` is always reset regardless of errors.
+
+### Bug 4 — goBackToDashboard doesn't cancel pending save timer or clear currentStudentId
+- **Root cause**: If the user edited a field (starting the 2-second debounce) then immediately navigated
+  back to the dashboard, `saveAll()` fired after 2 seconds against stale form state. Additionally,
+  `currentStudentId` was never cleared, meaning the approval auto-reset logic in `saveAll()` could
+  trigger for the previous student.
+- **Fix**: Added `clearTimeout(saveTimer); saveTimer = null; currentStudentId = null;` at the top of
+  `goBackToDashboard()`.
+
+### Scenario traces (post-fix)
+- **Admin logs in fresh**: `loadDashboard()` → `renderAdminDashboard()` + `loadAjkliDashboard()` each
+  fetch students+marks fresh; marks filtered to svf_email → deterministic `_lengkap` values.
+- **Admin logs out then back in**: `doLogout()` calls `location.reload()` — full page reload resets all
+  module-level variables including `_ajkliStudents`, `_ajkliPensyarahMap`, `currentStudent`,
+  `currentStudentId`, `_studentApprovalStatus`, `saveTimer`, `_suppressSave`. No stale state possible.
+- **Admin switches students**: `goBackToDashboard()` cancels timer, clears both student globals,
+  resets `_studentApprovalStatus`. `showTab('dashboard')` → `loadDashboard()` fetches fresh data.
+  Next `openStudentEval()` + `loadStudentForEval()` sets all globals from scratch.
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
