@@ -1515,39 +1515,45 @@ function updateStatCard(id, val, sub) {
 }
 
 async function renderAdminDashboard() {
-  var results = await Promise.all([
-    sb.from('students').select('id, svf_email'),
-    sb.from('users').select('id', { count: 'exact', head: true }).contains('roles', ['PENSYARAH']),
-    sb.from('marks').select('student_id, evaluator_email, section, data')
-  ]);
-  var stData   = results[0].data || [];
-  var psCount  = results[1].count || 0;
-  var mrData   = results[2].data || [];
+  try {
+    var results = await Promise.all([
+      sb.from('students').select('id, svf_email'),
+      sb.from('users').select('id', { count: 'exact', head: true }).contains('roles', ['PENSYARAH']),
+      sb.from('marks').select('student_id, evaluator_email, section, data')
+    ]);
+    var stData   = results[0].data || [];
+    var psCount  = results[1].count || 0;
+    var mrData   = results[2].data || [];
 
-  var totalPelajar = stData.length;
-  var belumAssign  = stData.filter(function(s) { return !s.svf_email; }).length;
+    var totalPelajar = stData.length;
+    var belumAssign  = stData.filter(function(s) { return !s.svf_email; }).length;
 
-  // Build svf_email lookup keyed by student id for deterministic completion check
-  var svfByStudentId = {};
-  stData.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
+    // Build svf_email lookup keyed by student id for deterministic completion check
+    var svfByStudentId = {};
+    stData.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
 
-  // Only count marks from the assigned SVF evaluator per student so the completion
-  // status is deterministic even when multiple evaluator rows exist for the same section
-  var marksDataByStudent = {};
-  mrData.forEach(function(m) {
-    var svfEmail = svfByStudentId[m.student_id];
-    if (svfEmail && m.evaluator_email !== svfEmail) return;
-    if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
-    marksDataByStudent[m.student_id][m.section] = m.data;
-  });
-  var lengkap = stData.filter(function(s) {
-    return isStudentComplete(marksDataByStudent[s.id] || {});
-  }).length;
+    // Only count marks from the assigned SVF evaluator per student so the completion
+    // status is deterministic even when multiple evaluator rows exist for the same section.
+    // Accept marks where evaluator_email is null/empty (legacy records) as a safe fallback.
+    var marksDataByStudent = {};
+    mrData.forEach(function(m) {
+      var svfEmail = svfByStudentId[m.student_id];
+      // Skip only when: student has SVF assigned AND mark has a non-null evaluator AND it doesn't match
+      if (svfEmail && m.evaluator_email && m.evaluator_email !== svfEmail) return;
+      if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
+      marksDataByStudent[m.student_id][m.section] = m.data;
+    });
+    var lengkap = stData.filter(function(s) {
+      return isStudentComplete(marksDataByStudent[s.id] || {});
+    }).length;
 
-  updateStatCard('dsc-total-pelajar',   totalPelajar, 'pelajar berdaftar');
-  updateStatCard('dsc-total-pensyarah', psCount,      'pensyarah dalam sistem');
-  updateStatCard('dsc-lengkap',         lengkap,      'semua bahagian diisi');
-  updateStatCard('dsc-belum-assign',    belumAssign,  'belum ada SVF');
+    updateStatCard('dsc-total-pelajar',   totalPelajar, 'pelajar berdaftar');
+    updateStatCard('dsc-total-pensyarah', psCount,      'pensyarah dalam sistem');
+    updateStatCard('dsc-lengkap',         lengkap,      'semua bahagian diisi');
+    updateStatCard('dsc-belum-assign',    belumAssign,  'belum ada SVF');
+  } catch (err) {
+    console.error('renderAdminDashboard error:', err);
+  }
 }
 
 async function loadAjkliDashboard() {
@@ -1555,54 +1561,73 @@ async function loadAjkliDashboard() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
 
-  var results = await Promise.all([
-    sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
-    sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name').order('name'),
-    sb.from('marks').select('student_id, evaluator_email, section, data')
-  ]);
-  var pensyarahList = results[0].data || [];
-  _ajkliStudents    = results[1].data || [];
-  var mrData        = results[2].data || [];
+  try {
+    var results = await Promise.all([
+      sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
+      sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name').order('name'),
+      sb.from('marks').select('student_id, evaluator_email, section, data')
+    ]);
+    var pensyarahList = results[0].data || [];
+    _ajkliStudents    = results[1].data || [];
+    var mrData        = results[2].data || [];
 
-  _ajkliPensyarahMap = {};
-  pensyarahList.forEach(function(p) { _ajkliPensyarahMap[p.email] = p.full_name; });
+    _ajkliPensyarahMap = {};
+    pensyarahList.forEach(function(p) { _ajkliPensyarahMap[p.email] = p.full_name; });
 
-  var filterEl = document.getElementById('dash-filter-pensyarah');
-  if (filterEl) {
-    filterEl.innerHTML = '<option value="">Semua Pensyarah</option>';
-    pensyarahList.forEach(function(p) {
-      filterEl.innerHTML += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
+    var filterEl = document.getElementById('dash-filter-pensyarah');
+    if (filterEl) {
+      filterEl.innerHTML = '<option value="">Semua Pensyarah</option>';
+      pensyarahList.forEach(function(p) {
+        filterEl.innerHTML += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
+      });
+      // Always reset to "Semua Pensyarah" on dashboard reload so stale filter
+      // selections don't hide students across navigation cycles
+      filterEl.value = '';
+    }
+    var prFilterEl = document.getElementById('dash-filter-program');
+    if (prFilterEl) prFilterEl.value = '';
+
+    // Build svf_email lookup keyed by student id for deterministic completion check
+    var svfByStudentId = {};
+    _ajkliStudents.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
+
+    // Only count marks from the assigned SVF evaluator per student so the completion
+    // status is deterministic even when multiple evaluator rows exist for the same section.
+    // Accept marks where evaluator_email is null/empty (legacy records) as a safe fallback.
+    var marksDataByStudent = {};
+    mrData.forEach(function(m) {
+      var svfEmail = svfByStudentId[m.student_id];
+      // Skip only when: student has SVF assigned AND mark has a non-null evaluator AND it doesn't match
+      if (svfEmail && m.evaluator_email && m.evaluator_email !== svfEmail) return;
+      if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
+      marksDataByStudent[m.student_id][m.section] = m.data;
     });
+    _ajkliStudents.forEach(function(s) {
+      // Safety: marksDataByStudent[s.id] may be undefined if student has no marks yet — default to {}
+      s._lengkap = isStudentComplete(marksDataByStudent[s.id] || {});
+    });
+
+    var total = _ajkliStudents.length;
+    var done  = _ajkliStudents.filter(function(s) { return s._lengkap; }).length;
+    var pct   = total > 0 ? Math.round(done / total * 100) : 0;
+    var lblEl = document.getElementById('dash-progress-label');
+    if (lblEl) lblEl.textContent = done + ' daripada ' + total + ' pelajar lengkap';
+    var pctEl = document.getElementById('dash-progress-pct');
+    if (pctEl) pctEl.textContent = pct + '%';
+    var barEl = document.getElementById('dash-progress-bar');
+    if (barEl) barEl.style.width = pct + '%';
+
+    filterAjkliDashboard();
+  } catch (err) {
+    console.error('loadAjkliDashboard error:', err);
+    // Safety net: if students were fetched before the error, still render them as Belum Lengkap
+    if (_ajkliStudents.length > 0) {
+      _ajkliStudents.forEach(function(s) { s._lengkap = false; });
+      filterAjkliDashboard();
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:red">Ralat memuatkan data. Sila muat semula halaman.</td></tr>';
+    }
   }
-
-  // Build svf_email lookup keyed by student id for deterministic completion check
-  var svfByStudentId = {};
-  _ajkliStudents.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
-
-  // Only count marks from the assigned SVF evaluator per student so the completion
-  // status is deterministic even when multiple evaluator rows exist for the same section
-  var marksDataByStudent = {};
-  mrData.forEach(function(m) {
-    var svfEmail = svfByStudentId[m.student_id];
-    if (svfEmail && m.evaluator_email !== svfEmail) return;
-    if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
-    marksDataByStudent[m.student_id][m.section] = m.data;
-  });
-  _ajkliStudents.forEach(function(s) {
-    s._lengkap = isStudentComplete(marksDataByStudent[s.id] || {});
-  });
-
-  var total = _ajkliStudents.length;
-  var done  = _ajkliStudents.filter(function(s) { return s._lengkap; }).length;
-  var pct   = total > 0 ? Math.round(done / total * 100) : 0;
-  var lblEl = document.getElementById('dash-progress-label');
-  if (lblEl) lblEl.textContent = done + ' daripada ' + total + ' pelajar lengkap';
-  var pctEl = document.getElementById('dash-progress-pct');
-  if (pctEl) pctEl.textContent = pct + '%';
-  var barEl = document.getElementById('dash-progress-bar');
-  if (barEl) barEl.style.width = pct + '%';
-
-  filterAjkliDashboard();
 }
 
 function filterAjkliDashboard() {

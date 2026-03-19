@@ -484,6 +484,44 @@ Four bugs causing inconsistent completion status were found and fixed in `js/app
   resets `_studentApprovalStatus`. `showTab('dashboard')` → `loadDashboard()` fetches fresh data.
   Next `openStudentEval()` + `loadStudentForEval()` sets all globals from scratch.
 
+## Dashboard Regression Fix (v4.17)
+
+Three additional bugs found in v4.16 code causing zero students to appear on dashboard for all roles:
+
+### Bug 5 — Null evaluator_email in marks silently drops all marks for SVF-assigned students
+- **Root cause**: The v4.16 filter condition `if (svfEmail && m.evaluator_email !== svfEmail) return`
+  was too strict. If any mark record has `evaluator_email = null` in the DB (legacy data saved before
+  the evaluator_email constraint was enforced), `null !== svfEmail` evaluates to `true`, causing the
+  mark to be silently dropped for any student with an assigned SVF. Result: all those students show
+  "Belum Lengkap" even when all sections are confirmed.
+- **Fix**: Changed condition to `if (svfEmail && m.evaluator_email && m.evaluator_email !== svfEmail)`.
+  Marks with null/empty `evaluator_email` are now accepted as a safe fallback (legacy data tolerance).
+  Applied to both `renderAdminDashboard()` and `loadAjkliDashboard()`.
+
+### Bug 6 — No try/catch in async dashboard functions; network error leaves table stuck
+- **Root cause**: `loadAjkliDashboard()` and `renderAdminDashboard()` had no error handling. If
+  `Promise.all` throws (network error, unexpected runtime error), `_ajkliStudents` stays `[]` and
+  `filterAjkliDashboard()` is never called — leaving the table body permanently stuck on "Memuatkan..."
+  with no students visible.
+- **Fix**: Wrapped both functions in try/catch. On error in `loadAjkliDashboard`, if `_ajkliStudents`
+  was already populated before the error, students are rendered as "Belum Lengkap" via the catch block.
+  Otherwise, an error message is shown.
+
+### Bug 7 — Stale filter dropdown selection hides all students after navigation
+- **Root cause**: `filterEl.innerHTML = ...` rebuilds the pensyarah dropdown options but browsers
+  **preserve the selected value** if the same option still exists. If a user selected a specific
+  pensyarah filter, then navigated to an eval and returned, `loadAjkliDashboard()` would reload with
+  that filter still active. If that pensyarah has no assigned students, the table shows "Tiada pelajar."
+  appearing as zero students despite the DB having data.
+- **Fix**: Added `filterEl.value = ''` and `prFilterEl.value = ''` after rebuilding filter dropdowns
+  in `loadAjkliDashboard()`. Filters always reset to "Semua" on each dashboard reload.
+
+### Invariant confirmed
+- Students are ALWAYS displayed regardless of marks/approval state. Marks data only affects the
+  "Lengkap / Belum Lengkap" badge. An empty or missing marks record → "Belum Lengkap", never hidden.
+- `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
+  (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
