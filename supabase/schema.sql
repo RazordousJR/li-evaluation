@@ -118,3 +118,63 @@ INSERT INTO public.users (full_name, email, password_hash, roles, is_active) VAL
   ('Pensyarah',            'pensyarah@utem.edu.my',
    encode(digest('pensyarah123', 'sha256'), 'hex'),  '{PENSYARAH}', TRUE)
 ON CONFLICT (email) DO NOTHING;
+
+-- ============================================================
+-- Audit Trail (Phase 1)
+-- ============================================================
+
+-- 4. MARK_AUDIT — records every field-level change to public.marks
+CREATE TABLE IF NOT EXISTS public.mark_audit (
+  id               UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id       UUID        NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  section          TEXT        NOT NULL,  -- e.g. 'svi', 'svf', 'logbook', 'presentation', 'report', 'meta'
+  field_key        TEXT        NOT NULL,  -- specific jsonb key that changed
+  old_value        TEXT,
+  new_value        TEXT,
+  changed_by_email TEXT        NOT NULL,
+  changed_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.mark_audit DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.mark_audit TO anon;
+
+-- Trigger function: compare OLD.data vs NEW.data and log each differing field
+CREATE OR REPLACE FUNCTION log_mark_changes()
+RETURNS TRIGGER AS $$
+DECLARE
+  k        TEXT;
+  old_val  TEXT;
+  new_val  TEXT;
+BEGIN
+  -- Keys present in NEW.data (inserted or changed)
+  FOR k IN SELECT jsonb_object_keys(NEW.data) LOOP
+    old_val := OLD.data ->> k;
+    new_val := NEW.data ->> k;
+    IF old_val IS DISTINCT FROM new_val THEN
+      INSERT INTO public.mark_audit
+        (student_id, section, field_key, old_value, new_value, changed_by_email)
+      VALUES
+        (NEW.student_id, NEW.section, k, old_val, new_val, NEW.evaluator_email);
+    END IF;
+  END LOOP;
+
+  -- Keys present in OLD.data but removed from NEW.data
+  FOR k IN SELECT jsonb_object_keys(OLD.data) LOOP
+    IF NOT (NEW.data ? k) THEN
+      old_val := OLD.data ->> k;
+      INSERT INTO public.mark_audit
+        (student_id, section, field_key, old_value, new_value, changed_by_email)
+      VALUES
+        (NEW.student_id, NEW.section, k, old_val, NULL, NEW.evaluator_email);
+    END IF;
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop and recreate trigger to ensure idempotency when re-running schema
+DROP TRIGGER IF EXISTS trg_mark_audit ON public.marks;
+CREATE TRIGGER trg_mark_audit
+  AFTER UPDATE ON public.marks
+  FOR EACH ROW EXECUTE FUNCTION log_mark_changes();

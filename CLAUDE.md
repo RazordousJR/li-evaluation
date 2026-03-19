@@ -381,6 +381,44 @@ BITU3946 OBE components:
   - Toast element: `#idle-toast` injected into DOM by `startIdleWatch()`
 - **Migration**: Run pgcrypto migration in `supabase/schema.sql` to hash existing plaintext passwords in DB
 
+## Audit Trail (Phase 1 — v4.12)
+
+### Database Table: `public.mark_audit`
+Columns: `id` (uuid PK), `student_id` (uuid FK → students, CASCADE DELETE), `section` (text), `field_key` (text), `old_value` (text), `new_value` (text), `changed_by_email` (text), `changed_at` (timestamptz, default now())
+- One row per field-level change; recorded automatically via Postgres trigger
+- RLS disabled; anon role granted full access (consistent with other tables)
+
+### Trigger: `trg_mark_audit` on `public.marks`
+- Fires AFTER UPDATE FOR EACH ROW
+- Function `log_mark_changes()`: iterates `jsonb_object_keys(NEW.data)` and `OLD.data` keys
+  - Inserts audit row whenever `OLD.data ->> key IS DISTINCT FROM NEW.data ->> key`
+  - Also captures keys removed from NEW.data (records old value → NULL)
+- Uses `NEW.evaluator_email` as `changed_by_email`
+- `DROP TRIGGER IF EXISTS` before `CREATE TRIGGER` makes schema re-runnable safely
+
+### JS: `loadAuditTrail(studentId)`
+- Queries `public.mark_audit WHERE student_id = studentId ORDER BY changed_at DESC`
+- Returns array of rows; empty array on error
+- Called from `loadStudentForEval()` after marks are loaded
+
+### JS: `renderAuditTrail(rows)`
+- Renders rows into `#audit-trail-body` in `#page-summary`
+- Shows "Tiada rekod perubahan" when array is empty
+- Section labels mapped from raw section key (e.g. `logbook` → `e-Logbook`)
+- `_auditRows` module-level cache holds current rows
+
+### JS: `toggleAuditTrail()`
+- Toggles visibility of `#audit-trail-content` div
+- Updates `#audit-toggle-btn` text between "Lihat Sejarah" / "Sembunyikan Sejarah"
+- Panel starts collapsed when student is loaded for eval
+
+### UI: Ringkasan & Gred — "Sejarah Perubahan Markah" section
+- Located at bottom of `#page-summary`, after the btn-row
+- Toggle button `#audit-toggle-btn` shows/hides table
+- Table columns: Tarikh & Masa | Bahagian | Field | Nilai Lama | Nilai Baru | Diubah Oleh
+- Section badges styled with `.audit-section-badge` (blue pill)
+- **Setup**: Run the "Audit Trail (Phase 1)" block in `supabase/schema.sql` in Supabase SQL Editor
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
@@ -399,7 +437,7 @@ Track of planned improvements. Tick when done.
 - [ ] Alert bila deadline nak dekat
 
 ### Audit Trail
-- [ ] Log siapa edit markah, bila, dari berapa ke berapa
+- [x] Log siapa edit markah, bila, dari berapa ke berapa
 
 ### Dashboard & UX
 - [ ] Chart/graf — % pelajar lengkap, distribution markah
