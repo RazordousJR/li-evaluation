@@ -1787,6 +1787,15 @@ async function loadStudentForEval(student) {
       _suppressSave = false;
     }
     setSaveStatus('saved');
+
+    // Load and render audit trail
+    var auditRows = await loadAuditTrail(student.id);
+    renderAuditTrail(auditRows);
+    // Collapse the audit trail panel when loading a new student
+    var auditContent = document.getElementById('audit-trail-content');
+    var auditBtn = document.getElementById('audit-toggle-btn');
+    if (auditContent) auditContent.style.display = 'none';
+    if (auditBtn) auditBtn.textContent = 'Lihat Sejarah';
   } catch(e) {
     console.error('loadStudentForEval error:', e);
     setSaveStatus('error');
@@ -1850,6 +1859,67 @@ async function kemaskiniSviOrg() {
     setTimeout(function() { if (feedback) feedback.textContent = ''; }, 3000);
   }
 }
+// ===== AUDIT TRAIL =====
+
+async function loadAuditTrail(studentId) {
+  try {
+    var resp = await sb.from('mark_audit')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('changed_at', { ascending: false });
+    return (!resp.error && resp.data) ? resp.data : [];
+  } catch(e) {
+    console.error('loadAuditTrail error:', e);
+    return [];
+  }
+}
+
+var _auditRows = [];
+
+function renderAuditTrail(rows) {
+  _auditRows = rows || [];
+  var tbody = document.getElementById('audit-trail-body');
+  if (!tbody) return;
+
+  var sectionLabels = {
+    svi: 'SVI', svf: 'SVF', logbook: 'e-Logbook',
+    presentation: 'Pembentangan', report: 'Laporan LI', meta: 'Meta'
+  };
+
+  if (!_auditRows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:1rem">Tiada rekod perubahan</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = _auditRows.map(function(row) {
+    var dt = new Date(row.changed_at);
+    var dateStr = dt.toLocaleDateString('ms-MY', { day:'2-digit', month:'2-digit', year:'numeric' })
+                + ' ' + dt.toLocaleTimeString('ms-MY', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    var sectionLabel = sectionLabels[row.section] || row.section;
+    var oldVal = (row.old_value !== null && row.old_value !== undefined) ? row.old_value : '<em style="color:var(--text2)">—</em>';
+    var newVal = (row.new_value !== null && row.new_value !== undefined) ? row.new_value : '<em style="color:var(--text2)">—</em>';
+    return '<tr>'
+      + '<td style="white-space:nowrap;font-size:12px">' + dateStr + '</td>'
+      + '<td><span class="audit-section-badge">' + sectionLabel + '</span></td>'
+      + '<td style="font-family:monospace;font-size:12px">' + row.field_key + '</td>'
+      + '<td style="color:#dc2626">' + oldVal + '</td>'
+      + '<td style="color:#16a34a">' + newVal + '</td>'
+      + '<td style="font-size:12px">' + (row.changed_by_email || '—') + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function toggleAuditTrail() {
+  var content = document.getElementById('audit-trail-content');
+  var btn = document.getElementById('audit-toggle-btn');
+  if (!content) return;
+  var isHidden = content.style.display === 'none' || content.style.display === '';
+  content.style.display = isHidden ? '' : 'none';
+  if (btn) btn.textContent = isHidden ? 'Sembunyikan Sejarah' : 'Lihat Sejarah';
+}
+
+// ===== END AUDIT TRAIL =====
+
 // ===== END STUDENT EVAL WORKFLOW =====
 
 initAuth();

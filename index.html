@@ -666,6 +666,33 @@
     <button class="btn-secondary" onclick="window.print()">Cetak / PDF</button>
     <button class="btn-danger" onclick="resetAll()">Reset Semua</button>
   </div>
+
+  <!-- AUDIT TRAIL -->
+  <div class="section audit-trail-section">
+    <div class="audit-trail-header">
+      <span class="section-title" style="margin:0">Sejarah Perubahan Markah</span>
+      <button class="btn-secondary audit-toggle-btn" id="audit-toggle-btn" onclick="toggleAuditTrail()">Lihat Sejarah</button>
+    </div>
+    <div id="audit-trail-content" style="display:none;margin-top:.75rem">
+      <div class="audit-table-wrap">
+        <table class="print-table" id="audit-trail-table">
+          <thead>
+            <tr>
+              <th>Tarikh &amp; Masa</th>
+              <th>Bahagian</th>
+              <th>Field</th>
+              <th>Nilai Lama</th>
+              <th>Nilai Baru</th>
+              <th>Diubah Oleh</th>
+            </tr>
+          </thead>
+          <tbody id="audit-trail-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:1rem">Tiada rekod perubahan</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- USER MANAGEMENT (ADMIN ONLY) -->

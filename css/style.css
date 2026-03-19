@@ -264,6 +264,13 @@ textarea{resize:vertical;min-height:70px}
 .svi-org-indicator{background:var(--green-bg);border:1px solid rgba(10,124,78,.25);border-radius:var(--radius);padding:7px 14px;font-size:12.5px;color:var(--green-text);font-weight:500;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.875rem;display:none}
 .svi-org-sep{opacity:.4;font-size:14px}
 
+/* ===== AUDIT TRAIL ===== */
+.audit-trail-section{border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem}
+.audit-trail-header{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.audit-toggle-btn{font-size:12px;padding:.3rem .75rem}
+.audit-table-wrap{overflow-x:auto}
+.audit-section-badge{display:inline-block;background:#e8f0fe;color:#1e3a8a;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;white-space:nowrap}
+
 @media print{
   body{background:white}
   .sidebar,.topbar,.btn-row,.login-overlay,.sidebar-overlay{display:none!important}
