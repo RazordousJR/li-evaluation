@@ -109,8 +109,15 @@ async function doLogin() {
     // Use SECURITY DEFINER RPC to bypass RLS for the pre-session login lookup
     var resp = await sb.rpc('get_user_for_login', { p_email: email });
 
+    if (resp.error) {
+      console.error('[doLogin] RPC error:', resp.error);
+      errEl.textContent = 'Ralat sambungan. Cuba semula.';
+      errEl.style.display = 'block';
+      return;
+    }
+
     var user = resp.data?.[0];
-    if (resp.error || !user || user.password_hash !== passHash || user.is_active === false) {
+    if (!user || user.is_active === false || user.password_hash !== passHash) {
       errEl.textContent = 'E-mel atau kata laluan tidak sah.';
       errEl.style.display = 'block';
       return;
