@@ -542,6 +542,14 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.21.2 — populatePDFPages() Data Fixes)
+
+### Bugfixes (v4.21.2)
+- **FIX 1 — Page 4 Logbook B1 max wrong**: Changed B1 (Persembahan) max display from `/10` to `/20` to match actual scoring schema.
+- **FIX 2 — Page 5 BITU3926 PR1-1 zeros**: Replaced `sviBVals` loop array with named individual variables (`sviB1`–`sviB10`). Updated PR1-1 formula to `svfB1 + (sviBTotal / 5)` exactly. Build `sviBArr` from named vars for the detail rows loop.
+- **FIX 3 — Page 6 pilihan detection**: Changed `parseInt((mm['meta']||{})['pilihan'] || 1) || 1` to `parseInt((mm['meta']||{})['pilihan']) || 1` — avoids coercing undefined inside parseInt, matches spec.
+- **FIX 4 — Page 7 PR1-1 MARKAH fallback**: Added fallback for `domVal('r_pr11')` — if DOM returns empty or `'0'`, computes `svfB1 + sviSum/5` directly from `window._pdfData.marksMap` and formats as `"X.X / 20"`.
+
 ## PDF Report Generation (v4.21.1 — populatePDFPages() Bugfix)
 
 ### Bugfix (v4.21.1)

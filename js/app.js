@@ -2686,7 +2686,7 @@ function populatePDFPages() {
     var logTotal = a1 + b1 + c1;
     var r = '';
     r += '<tr><td>A1. Kandungan Logbook / Logbook Content</td><td class="td-mark">' + a1 + '</td><td class="td-max">/50</td></tr>';
-    r += '<tr><td>B1. Persembahan / Presentation Quality</td><td class="td-mark">' + b1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>B1. Persembahan / Presentation Quality</td><td class="td-mark">' + b1 + '</td><td class="td-max">/20</td></tr>';
     r += '<tr><td>C1. Penghantaran / Submission</td><td class="td-mark">' + c1 + '</td><td class="td-max">/10</td></tr>';
     r += '<tr class="tr-total"><td><strong>JUMLAH e-LOGBOOK / e-LOGBOOK TOTAL</strong></td><td class="td-mark"><strong>' + logTotal + '</strong></td><td class="td-max">/70</td></tr>';
     sh('pp4-tbody', r);
@@ -2694,16 +2694,25 @@ function populatePDFPages() {
 
   // ── PAGE 5: PEMBENTANGAN ──
   (function() {
-    var svfB1 = gm('presentation', 'svf_b1');
-    var sviBVals = [];
-    for (var i = 1; i <= 10; i++) sviBVals.push(gm('presentation', 'svi_b' + i));
-    var sviBSum = sviBVals.reduce(function(acc, v) { return acc + v; }, 0);
-    var sviBFor3926 = Math.round(sviBSum / 5 * 10) / 10; // raw /50 → /10
-    var pr11_3926 = Math.round((svfB1 + sviBFor3926) * 10) / 10;
+    var svfB1  = gm('presentation', 'svf_b1');
+    var sviB1  = gm('presentation', 'svi_b1');
+    var sviB2  = gm('presentation', 'svi_b2');
+    var sviB3  = gm('presentation', 'svi_b3');
+    var sviB4  = gm('presentation', 'svi_b4');
+    var sviB5  = gm('presentation', 'svi_b5');
+    var sviB6  = gm('presentation', 'svi_b6');
+    var sviB7  = gm('presentation', 'svi_b7');
+    var sviB8  = gm('presentation', 'svi_b8');
+    var sviB9  = gm('presentation', 'svi_b9');
+    var sviB10 = gm('presentation', 'svi_b10');
+    var sviBTotal = sviB1 + sviB2 + sviB3 + sviB4 + sviB5 +
+                    sviB6 + sviB7 + sviB8 + sviB9 + sviB10;
+    var pr11_3926 = svfB1 + (sviBTotal / 5);
     // Read BITU3946 totals from calcSummary DOM
     var psvfRaw = parseFloat(domVal('r2_pr11_psvf_raw')) || 0;
     var psviRaw = parseFloat(domVal('r2_pr11_psvi_raw')) || 0;
     var pr11_3946 = Math.round((psvfRaw + psviRaw) / 200 * 20 * 100) / 100;
+    var sviBArr = [sviB1,sviB2,sviB3,sviB4,sviB5,sviB6,sviB7,sviB8,sviB9,sviB10];
     var sviLabels = [
       'Penguasaan Teknikal / Technical Mastery',
       'Kejelasan Penyampaian / Clarity of Delivery',
@@ -2719,13 +2728,13 @@ function populatePDFPages() {
     var r = '';
     r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BITU3926 — PR1-1 (Pembentangan / Presentation, max /20)</td></tr>';
     r += '<tr><td>SVF Bah. B — Pembentangan / SVF Presentation</td><td class="td-mark">' + svfB1 + '</td><td class="td-max">/10</td></tr>';
-    r += '<tr><td>SVI Bah. B — Pembentangan (Jumlah &divide; 5) / SVI Presentation</td><td class="td-mark">' + sviBFor3926.toFixed(1) + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>SVI Bah. B — Pembentangan (Jumlah &divide; 5) / SVI Presentation</td><td class="td-mark">' + (sviBTotal / 5).toFixed(1) + '</td><td class="td-max">/10</td></tr>';
     r += '<tr class="tr-subtotal"><td>PR1-1 BITU3926</td><td class="td-mark">' + pr11_3926.toFixed(1) + '</td><td class="td-max">/20</td></tr>';
     r += '<tr><td colspan="3" style="background:#eff6ff;font-weight:600;color:#1e4291;padding:4px 8px;font-size:9pt">SVI Pembentangan — Butiran / SVI Presentation Detail (raw /50)</td></tr>';
     for (var j = 0; j < 10; j++) {
-      r += '<tr><td style="padding-left:16px">B' + (j + 1) + '. ' + sviLabels[j] + '</td><td class="td-mark">' + sviBVals[j] + '</td><td class="td-max">/5</td></tr>';
+      r += '<tr><td style="padding-left:16px">B' + (j + 1) + '. ' + sviLabels[j] + '</td><td class="td-mark">' + sviBArr[j] + '</td><td class="td-max">/5</td></tr>';
     }
-    r += '<tr class="tr-subtotal"><td>Jumlah SVI Pembentangan (raw)</td><td class="td-mark">' + sviBSum + '</td><td class="td-max">/50</td></tr>';
+    r += '<tr class="tr-subtotal"><td>Jumlah SVI Pembentangan (raw)</td><td class="td-mark">' + sviBTotal + '</td><td class="td-max">/50</td></tr>';
     r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BITU3946 — PR1-1 (Purata SVF &amp; SVI / 20)</td></tr>';
     r += '<tr><td>Pembentangan SVF (Jumlah Keseluruhan SVF)</td><td class="td-mark">' + psvfRaw + '</td><td class="td-max">/100</td></tr>';
     r += '<tr><td>Pembentangan SVI (Jumlah Keseluruhan SVI)</td><td class="td-mark">' + psviRaw + '</td><td class="td-max">/100</td></tr>';
@@ -2735,7 +2744,7 @@ function populatePDFPages() {
 
   // ── PAGE 6: LAPORAN LI ──
   (function() {
-    var pilihan = parseInt((mm['meta'] || {})['pilihan'] || 1) || 1;
+    var pilihan = parseInt((mm['meta'] || {})['pilihan']) || 1;
     var a1 = gm('report', 'rep_a1'), a2 = gm('report', 'rep_a2'), a3 = gm('report', 'rep_a3');
     var a4Tech = pilihan === 2
       ? gm('report', 'rep_a4_tech_p2') : gm('report', 'rep_a4_tech_p1');
@@ -2781,7 +2790,14 @@ function populatePDFPages() {
     r += '<tr><td>PRJ-3 (SVF A1)</td><td class="td-mark">' + domVal('r_prj3r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj3') + '</td></tr>';
     r += '<tr><td>PRJ-4 (SVF A2+A3)</td><td class="td-mark">' + domVal('r_prj4r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj4') + '</td></tr>';
     r += '<tr><td>LR1 (e-Logbook)</td><td class="td-mark">' + domVal('r_lr1r') + '</td><td class="td-max">20%</td><td class="td-mark">' + domVal('r_lr1') + '</td></tr>';
-    r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">—</td><td class="td-max">20%</td><td class="td-mark">' + domVal('r_pr11') + '</td></tr>';
+    var pr11Markah = domVal('r_pr11');
+    if (!pr11Markah || pr11Markah === '0') {
+      var svf1 = gm('presentation', 'svf_b1');
+      var sviS = 0;
+      for (var ki = 1; ki <= 10; ki++) sviS += gm('presentation', 'svi_b' + ki);
+      pr11Markah = (svf1 + sviS / 5).toFixed(1) + ' / 20';
+    }
+    r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">—</td><td class="td-max">20%</td><td class="td-mark">' + pr11Markah + '</td></tr>';
     r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3926 / Gred</strong></td><td class="td-mark"><strong>' + d.total3926.toFixed(2) + ' / ' + d.grade3926 + '</strong></td></tr>';
     // BITU3946
     r += '<tr><td colspan="4" style="background:#1e3a8a;color:#fff;font-weight:700;padding:6px 8px;border-top:8px solid #fff">BITU3946 — Laporan Latihan Industri</td></tr>';
