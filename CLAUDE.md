@@ -542,6 +542,13 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.21.6 — Three generatePDF() bugfixes)
+
+### Bugfixes (v4.21.6)
+- **FIX 1 — SVF name shows email instead of full name**: `_ajkliPensyarahMap` and `_senaraiPensyarahMap` may be empty if user navigated directly to eval without loading the dashboard. Added async Supabase fallback: if both maps miss, `generatePDF()` awaits `sb.from('users').select('full_name').eq('email', s.svf_email).single()`. Falls back to `s.svf_email` only as last resort. Result stored in `window._pdfSvfName` for use by `populatePDFPages()`.
+- **FIX 2 — PR1-1 mentah shows 60.0 instead of 20.0**: `r_pr11_svib_raw` holds the raw SVI value (scale 0–50) before ÷5. Added guard `sviBforCalc = sviBraw > 10 ? sviBraw / 5 : sviBraw` for both the `pr11mentah` and the `pr11Markah` fallback calculations in `populatePDFPages()` page 7.
+- **FIX 3 — Page 7 SVF signature shows "—"**: `pp7-sig-svf` was using `s.svf_name` directly. Now reads `window._pdfSvfName` (set in Fix 1) with `s.svf_name` as secondary fallback.
+
 ## PDF Report Generation (v4.21.5 — SVF name fallback in cover page)
 
 ### Bugfix (v4.21.5)

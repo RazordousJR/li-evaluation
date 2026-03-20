@@ -2468,8 +2468,15 @@ async function generatePDF(student) {
   if (!svfDisplayName && s.svf_email) {
     svfDisplayName = (_ajkliPensyarahMap && _ajkliPensyarahMap[s.svf_email]) ||
       (_senaraiPensyarahMap && _senaraiPensyarahMap[s.svf_email]) ||
-      s.svf_email;
+      '';
   }
+  // If still no name, fetch from Supabase (e.g. navigated directly to eval)
+  if (!svfDisplayName && s.svf_email) {
+    var uRes = await sb.from('users').select('full_name').eq('email', s.svf_email).single();
+    if (uRes.data && uRes.data.full_name) svfDisplayName = uRes.data.full_name;
+  }
+  if (!svfDisplayName) svfDisplayName = s.svf_email || '—';
+  window._pdfSvfName = svfDisplayName;
 
   // Populate basic student info
   var courseCode = (s.kursus === 'BITE' || s.kursus === 'BITZ')
@@ -2612,7 +2619,8 @@ function populatePDFPages() {
 
   // Signature names on page 7
   st('pp7-sig-svi', s.svi_name || '—');
-  st('pp7-sig-svf', s.svf_name || '—');
+  var svfSigName = window._pdfSvfName || s.svf_name || '—';
+  st('pp7-sig-svf', svfSigName);
 
   // ── PAGE 2: SVI ──
   (function() {
@@ -2820,11 +2828,13 @@ function populatePDFPages() {
     if (!pr11Markah || pr11Markah === '0') {
       var svfBraw2 = parseFloat(domVal('r_pr11_svfb_raw')) || 0;
       var sviBraw2 = parseFloat(domVal('r_pr11_svib_raw')) || 0;
-      pr11Markah = (svfBraw2 + sviBraw2).toFixed(1) + ' / 20';
+      var sviBforCalc2 = sviBraw2 > 10 ? sviBraw2 / 5 : sviBraw2;
+      pr11Markah = (svfBraw2 + sviBforCalc2).toFixed(1) + ' / 20';
     }
     var svfBraw = parseFloat(domVal('r_pr11_svfb_raw')) || 0;
     var sviBraw = parseFloat(domVal('r_pr11_svib_raw')) || 0;
-    var pr11mentah = (svfBraw + sviBraw).toFixed(1);
+    var sviBforCalc = sviBraw > 10 ? sviBraw / 5 : sviBraw;
+    var pr11mentah = (svfBraw + sviBforCalc).toFixed(1);
     r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">' + pr11mentah + '</td><td class="td-max">20%</td><td class="td-mark">' + pr11Markah + '</td></tr>';
     r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3926 / Gred</strong></td><td class="td-mark"><strong>' + d.total3926.toFixed(2) + ' / ' + d.grade3926 + '</strong></td></tr>';
     // BITU3946
