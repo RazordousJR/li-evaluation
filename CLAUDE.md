@@ -543,12 +543,55 @@ Track of planned improvements. Tick when done.
 - [x] Log siapa edit markah, bila, dari berapa ke berapa
 
 ### Dashboard & UX
-- [ ] Chart/graf — % pelajar lengkap, distribution markah
+- [x] Chart/graf — % pelajar lengkap, distribution markah
 - [ ] Mobile input UX yang lebih baik
 
 ### Workflow
 - [x] Approval flow: pensyarah submit → AJK_LI approve → lock markah
 - [ ] History/versioning markah (boleh tengok versi sebelum edit)
+
+## Dashboard Charts (v4.17)
+
+### Chart.js CDN
+- Added `chart.js@4.4.0` via jsdelivr in `<head>` of index.html (after existing CDN scripts)
+
+### ADMIN & AJK_LI Dashboard — 3 Donut Charts
+- Chart container: `<div class="dash-charts-grid" id="dash-charts-row">` placed above the student table inside `#dash-ajkli`
+- Chart IDs: `chart-completion`, `chart-approval`, `chart-program`
+- Global chart instance vars (module-level in app.js): `_chartCompletion`, `_chartApproval`, `_chartProgram`
+  - Each is destroyed before recreation to prevent memory leaks
+
+### `renderDashboardCharts(students, marksDataByStudent)`
+- Called at the end of `loadAjkliDashboard()`, just before `filterAjkliDashboard()`
+- Uses all students in `_ajkliStudents` (full dataset, not filtered subset)
+- Reads CSS variable colors via `getComputedStyle` so dark mode works automatically
+- **Chart 1 — Status Penilaian** (`chart-completion`): Lengkap vs Belum Lengkap (green/red)
+- **Chart 2 — Status Kelulusan** (`chart-approval`): Diluluskan/Menunggu Kelulusan/Draf (green/amber/grey)
+  - Requires `approval_status` field — added to `loadAjkliDashboard()` students select
+- **Chart 3 — Agihan Program** (`chart-program`): students grouped by `kursus`; dynamic (any number of programs); uses 8-color palette
+
+### `approval_status` Added to `loadAjkliDashboard()` Query
+- Students select changed from `'id, matric_no, name, kursus, svf_email, svf_name'`
+  to `'id, matric_no, name, kursus, svf_email, svf_name, approval_status'`
+
+### PENSYARAH Dashboard — Section Progress Pills
+- Container: `<div class="section" id="dash-pensyarah-sections">` above the student table in `#dash-pensyarah`
+- Pills rendered into `#pensyarah-section-pills`
+
+### `renderPensyarahSectionPills(students, marksDataByStudent)`
+- Called inside `loadPensyarahDashboard()` after marks data is computed
+- For each of 5 sections (svi, svf, logbook, presentation, report): counts students with `data.confirmed === true`
+- Green pill (`.pill-done`) if count > 0; grey pill (`.pill-pending`) if 0
+- Label: section display name + "X/Y pelajar"
+
+### CSS Classes Added (style.css)
+- `.dash-charts-grid` — 3-column grid for chart cards; collapses to 1-col on mobile
+- `.dash-chart-card` — card background/border/padding
+- `.dash-chart-title` — uppercase label above chart
+- `.dash-chart-wrap` — `position:relative; height:200px` for Chart.js sizing
+- `.pensyarah-section-pill` — base pill style
+- `.pill-done` — green (uses `--green-bg`/`--green-text`)
+- `.pill-pending` — grey (uses `--gray-bg`/`--gray-text`)
 
 ## Student Approval Workflow (v4.13)
 
