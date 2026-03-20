@@ -2518,9 +2518,19 @@ async function generatePDF(student) {
   var svfRating = (marksMap['svf'] || {})['rating'] || '—';
   var svfStatus = (marksMap['svf'] || {})['status'] || '—';
 
-  setText('pp-total-marks',
-    'BITU3926: ' + total3926.toFixed(2) + ' | BITU3946: ' + total3946.toFixed(2));
-  setText('pp-grade', grade3926 + ' / ' + grade3946);
+  var marksEl = document.getElementById('pp-total-marks');
+  if (marksEl) {
+    marksEl.innerHTML =
+      '<div>BITU3926: <strong>' + total3926.toFixed(2) + '</strong></div>' +
+      '<div style="margin-top:4px">BITU3946: <strong>' + total3946.toFixed(2) + '</strong></div>';
+  }
+
+  var gradeEl = document.getElementById('pp-grade');
+  if (gradeEl) {
+    gradeEl.innerHTML =
+      '<div>BITU3926: <strong>' + grade3926 + '</strong></div>' +
+      '<div style="margin-top:4px">BITU3946: <strong>' + grade3946 + '</strong></div>';
+  }
   setText('pp-svi-rating', sviRating);
   setText('pp-svf-rating', svfRating + ' (' + svfStatus + ')');
 

@@ -542,6 +542,11 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.20.4 — stacked marks/grade display)
+
+### Change (v4.20.4)
+- `pp-total-marks` and `pp-grade` now use `innerHTML` with two stacked `<div>` elements instead of a single `setText()` call — displays BITU3926 and BITU3946 values on separate lines with 4px gap.
+
 ## PDF Report Generation (v4.20.3 — DOM-based totals)
 
 ### Bugfix (v4.20.3)
