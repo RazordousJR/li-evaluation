@@ -177,28 +177,25 @@ Both upload flows perform duplicate checking against Supabase before showing the
 ## Navigation
 - `showTab(t)` in app.js handles page switching, updates sidebar nav active state and topbar title
 - `openSidebar()` / `closeSidebar()` handle mobile sidebar toggle
-- Tab names: `dashboard`, `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`
+- Tab names: `dashboard`, `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`, `senarai`
 - **Dashboard** is the new landing page for all roles (replaces `info` as default)
 - `loadDashboard()` detects role and calls role-specific render function
 
-## Dashboard (v4.2 — Enhanced Admin)
+## Dashboard (v4.19 — Charts Only)
 
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)
 - 4 stat cards (in `#dash-admin`): Total Pelajar, Total Pensyarah, Pelajar Lengkap (all 5 sections), Belum Assign SVF
 - `renderAdminDashboard()` queries students, users (PENSYARAH), and marks in parallel
-- Below stat cards: full AJK_LI view (progress bar + filters + student table) via `#dash-ajkli`
-- ADMIN can click any student row → opens Evaluation Form for that student (same as AJK_LI)
+- Below stat cards: AJK_LI charts section via `#dash-ajkli`
 - `loadDashboard()` for ADMIN calls both `renderAdminDashboard()` and `loadAjkliDashboard()`
 
 ### AJK_LI Dashboard
 - Page: `#page-dashboard` → `#dash-ajkli` section
-- Progress bar showing % completion across all students
-- Filter dropdowns: by Pensyarah (SVF) and by Program
-- Student table: No Matrik, Nama, Program, SVF, Status Markah (Lengkap/Belum Lengkap)
-- Click row → opens Evaluation Form for that student
-- `loadAjkliDashboard()`, `filterAjkliDashboard()`, `renderAjkliTable()`
-- `_ajkliStudents[]` and `_ajkliPensyarahMap{}` globals cache loaded data
+- **Contains 4 donut charts only** (v4.19: progress bar, filter dropdowns, and student table removed)
+- `loadAjkliDashboard()` fetches students+marks, computes `_lengkap`, calls `renderDashboardCharts()`
+- `_ajkliStudents[]` and `_ajkliPensyarahMap{}` globals still populated (used by `renderDashboardCharts`)
+- Student browsing moved to **Panel Senarai** (`#page-senarai`)
 
 ### PENSYARAH Dashboard
 - Page: `#page-dashboard` → `#dash-pensyarah` section
@@ -207,6 +204,27 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - Status computed from marks evaluator_email-filtered query
 - Click row → triggers `openStudentEval(student)` flow
 - `loadPensyarahDashboard()`, `_pensyarahDashStudents[]` global
+
+## Panel Senarai (v4.19 — ADMIN + AJK_LI)
+- Accessible via "Senarai Pelajar" sidebar nav item (`senarai-nav-item`), shown for ADMIN and AJK_LI only
+- Page ID: `#page-senarai`; tab name: `senarai`; topbar title: "Senarai Pelajar"
+- **Filters** (4 dropdowns + reset button):
+  - `senarai-filter-pensyarah` — filter by SVF email; dropdown populated from `public.users` (PENSYARAH)
+  - `senarai-filter-program` — filter by `kursus` value (BITC/BITD/BITM/BITI/BITS/BITE/BITZ)
+  - `senarai-filter-markah` — filter by completion: `lengkap` / `belum`
+  - `senarai-filter-kelulusan` — filter by `approval_status`: `draft` / `submitted` / `approved`
+- **Summary row** (`#senarai-summary`): "Menunjukkan X daripada Y pelajar"
+- **Table** (`#senarai-tbody`): 6 columns — No Matrik, Nama Pelajar, Program, Pensyarah SVF, Status Markah, Status Kelulusan
+  - Row onclick: `openStudentEval(student)` (same as dashboard rows)
+- **Pagination** (`#senarai-pagination`): 20 records per page; Prev/Next buttons; "Halaman X / Y" display
+- **Module-level globals**: `_senaraiStudents[]`, `_senaraiFiltered[]`, `_senaraiPage`, `_senaraiPageSize` (20), `_senaraiPensyarahMap{}`
+- **Functions**:
+  - `loadSenarai()` — async; fetches students+users+marks in parallel; builds `_senaraiPensyarahMap`; computes `_lengkap` per student (same svf-filtered logic as dashboard); populates pensyarah dropdown; calls `filterSenarai()`
+  - `filterSenarai()` — applies all 4 filter values to `_senaraiStudents`; resets page to 1; updates summary; calls `renderSenaraiTable()`
+  - `renderSenaraiTable()` — paginates `_senaraiFiltered`; renders rows with markah + kelulusan badges; calls `renderSenaraiPagination()`
+  - `renderSenaraiPagination()` — renders prev/next controls into `#senarai-pagination`
+  - `resetSenaraiFilters()` — resets all 4 dropdowns to `''`; calls `filterSenarai()`
+- **CSS**: `.senarai-filter-row`, `.senarai-summary-row`, `.senarai-pagination`, `.table-wrap`, `.data-table`
 
 ## Student Profile Setup (v4.2)
 - `openStudentEval(student)` — entry point for selecting a student from any dashboard
@@ -544,6 +562,7 @@ Track of planned improvements. Tick when done.
 
 ### Dashboard & UX
 - [x] Chart/graf — % pelajar lengkap, distribution markah
+- [x] Panel Senarai — paginated student list with 4 filters (pensyarah, program, markah, kelulusan)
 - [ ] Mobile input UX yang lebih baik
 
 ### Workflow

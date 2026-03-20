@@ -62,6 +62,7 @@
         <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
         <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
         <a class="nav-item" id="uruspensyarah-nav-item" data-tab="uruspensyarah" onclick="showTab('uruspensyarah')" style="display:none">Urus Pensyarah</a>
+        <a class="nav-item" id="senarai-nav-item" data-tab="senarai" onclick="showTab('senarai')" style="display:none">Senarai Pelajar</a>
         <a class="nav-item" id="admin-nav-item" data-tab="usermgmt" onclick="showTab('usermgmt')" style="display:none">Pengurusan Pengguna</a>
       </div>
       <!-- EVAL SIDEBAR: shown when a student is selected for evaluation -->
@@ -173,43 +174,6 @@
         <div class="dash-chart-wrap"><canvas id="chart-svf" height="200"></canvas></div>
       </div>
     </div>
-    <div class="section">
-      <div class="section-title">Kemajuan Penilaian</div>
-      <div class="dash-progress-wrap">
-        <div class="dash-progress-header">
-          <span id="dash-progress-label" style="color:var(--text2)">Memuatkan...</span>
-          <span id="dash-progress-pct" class="dash-progress-pct">0%</span>
-        </div>
-        <div class="progress-bar" style="height:10px">
-          <div class="progress-fill" id="dash-progress-bar" style="width:0%"></div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <select id="dash-filter-pensyarah" onchange="filterAjkliDashboard()" style="font-size:13px;padding:5px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit">
-          <option value="">Semua Pensyarah</option>
-        </select>
-        <select id="dash-filter-program" onchange="filterAjkliDashboard()" style="font-size:13px;padding:5px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit">
-          <option value="">Semua Program</option>
-          <option>BITC</option><option>BITD</option><option>BITM</option>
-          <option>BITI</option><option>BITS</option><option>BITE</option><option>BITZ</option>
-        </select>
-        <button class="btn-secondary" onclick="loadAjkliDashboard()">&#8635; Muat Semula</button>
-      </div>
-    </div>
-    <div class="section">
-      <div class="um-table-wrap">
-        <table class="print-table">
-          <thead>
-            <tr>
-              <th>No Matrik</th><th>Nama Pelajar</th><th>Program</th><th>SVF</th><th>Status Markah</th>
-            </tr>
-          </thead>
-          <tbody id="dash-ajkli-tbody">
-            <tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <!-- PENSYARAH dashboard -->
@@ -239,6 +203,67 @@
   </div>
 
 </div><!-- end page-dashboard -->
+
+<!-- SENARAI PELAJAR -->
+<div class="page" id="page-senarai">
+  <div class="section">
+    <div class="section-title">Senarai Pelajar</div>
+
+    <!-- Filter row -->
+    <div class="senarai-filter-row">
+      <select id="senarai-filter-pensyarah" onchange="filterSenarai()">
+        <option value="">Semua Pensyarah</option>
+      </select>
+      <select id="senarai-filter-program" onchange="filterSenarai()">
+        <option value="">Semua Program</option>
+        <option value="BITC">BITC</option>
+        <option value="BITD">BITD</option>
+        <option value="BITM">BITM</option>
+        <option value="BITI">BITI</option>
+        <option value="BITS">BITS</option>
+        <option value="BITE">BITE</option>
+        <option value="BITZ">BITZ</option>
+      </select>
+      <select id="senarai-filter-markah" onchange="filterSenarai()">
+        <option value="">Semua Status Markah</option>
+        <option value="lengkap">Lengkap</option>
+        <option value="belum">Belum Lengkap</option>
+      </select>
+      <select id="senarai-filter-kelulusan" onchange="filterSenarai()">
+        <option value="">Semua Status Kelulusan</option>
+        <option value="draft">Draf</option>
+        <option value="submitted">Menunggu Kelulusan</option>
+        <option value="approved">Diluluskan</option>
+      </select>
+      <button class="btn-secondary" onclick="resetSenaraiFilters()">Tetapkan Semula</button>
+    </div>
+
+    <!-- Summary row -->
+    <div id="senarai-summary" class="senarai-summary-row"></div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>No Matrik</th>
+            <th>Nama Pelajar</th>
+            <th>Program</th>
+            <th>Pensyarah SVF</th>
+            <th>Status Markah</th>
+            <th>Status Kelulusan</th>
+          </tr>
+        </thead>
+        <tbody id="senarai-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="senarai-pagination" id="senarai-pagination"></div>
+  </div>
+</div><!-- end page-senarai -->
 
 <!-- INFO -->
 <div class="page" id="page-info">
