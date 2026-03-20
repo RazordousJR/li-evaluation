@@ -2506,28 +2506,28 @@ async function generatePDF(student) {
 
   // Recompute OBE summary (same logic as calcSummary)
   // PRJ-1: SVI A1+A2 /30 * 15
-  var sviA1 = getMark('svi', 'svi_a1') + getMark('svi', 'svi_a2');
+  var sviA1 = getMark('svi', 'a1') + getMark('svi', 'a2');
   var prj1 = sviA1 / 30 * 15;
 
   // PRJ-2: SVI A3+A4 /20 * 15
-  var sviA23 = getMark('svi', 'svi_a3') + getMark('svi', 'svi_a4');
+  var sviA23 = getMark('svi', 'a3') + getMark('svi', 'a4');
   var prj2 = sviA23 / 20 * 15;
 
   // PRJ-3: SVF A1 /30 * 15
-  var svfA1 = getMark('svf', 'svf_a1_admin') + getMark('svf', 'svf_a1_tech');
+  var svfA1 = getMark('svf', 'a1_admin') + getMark('svf', 'a1_tech');
   var prj3 = svfA1 / 30 * 15;
 
   // PRJ-4: SVF A2+A3 /60 * 15
-  var svfA23 = getMark('svf', 'svf_a2_admin') + getMark('svf', 'svf_a2_tech') +
-               getMark('svf', 'svf_a3');
+  var svfA23 = getMark('svf', 'a2_admin') + getMark('svf', 'a2_tech') +
+               getMark('svf', 'a3');
   var prj4 = svfA23 / 60 * 15;
 
   // LR1: Logbook /70 * 20
-  var logTotal = getMark('logbook', 'log_a1') + getMark('logbook', 'log_b1') +
-                 getMark('logbook', 'log_c1');
+  var logTotal = getMark('logbook', 'a1') + getMark('logbook', 'b1') +
+                 getMark('logbook', 'c1');
   var lr1 = logTotal / 70 * 20;
 
-  // PR1-1: Pembentangan SVF B + SVI B /20
+  // PR1-1: Pembentangan SVF B + SVI B /20 (presentation keys have prefix)
   var svfB = getMark('presentation', 'svf_b1');
   var sviB = getMark('presentation', 'svi_b1') + getMark('presentation', 'svi_b2') +
              getMark('presentation', 'svi_b3') + getMark('presentation', 'svi_b4') +
@@ -2549,12 +2549,12 @@ async function generatePDF(student) {
   else if (total >= 40) grade = 'D';
   else grade = 'E';
 
-  // SVI and SVF ratings from marks data
+  // SVI and SVF ratings from marks data (stored without section prefix)
   var sviData = marksMap['svi'] || {};
   var svfData = marksMap['svf'] || {};
-  var sviRating = sviData['svi_rating'] || '—';
-  var svfRating = svfData['svf_rating'] || '—';
-  var svfStatus = svfData['svf_status'] || '—';
+  var sviRating = sviData['rating'] || '—';
+  var svfRating = svfData['rating'] || '—';
+  var svfStatus = svfData['status'] || '—';
 
   setText('pp-total-marks', totalRounded.toFixed(2));
   setText('pp-grade', grade);

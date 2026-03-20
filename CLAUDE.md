@@ -542,6 +542,16 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.20.2 — getMark field name fix)
+
+### Bugfix (v4.20.2)
+- **BUG 4 — getMark() field name mismatch**: `generatePDF()` was using wrong jsonb keys (e.g. `'svi_a1'` instead of `'a1'`). Actual stored keys per section:
+  - SVI: `a1`, `a2`, `a3`, `a4`, `b1`–`b10`, `rating`, `ulasan` (no section prefix)
+  - SVF: `a1_admin`, `a1_tech`, `a2_admin`, `a2_tech`, `a3`, `b1`, `c1`, `rating`, `status`, `ulasan` (no section prefix)
+  - Logbook: `a1`, `b1`, `c1` (no prefix)
+  - Presentation: `svf_b1`, `svi_b1`–`svi_b10` (has evaluator prefix — exception)
+  - All `getMark()` calls updated to use correct keys; rating lookups changed from `svi_rating`/`svf_rating`/`svf_status` → `rating`/`rating`/`status`
+
 ## PDF Report Generation (v4.20.1 — Bugfixes)
 
 ### Bugfixes (v4.20.1)
