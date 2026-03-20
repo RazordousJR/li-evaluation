@@ -183,6 +183,8 @@ Both upload flows perform duplicate checking against Supabase before showing the
 
 ## Dashboard (v4.19 — Charts Only)
 
+> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19.
+
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)
 - 4 stat cards (in `#dash-admin`): Total Pelajar, Total Pensyarah, Pelajar Lengkap (all 5 sections), Belum Assign SVF
@@ -210,7 +212,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
 - Page ID: `#page-senarai`; tab name: `senarai`; topbar title: "Senarai Pelajar"
 - **Filters** (4 dropdowns + reset button):
   - `senarai-filter-pensyarah` — filter by SVF email; dropdown populated from `public.users` (PENSYARAH)
-  - `senarai-filter-program` — filter by `kursus` value (BITC/BITD/BITM/BITI/BITS/BITE/BITZ)
+  - `senarai-filter-program` — filter by `kursus` value; options populated dynamically from `_senaraiStudents` in `loadSenarai()` (sorted, deduplicated)
   - `senarai-filter-markah` — filter by completion: `lengkap` / `belum`
   - `senarai-filter-kelulusan` — filter by `approval_status`: `draft` / `submitted` / `approved`
 - **Summary row** (`#senarai-summary`): "Menunjukkan X daripada Y pelajar"
