@@ -542,6 +542,63 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.20 — Part 1: Structure & Styling)
+
+### Overview
+- PDF generation uses browser `window.print()` with `@media print` CSS — no external library needed
+- A hidden `#print-area` div is populated with student data then printed; all other UI elements are hidden
+- Part 1 adds the structure, CSS classes, and cover page only
+- Part 2 (pending) will add marks detail pages 2–6
+
+### `#print-area` Structure (index.html)
+- Placed just before `<script src="js/app.js">` (before `</body>`)
+- Hidden on screen via `#print-area { display: none }` in CSS; revealed by `@media print`
+- Contains `<div class="print-page" id="pp-cover">` — Page 1 (cover + student info + OBE summary + signatures)
+- Pages 2–6 to be added in Part 2
+
+### Cover Page Element IDs (`#pp-cover`)
+| ID | Content |
+|----|---------|
+| `pp-course-code` | BITU3926 or BITU3946 (derived from `kursus`) |
+| `pp-sesi` | Academic session (e.g. 2024/2025) |
+| `pp-semester` | "Semester X" |
+| `pp-nama` | Student name |
+| `pp-matric` | Matric number |
+| `pp-program` | Programme code (kursus) |
+| `pp-syarikat` | Company/organisation |
+| `pp-svi` | Industry supervisor name |
+| `pp-svf` | Faculty supervisor name |
+| `pp-total-marks` | Total marks (populated in Part 2) |
+| `pp-grade` | Grade (populated in Part 2) |
+| `pp-svi-rating` | SVI overall rating (populated in Part 2) |
+| `pp-svf-rating` | SVF recommendation (populated in Part 2) |
+| `pp-sig-svi` | Signature line — SVI name |
+| `pp-sig-svf` | Signature line — SVF name |
+| `pp-footer-date` | "Dijana: DD/MM/YYYY" |
+
+### JS Functions (app.js)
+- `generatePDF(student)` — populates all `pp-*` elements from `student` object (defaults to `currentStudent`); calls `window.print()`
+  - Course code: `BITU3926` if `kursus === 'BITE' || 'BITZ'`; else `BITU3946`
+  - Summary marks fields set to `'—'` pending Part 2 implementation
+- `setText(id, val)` — helper; safely sets `textContent` of element by ID (null-safe)
+
+### Button
+- "⬇ Jana Laporan PDF" button added to `.btn-row` in `#page-summary` (replaces old "Cetak / PDF" button)
+- `onclick="generatePDF()"`
+
+### CSS Classes Added (style.css)
+- `@media print` — hides sidebar/topbar/pages, shows `#print-area`, sets A4 page margins
+- `#print-area` — `display:none` on screen; block when printing
+- `.print-page` — full-page container with `min-height:257mm`; `page-break-after:always`
+- `.print-header` / `.print-header-logo` / `.print-header-text` / `.print-header-title` / `.print-header-sub` / `.print-header-right`
+- `.print-student-box` / `.psb-row` / `.psb-label` / `.psb-val` — student info grid
+- `.print-section-title` / `.print-section-subtitle`
+- `.print-table` / `.td-mark` / `.td-max` / `.tr-subtotal` / `.tr-total` — marks table
+- `.print-obe-grid` / `.print-obe-card` / `.poc-label` / `.poc-val` / `.poc-sub` — OBE summary cards
+- `.print-signature-row` / `.print-sig-box` / `.print-sig-line` / `.print-sig-label` / `.print-sig-sub`
+- `.print-footer`
+- `.bilingual` / `.bm` / `.en` — bilingual label helper
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
@@ -551,7 +608,7 @@ Track of planned improvements. Tick when done.
 - [ ] Enable RLS (Row-Level Security) di Supabase — attempted v4.14, reverted v4.15 due to PgBouncer GUC persistence; app-layer filtering used instead
 
 ### Export & Reporting
-- [ ] Export PDF terus dari sistem (sekarang CSV je)
+- [x] Export PDF terus dari sistem — Part 1 structure done (v4.20); Part 2 marks data population pending
 - [ ] Generate borang penilaian akhir auto (surat rasmi)
 - [ ] OBE report yang boleh print cantik
 

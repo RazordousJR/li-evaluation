@@ -2451,4 +2451,45 @@ async function unlockForEdit() {
 
 // ===== END STUDENT EVAL WORKFLOW =====
 
+// ===== PDF GENERATION =====
+
+// Helper: safely set element text content
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function generatePDF(student) {
+  var s = student || currentStudent;
+  if (!s) { alert('Tiada pelajar dipilih.'); return; }
+
+  // Determine course code from kursus
+  var courseCode = (s.kursus === 'BITE' || s.kursus === 'BITZ')
+    ? 'BITU3926' : 'BITU3946';
+
+  setText('pp-course-code', courseCode);
+  setText('pp-sesi', s.sesi || '—');
+  setText('pp-semester', 'Semester ' + (s.semester || '—'));
+  setText('pp-nama', s.name || '—');
+  setText('pp-matric', s.matric_no || '—');
+  setText('pp-program', s.kursus || '—');
+  setText('pp-syarikat', s.organisasi || '—');
+  setText('pp-svi', s.svi_name || '—');
+  setText('pp-svf', s.svf_name || '—');
+  setText('pp-sig-svi', s.svi_name || '—');
+  setText('pp-sig-svf', s.svf_name || '—');
+  setText('pp-footer-date',
+    'Dijana: ' + new Date().toLocaleDateString('ms-MY'));
+
+  // Summary marks — will be populated in Part 2
+  setText('pp-total-marks', '—');
+  setText('pp-grade', '—');
+  setText('pp-svi-rating', '—');
+  setText('pp-svf-rating', '—');
+
+  window.print();
+}
+
+// ===== END PDF GENERATION =====
+
 initAuth();
