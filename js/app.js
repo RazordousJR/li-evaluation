@@ -2815,7 +2815,13 @@ function populatePDFPages() {
       for (var ki = 1; ki <= 10; ki++) sviS += gm('presentation', 'svi_b' + ki);
       pr11Markah = (svf1 + sviS / 5).toFixed(1) + ' / 20';
     }
-    r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">—</td><td class="td-max">20%</td><td class="td-mark">' + pr11Markah + '</td></tr>';
+    var svfB1val = parseFloat(domVal('svf_b1')) || 0;
+    var sviBsum = 0;
+    for (var i = 1; i <= 10; i++) {
+      sviBsum += parseFloat(domVal('svi_b' + i)) || 0;
+    }
+    var pr11mentah = (svfB1val + (sviBsum / 5)).toFixed(1);
+    r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">' + pr11mentah + '</td><td class="td-max">20%</td><td class="td-mark">' + pr11Markah + '</td></tr>';
     r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3926 / Gred</strong></td><td class="td-mark"><strong>' + d.total3926.toFixed(2) + ' / ' + d.grade3926 + '</strong></td></tr>';
     // BITU3946
     r += '<tr><td colspan="4" style="background:#1e3a8a;color:#fff;font-weight:700;padding:6px 8px;border-top:8px solid #fff">BITU3946 — Laporan Latihan Industri</td></tr>';

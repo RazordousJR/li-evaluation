@@ -542,6 +542,13 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.21.4 — Page 7 PR1-1 mentah fix)
+
+### Bugfix (v4.21.4)
+- **FIX — Page 7 PR1-1 mentah column**: Was showing `"—"`. Now computes
+  `svfB1val + (sviBsum / 5)` from DOM inputs (`svf_b1`, `svi_b1`–`svi_b10`)
+  and displays as e.g. `"20.0"` to match the markah column value.
+
 ## PDF Report Generation (v4.21.3 — DOM-based reads for pages 5 & 6)
 
 ### Bugfixes (v4.21.3)
