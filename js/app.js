@@ -2542,6 +2542,9 @@ async function generatePDF(student) {
     svfStatus: svfStatus, marksMap: marksMap
   };
 
+  // Populate pages 2-7 with marks data
+  populatePDFPages();
+
   // Mark last page to prevent trailing blank page
   document.querySelectorAll('.print-page').forEach(function(p) {
     p.classList.remove('last-page');
@@ -2550,6 +2553,252 @@ async function generatePDF(student) {
   if (pages.length) pages[pages.length - 1].classList.add('last-page');
 
   window.print();
+}
+
+function populatePDFPages() {
+  var d = window._pdfData;
+  if (!d) return;
+  var mm = d.marksMap;
+  var s = currentStudent;
+  if (!s) return;
+
+  var today = new Date().toLocaleDateString('ms-MY');
+  var courseCode = (s.kursus === 'BITE' || s.kursus === 'BITZ') ? 'BITU3926' : 'BITU3946';
+  var studentLabel = (s.name || '—') + ' | ' + (s.matric_no || '—');
+
+  // Get integer mark from marksMap
+  function gm(section, field) {
+    var sec = mm[section];
+    if (!sec) return 0;
+    var v = parseInt(sec[field]);
+    return isNaN(v) ? 0 : v;
+  }
+
+  // Set innerHTML of element by id
+  function sh(id, html) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  }
+
+  // Set textContent of element by id
+  function st(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  // Read textContent from existing DOM element
+  function domVal(id) {
+    var el = document.getElementById(id);
+    return el ? (el.textContent || '—') : '—';
+  }
+
+  // Populate header right and footer date for pages 2-7
+  [2, 3, 4, 5, 6, 7].forEach(function(n) {
+    st('pp' + n + '-course', courseCode);
+    st('pp' + n + '-student', studentLabel);
+    st('pp' + n + '-footer-date', 'Dijana: ' + today);
+  });
+
+  // Signature names on page 7
+  st('pp7-sig-svi', s.svi_name || '—');
+  st('pp7-sig-svf', s.svf_name || '—');
+
+  // ── PAGE 2: SVI ──
+  (function() {
+    var a1 = gm('svi', 'a1'), a2 = gm('svi', 'a2');
+    var a3 = gm('svi', 'a3'), a4 = gm('svi', 'a4');
+    var aSub = a1 + a2 + a3 + a4;
+    var bVals = [];
+    for (var i = 1; i <= 10; i++) bVals.push(gm('svi', 'b' + i));
+    var bSub = bVals.reduce(function(acc, v) { return acc + v; }, 0);
+    var sviTotal = aSub + bSub;
+    var rating = (mm['svi'] || {})['rating'] || '—';
+    var ulasan = (mm['svi'] || {})['ulasan'] || '—';
+    var bLabels = [
+      'Disiplin Diri / Self Discipline',
+      'Tanggungjawab / Responsibility',
+      'Keyakinan Diri / Self Confidence',
+      'Kreativiti & Inovasi / Creativity &amp; Innovation',
+      'Kepimpinan / Leadership',
+      'Komunikasi / Communication',
+      'Kerjasama Berpasukan / Teamwork',
+      'Etika Kerja / Work Ethics',
+      'Inisiatif / Initiative',
+      'Kemahiran Interpersonal / Interpersonal Skills'
+    ];
+    var r = '';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN A — Pengetahuan &amp; Kemahiran / Knowledge &amp; Skills (max /50)</td></tr>';
+    r += '<tr><td>A1. Pengetahuan Teknikal / Technical Knowledge</td><td class="td-mark">' + a1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>A2. Kemahiran Praktikal / Practical Skills</td><td class="td-mark">' + a2 + '</td><td class="td-max">/15</td></tr>';
+    r += '<tr><td>A3. Sikap &amp; Profesionalisme / Attitude &amp; Professionalism</td><td class="td-mark">' + a3 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>A4. Komunikasi &amp; Kerjasama / Communication &amp; Teamwork</td><td class="td-mark">' + a4 + '</td><td class="td-max">/15</td></tr>';
+    r += '<tr class="tr-subtotal"><td>Subtotal Bahagian A</td><td class="td-mark">' + aSub + '</td><td class="td-max">/50</td></tr>';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN B — Soft Skills (max /50)</td></tr>';
+    for (var j = 0; j < 10; j++) {
+      r += '<tr><td>B' + (j + 1) + '. ' + bLabels[j] + '</td><td class="td-mark">' + bVals[j] + '</td><td class="td-max">/5</td></tr>';
+    }
+    r += '<tr class="tr-subtotal"><td>Subtotal Bahagian B</td><td class="td-mark">' + bSub + '</td><td class="td-max">/50</td></tr>';
+    r += '<tr class="tr-total"><td><strong>JUMLAH SVI / SVI TOTAL</strong></td><td class="td-mark"><strong>' + sviTotal + '</strong></td><td class="td-max">/100</td></tr>';
+    r += '<tr><td>Penilaian Keseluruhan / Overall Rating</td><td class="td-mark" colspan="2">' + rating + '</td></tr>';
+    r += '<tr><td>Ulasan / Remarks</td><td colspan="2" style="font-style:italic;color:#555">' + ulasan + '</td></tr>';
+    sh('pp2-tbody', r);
+  })();
+
+  // ── PAGE 3: SVF ──
+  (function() {
+    var a1admin = gm('svf', 'a1_admin'), a1tech = gm('svf', 'a1_tech');
+    var a2admin = gm('svf', 'a2_admin'), a2tech = gm('svf', 'a2_tech');
+    var a3 = gm('svf', 'a3');
+    var a1sub = a1admin + a1tech;
+    var a2sub = a2admin + a2tech;
+    var aTotal = a1sub + a2sub + a3;
+    var b1 = gm('svf', 'b1'), c1 = gm('svf', 'c1');
+    var svfTotal = aTotal + b1 + c1;
+    var rating = (mm['svf'] || {})['rating'] || '—';
+    var status = (mm['svf'] || {})['status'] || '—';
+    var ulasan = (mm['svf'] || {})['ulasan'] || '—';
+    var r = '';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN A — Penilaian Prestasi / Performance Assessment (max /90)</td></tr>';
+    r += '<tr><td colspan="3" style="padding:3px 8px;font-style:italic;color:#555;font-size:9pt">A1 — Pengetahuan &amp; Kemahiran / Knowledge &amp; Skills (max /30)</td></tr>';
+    r += '<tr><td style="padding-left:20px">Pentadbiran &amp; Pengurusan / Administration &amp; Management</td><td class="td-mark">' + a1admin + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td style="padding-left:20px">Bidang Teknikal / Technical Field</td><td class="td-mark">' + a1tech + '</td><td class="td-max">/20</td></tr>';
+    r += '<tr class="tr-subtotal"><td style="padding-left:20px">Subtotal A1</td><td class="td-mark">' + a1sub + '</td><td class="td-max">/30</td></tr>';
+    r += '<tr><td colspan="3" style="padding:3px 8px;font-style:italic;color:#555;font-size:9pt">A2 — Kuantiti Hasil Kerja / Work Output Quantity (max /30)</td></tr>';
+    r += '<tr><td style="padding-left:20px">Pentadbiran &amp; Pengurusan / Administration &amp; Management</td><td class="td-mark">' + a2admin + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td style="padding-left:20px">Bidang Teknikal / Technical Field</td><td class="td-mark">' + a2tech + '</td><td class="td-max">/20</td></tr>';
+    r += '<tr class="tr-subtotal"><td style="padding-left:20px">Subtotal A2</td><td class="td-mark">' + a2sub + '</td><td class="td-max">/30</td></tr>';
+    r += '<tr><td>A3. Mutu Hasil Kerja / Work Quality</td><td class="td-mark">' + a3 + '</td><td class="td-max">/30</td></tr>';
+    r += '<tr class="tr-subtotal"><td>Subtotal Bahagian A</td><td class="td-mark">' + aTotal + '</td><td class="td-max">/90</td></tr>';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN B — Pembentangan / Presentation (max /10)</td></tr>';
+    r += '<tr><td>B1. Pembentangan / Presentation</td><td class="td-mark">' + b1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN C — Komitmen / Commitment (max /10)</td></tr>';
+    r += '<tr><td>C1. Komitmen &amp; Kehadiran / Commitment &amp; Attendance</td><td class="td-mark">' + c1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr class="tr-total"><td><strong>JUMLAH SVF / SVF TOTAL</strong></td><td class="td-mark"><strong>' + svfTotal + '</strong></td><td class="td-max">/110</td></tr>';
+    r += '<tr><td>Penilaian Keseluruhan / Overall Rating</td><td class="td-mark" colspan="2">' + rating + '</td></tr>';
+    r += '<tr><td>Cadangan Status / Status Recommendation</td><td class="td-mark" colspan="2">' + status + '</td></tr>';
+    r += '<tr><td>Ulasan / Remarks</td><td colspan="2" style="font-style:italic;color:#555">' + ulasan + '</td></tr>';
+    sh('pp3-tbody', r);
+  })();
+
+  // ── PAGE 4: LOGBOOK ──
+  (function() {
+    var a1 = gm('logbook', 'a1'), b1 = gm('logbook', 'b1'), c1 = gm('logbook', 'c1');
+    var logTotal = a1 + b1 + c1;
+    var r = '';
+    r += '<tr><td>A1. Kandungan Logbook / Logbook Content</td><td class="td-mark">' + a1 + '</td><td class="td-max">/50</td></tr>';
+    r += '<tr><td>B1. Persembahan / Presentation Quality</td><td class="td-mark">' + b1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>C1. Penghantaran / Submission</td><td class="td-mark">' + c1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr class="tr-total"><td><strong>JUMLAH e-LOGBOOK / e-LOGBOOK TOTAL</strong></td><td class="td-mark"><strong>' + logTotal + '</strong></td><td class="td-max">/70</td></tr>';
+    sh('pp4-tbody', r);
+  })();
+
+  // ── PAGE 5: PEMBENTANGAN ──
+  (function() {
+    var svfB1 = gm('presentation', 'svf_b1');
+    var sviBVals = [];
+    for (var i = 1; i <= 10; i++) sviBVals.push(gm('presentation', 'svi_b' + i));
+    var sviBSum = sviBVals.reduce(function(acc, v) { return acc + v; }, 0);
+    var sviBFor3926 = Math.round(sviBSum / 5 * 10) / 10; // raw /50 → /10
+    var pr11_3926 = Math.round((svfB1 + sviBFor3926) * 10) / 10;
+    // Read BITU3946 totals from calcSummary DOM
+    var psvfRaw = parseFloat(domVal('r2_pr11_psvf_raw')) || 0;
+    var psviRaw = parseFloat(domVal('r2_pr11_psvi_raw')) || 0;
+    var pr11_3946 = Math.round((psvfRaw + psviRaw) / 200 * 20 * 100) / 100;
+    var sviLabels = [
+      'Penguasaan Teknikal / Technical Mastery',
+      'Kejelasan Penyampaian / Clarity of Delivery',
+      'Keyakinan / Confidence',
+      'Pengurusan Masa / Time Management',
+      'Kemahiran Visual / Visual Skills',
+      'Pengendalian Soalan / Q&amp;A Handling',
+      'Struktur Pembentangan / Presentation Structure',
+      'Isi Kandungan / Content',
+      'Bahasa / Language',
+      'Keseluruhan / Overall'
+    ];
+    var r = '';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BITU3926 — PR1-1 (Pembentangan / Presentation, max /20)</td></tr>';
+    r += '<tr><td>SVF Bah. B — Pembentangan / SVF Presentation</td><td class="td-mark">' + svfB1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>SVI Bah. B — Pembentangan (Jumlah &divide; 5) / SVI Presentation</td><td class="td-mark">' + sviBFor3926.toFixed(1) + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr class="tr-subtotal"><td>PR1-1 BITU3926</td><td class="td-mark">' + pr11_3926.toFixed(1) + '</td><td class="td-max">/20</td></tr>';
+    r += '<tr><td colspan="3" style="background:#eff6ff;font-weight:600;color:#1e4291;padding:4px 8px;font-size:9pt">SVI Pembentangan — Butiran / SVI Presentation Detail (raw /50)</td></tr>';
+    for (var j = 0; j < 10; j++) {
+      r += '<tr><td style="padding-left:16px">B' + (j + 1) + '. ' + sviLabels[j] + '</td><td class="td-mark">' + sviBVals[j] + '</td><td class="td-max">/5</td></tr>';
+    }
+    r += '<tr class="tr-subtotal"><td>Jumlah SVI Pembentangan (raw)</td><td class="td-mark">' + sviBSum + '</td><td class="td-max">/50</td></tr>';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BITU3946 — PR1-1 (Purata SVF &amp; SVI / 20)</td></tr>';
+    r += '<tr><td>Pembentangan SVF (Jumlah Keseluruhan SVF)</td><td class="td-mark">' + psvfRaw + '</td><td class="td-max">/100</td></tr>';
+    r += '<tr><td>Pembentangan SVI (Jumlah Keseluruhan SVI)</td><td class="td-mark">' + psviRaw + '</td><td class="td-max">/100</td></tr>';
+    r += '<tr class="tr-total"><td><strong>PR1-1 BITU3946 ((SVF+SVI) &divide; 200 &times; 20)</strong></td><td class="td-mark"><strong>' + pr11_3946.toFixed(2) + '</strong></td><td class="td-max">/20</td></tr>';
+    sh('pp5-tbody', r);
+  })();
+
+  // ── PAGE 6: LAPORAN LI ──
+  (function() {
+    var pilihan = parseInt((mm['meta'] || {})['pilihan'] || 1) || 1;
+    var a1 = gm('report', 'rep_a1'), a2 = gm('report', 'rep_a2'), a3 = gm('report', 'rep_a3');
+    var a4Tech = pilihan === 2
+      ? gm('report', 'rep_a4_tech_p2') : gm('report', 'rep_a4_tech_p1');
+    var a4Admin = pilihan === 2
+      ? gm('report', 'rep_a4_admin_p2') : gm('report', 'rep_a4_admin_p1');
+    var a5 = gm('report', 'rep_a5'), a6 = gm('report', 'rep_a6'), a7 = gm('report', 'rep_a7');
+    var aRaw = a1 + a2 + a3 + a4Tech + a4Admin + a5 + a6 + a7;
+    var aConverted = Math.round(aRaw / 2 * 10) / 10;
+    var b1 = gm('report', 'rep_b1'), b2 = gm('report', 'rep_b2');
+    var b3 = gm('report', 'rep_b3'), b4 = gm('report', 'rep_b4');
+    var bSub = b1 + b2 + b3 + b4;
+    var repTotal = aRaw + bSub;
+    var r = '';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN A — Kandungan Laporan / Report Content (raw /80 &rarr; /40)</td></tr>';
+    r += '<tr><td>A1. Pengenalan / Introduction</td><td class="td-mark">' + a1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>A2. Latar Belakang Organisasi / Organisation Background</td><td class="td-mark">' + a2 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>A3. Latihan yang Diterima / Training Received</td><td class="td-mark">' + a3 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td colspan="3" style="padding:3px 8px;font-style:italic;color:#555;font-size:9pt">A4. Tugasan LI — Pilihan ' + pilihan + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Teknikal / Technical</td><td class="td-mark">' + a4Tech + '</td><td class="td-max">/20</td></tr>';
+    r += '<tr><td style="padding-left:16px">Pentadbiran &amp; Pengurusan / Administration</td><td class="td-mark">' + a4Admin + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>A5. Perbincangan / Discussion</td><td class="td-mark">' + a5 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>A6. Rumusan / Conclusion</td><td class="td-mark">' + a6 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>A7. Rujukan &amp; Lampiran / References &amp; Appendix</td><td class="td-mark">' + a7 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr class="tr-subtotal"><td>Subtotal Bah. A (raw)</td><td class="td-mark">' + aRaw + '</td><td class="td-max">/80</td></tr>';
+    r += '<tr class="tr-subtotal"><td>Subtotal Bah. A (&divide; 2)</td><td class="td-mark">' + aConverted + '</td><td class="td-max">/40</td></tr>';
+    r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN B — Kualiti Penulisan / Writing Quality (max /40)</td></tr>';
+    r += '<tr><td>B1. Kualiti Bahasa / Language Quality</td><td class="td-mark">' + b1 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>B2. Kualiti Persembahan / Presentation Quality</td><td class="td-mark">' + b2 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>B3. Kekemasan / Neatness</td><td class="td-mark">' + b3 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr><td>B4. Menepati Format Laporan / Format Compliance</td><td class="td-mark">' + b4 + '</td><td class="td-max">/10</td></tr>';
+    r += '<tr class="tr-subtotal"><td>Subtotal Bahagian B</td><td class="td-mark">' + bSub + '</td><td class="td-max">/40</td></tr>';
+    r += '<tr class="tr-total"><td><strong>JUMLAH LAPORAN LI / REPORT TOTAL (raw)</strong></td><td class="td-mark"><strong>' + repTotal + '</strong></td><td class="td-max">/120</td></tr>';
+    sh('pp6-tbody', r);
+  })();
+
+  // ── PAGE 7: OBE BREAKDOWN ──
+  (function() {
+    var r = '';
+    // BITU3926
+    r += '<tr><td colspan="4" style="background:#1e3a8a;color:#fff;font-weight:700;padding:6px 8px">BITU3926 — Latihan Industri</td></tr>';
+    r += '<tr><td>PRJ-1 (SVI A1+A2)</td><td class="td-mark">' + domVal('r_prj1r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj1') + '</td></tr>';
+    r += '<tr><td>PRJ-2 (SVI A3+A4)</td><td class="td-mark">' + domVal('r_prj2r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj2') + '</td></tr>';
+    r += '<tr><td>PRJ-3 (SVF A1)</td><td class="td-mark">' + domVal('r_prj3r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj3') + '</td></tr>';
+    r += '<tr><td>PRJ-4 (SVF A2+A3)</td><td class="td-mark">' + domVal('r_prj4r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj4') + '</td></tr>';
+    r += '<tr><td>LR1 (e-Logbook)</td><td class="td-mark">' + domVal('r_lr1r') + '</td><td class="td-max">20%</td><td class="td-mark">' + domVal('r_lr1') + '</td></tr>';
+    r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">—</td><td class="td-max">20%</td><td class="td-mark">' + domVal('r_pr11') + '</td></tr>';
+    r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3926 / Gred</strong></td><td class="td-mark"><strong>' + d.total3926.toFixed(2) + ' / ' + d.grade3926 + '</strong></td></tr>';
+    // BITU3946
+    r += '<tr><td colspan="4" style="background:#1e3a8a;color:#fff;font-weight:700;padding:6px 8px;border-top:8px solid #fff">BITU3946 — Laporan Latihan Industri</td></tr>';
+    r += '<tr><td colspan="4" style="background:#eff6ff;font-weight:700;color:#1e4291;padding:4px 8px">TR1 — Laporan LI (70%)</td></tr>';
+    r += '<tr><td style="padding-left:16px">Laporan A (Jumlah A &divide; 2)</td><td class="td-mark">' + domVal('r2_tr1_lapa_raw') + '</td><td class="td-max">&rarr; /40</td><td class="td-mark">' + domVal('r2_tr1_lapa') + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Laporan B ((Jumlah B &divide; 40) &times; 10)</td><td class="td-mark">' + domVal('r2_tr1_lapb_raw') + '</td><td class="td-max">&rarr; /10</td><td class="td-mark">' + domVal('r2_tr1_lapb') + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">SVF Komitmen</td><td class="td-mark">' + domVal('r2_tr1_svfc_raw') + '</td><td class="td-max">/10</td><td class="td-mark">' + domVal('r2_tr1_svfc') + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Logbook Penghantaran</td><td class="td-mark">' + domVal('r2_tr1_logc_raw') + '</td><td class="td-max">/10</td><td class="td-mark">' + domVal('r2_tr1_logc') + '</td></tr>';
+    r += '<tr class="tr-subtotal"><td>TR1 Jumlah</td><td></td><td class="td-max">70%</td><td class="td-mark">' + domVal('r2_tr1') + '</td></tr>';
+    r += '<tr><td colspan="4" style="background:#eff6ff;font-weight:700;color:#1e4291;padding:4px 8px">PR1-1 — Pembentangan (20%)</td></tr>';
+    r += '<tr><td style="padding-left:16px">Pembentangan SVF</td><td class="td-mark">' + domVal('r2_pr11_psvf_raw') + '</td><td class="td-max">/100</td><td class="td-mark">' + domVal('r2_pr11_psvf') + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Pembentangan SVI</td><td class="td-mark">' + domVal('r2_pr11_psvi_raw') + '</td><td class="td-max">/100</td><td class="td-mark">' + domVal('r2_pr11_psvi') + '</td></tr>';
+    r += '<tr class="tr-subtotal"><td>PR1-1 Jumlah</td><td></td><td class="td-max">20%</td><td class="td-mark">' + domVal('r2_pr11') + '</td></tr>';
+    r += '<tr><td>PR1-2 (Soft Skills / SVI Bah. B &divide; 5)</td><td class="td-mark">' + domVal('r2_pr12r') + '</td><td class="td-max">10%</td><td class="td-mark">' + domVal('r2_pr12') + '</td></tr>';
+    r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3946 / Gred</strong></td><td class="td-mark"><strong>' + d.total3946.toFixed(2) + ' / ' + d.grade3946 + '</strong></td></tr>';
+    sh('pp7-tbody', r);
+  })();
 }
 
 // ===== END PDF GENERATION =====
