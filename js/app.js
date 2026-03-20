@@ -2558,7 +2558,7 @@ async function generatePDF(student) {
 function populatePDFPages() {
   var d = window._pdfData;
   if (!d) return;
-  var mm = d.marksMap;
+  var mm = d.marksMap || {};
   var s = currentStudent;
   if (!s) return;
 
@@ -2566,9 +2566,9 @@ function populatePDFPages() {
   var courseCode = (s.kursus === 'BITE' || s.kursus === 'BITZ') ? 'BITU3926' : 'BITU3946';
   var studentLabel = (s.name || '—') + ' | ' + (s.matric_no || '—');
 
-  // Get integer mark from marksMap
+  // Get integer mark — always reads from window._pdfData.marksMap for robustness
   function gm(section, field) {
-    var sec = mm[section];
+    var sec = (window._pdfData.marksMap || {})[section];
     if (!sec) return 0;
     var v = parseInt(sec[field]);
     return isNaN(v) ? 0 : v;
@@ -2586,10 +2586,10 @@ function populatePDFPages() {
     if (el) el.textContent = val;
   }
 
-  // Read textContent from existing DOM element
+  // Read textContent from DOM element — works on hidden elements; fallback '0' for numeric use
   function domVal(id) {
     var el = document.getElementById(id);
-    return el ? (el.textContent || '—') : '—';
+    return el ? (el.textContent || el.innerText || '0') : '0';
   }
 
   // Populate header right and footer date for pages 2-7

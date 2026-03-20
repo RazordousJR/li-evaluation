@@ -542,6 +542,22 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.21.1 — populatePDFPages() Bugfix)
+
+### Bugfix (v4.21.1)
+- **BUG — Empty table bodies on all pages 2-7**: `gm()` used closure variable `mm` which, if
+  `window._pdfData.marksMap` was `null`/`undefined`, caused a `TypeError` at `mm[section]` inside
+  each page IIFE. The IIFE threw before reaching `sh('ppN-tbody', r)`, leaving all tbody elements
+  empty. Headers and footers still populated because they are set via the `forEach` loop above the
+  IIFEs.
+- **Fix 1 — `mm` null-safe**: `var mm = d.marksMap || {}` — prevents direct null crash on `mm` access.
+- **Fix 2 — `gm()` explicit reference**: Changed to `(window._pdfData.marksMap || {})[section]` —
+  always reads directly from `window._pdfData` at call time, ensuring correct map even if
+  `populatePDFPages()` closure state is stale.
+- **Fix 3 — `domVal()` fallback**: Changed `|| '—'` to `|| el.innerText || '0'` — `innerText`
+  works on elements where `textContent` may be empty (whitespace-only); `'0'` numeric fallback
+  is safer than `'—'` for OBE component cells.
+
 ## PDF Report Generation (v4.21 — Pages 2-7 Added)
 
 ### Overview
