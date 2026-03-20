@@ -2504,62 +2504,33 @@ async function generatePDF(student) {
     return isNaN(v) ? 0 : v;
   }
 
-  // Recompute OBE summary (same logic as calcSummary)
-  // PRJ-1: SVI A1+A2 /30 * 15
-  var sviA1 = getMark('svi', 'a1') + getMark('svi', 'a2');
-  var prj1 = sviA1 / 30 * 15;
+  // Read totals and grades directly from calcSummary() DOM output
+  var total3926 = parseFloat(
+    document.getElementById('sum_3926_total')?.textContent || '0') || 0;
+  var grade3926 = document.getElementById('sum_3926_grade')?.textContent || '—';
 
-  // PRJ-2: SVI A3+A4 /20 * 15
-  var sviA23 = getMark('svi', 'a3') + getMark('svi', 'a4');
-  var prj2 = sviA23 / 20 * 15;
+  var total3946 = parseFloat(
+    document.getElementById('sum_3946_total')?.textContent || '0') || 0;
+  var grade3946 = document.getElementById('sum_3946_grade')?.textContent || '—';
 
-  // PRJ-3: SVF A1 /30 * 15
-  var svfA1 = getMark('svf', 'a1_admin') + getMark('svf', 'a1_tech');
-  var prj3 = svfA1 / 30 * 15;
+  // Ratings from marksMap (stored without section prefix)
+  var sviRating = (marksMap['svi'] || {})['rating'] || '—';
+  var svfRating = (marksMap['svf'] || {})['rating'] || '—';
+  var svfStatus = (marksMap['svf'] || {})['status'] || '—';
 
-  // PRJ-4: SVF A2+A3 /60 * 15
-  var svfA23 = getMark('svf', 'a2_admin') + getMark('svf', 'a2_tech') +
-               getMark('svf', 'a3');
-  var prj4 = svfA23 / 60 * 15;
-
-  // LR1: Logbook /70 * 20
-  var logTotal = getMark('logbook', 'a1') + getMark('logbook', 'b1') +
-                 getMark('logbook', 'c1');
-  var lr1 = logTotal / 70 * 20;
-
-  // PR1-1: Pembentangan SVF B + SVI B /20 (presentation keys have prefix)
-  var svfB = getMark('presentation', 'svf_b1');
-  var sviB = getMark('presentation', 'svi_b1') + getMark('presentation', 'svi_b2') +
-             getMark('presentation', 'svi_b3') + getMark('presentation', 'svi_b4') +
-             getMark('presentation', 'svi_b5') + getMark('presentation', 'svi_b6') +
-             getMark('presentation', 'svi_b7') + getMark('presentation', 'svi_b8') +
-             getMark('presentation', 'svi_b9') + getMark('presentation', 'svi_b10');
-  var pr11 = svfB + sviB / 5;
-
-  var total = prj1 + prj2 + prj3 + prj4 + lr1 + pr11;
-  var totalRounded = Math.round(total * 100) / 100;
-
-  // Grade
-  var grade;
-  if (total >= 85) grade = 'A';
-  else if (total >= 75) grade = 'B+';
-  else if (total >= 65) grade = 'B';
-  else if (total >= 55) grade = 'C+';
-  else if (total >= 45) grade = 'C';
-  else if (total >= 40) grade = 'D';
-  else grade = 'E';
-
-  // SVI and SVF ratings from marks data (stored without section prefix)
-  var sviData = marksMap['svi'] || {};
-  var svfData = marksMap['svf'] || {};
-  var sviRating = sviData['rating'] || '—';
-  var svfRating = svfData['rating'] || '—';
-  var svfStatus = svfData['status'] || '—';
-
-  setText('pp-total-marks', totalRounded.toFixed(2));
-  setText('pp-grade', grade);
+  setText('pp-total-marks',
+    'BITU3926: ' + total3926.toFixed(2) + ' | BITU3946: ' + total3946.toFixed(2));
+  setText('pp-grade', grade3926 + ' / ' + grade3946);
   setText('pp-svi-rating', sviRating);
   setText('pp-svf-rating', svfRating + ' (' + svfStatus + ')');
+
+  // Store computed values for use in Part 2 pages
+  window._pdfData = {
+    total3926: total3926, grade3926: grade3926,
+    total3946: total3946, grade3946: grade3946,
+    sviRating: sviRating, svfRating: svfRating,
+    svfStatus: svfStatus, marksMap: marksMap
+  };
 
   // Mark last page to prevent trailing blank page
   document.querySelectorAll('.print-page').forEach(function(p) {
