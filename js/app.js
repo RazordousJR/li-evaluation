@@ -1558,10 +1558,16 @@ async function renderAdminDashboard() {
 }
 
 function renderDashboardCharts(students, marksDataByStudent) {
-  var cs = getComputedStyle(document.documentElement);
-  var green = cs.getPropertyValue('--green').trim() || '#16a34a';
-  var red   = cs.getPropertyValue('--red').trim()   || '#dc2626';
-  var amber = cs.getPropertyValue('--amber').trim() || '#d97706';
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js not loaded yet, retrying in 300ms');
+    setTimeout(function() { renderDashboardCharts(students, marksDataByStudent); }, 300);
+    return;
+  }
+
+  // Use hardcoded colors — CSS variable reads can return empty string in some browsers
+  var green = '#0a7c4e';
+  var red   = '#c0392b';
+  var amber = '#b45309';
   var grey  = '#9ca3af';
 
   // Chart 1 — Status Penilaian (Lengkap vs Belum Lengkap)
@@ -1642,6 +1648,7 @@ function renderDashboardCharts(students, marksDataByStudent) {
 function renderPensyarahSectionPills(students, marksDataByStudent) {
   var container = document.getElementById('pensyarah-section-pills');
   if (!container) return;
+  console.log('[pills] students:', students.length, 'marksKeys:', Object.keys(marksDataByStudent).length);
   var sections = [
     { key: 'svi',          label: 'SVI' },
     { key: 'svf',          label: 'SVF' },
@@ -1654,7 +1661,8 @@ function renderPensyarahSectionPills(students, marksDataByStudent) {
   sections.forEach(function(sec) {
     var count = students.filter(function(s) {
       var sData = marksDataByStudent[s.id] && marksDataByStudent[s.id][sec.key];
-      return sData && sData.confirmed === true;
+      // confirmed may be boolean true or string "true" depending on Supabase jsonb deserialization
+      return sData && (sData.confirmed === true || sData.confirmed === 'true');
     }).length;
     var cls = count > 0 ? 'pensyarah-section-pill pill-done' : 'pensyarah-section-pill pill-pending';
     html += '<span class="' + cls + '">' + escHtml(sec.label) + ' ' + count + '/' + total + ' pelajar</span>';

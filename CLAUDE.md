@@ -550,7 +550,14 @@ Track of planned improvements. Tick when done.
 - [x] Approval flow: pensyarah submit → AJK_LI approve → lock markah
 - [ ] History/versioning markah (boleh tengok versi sebelum edit)
 
-## Dashboard Charts (v4.17)
+## Dashboard Charts (v4.17.1 — Blank Chart Bugfix)
+
+### Bugfixes (v4.17.1)
+- **Timing**: `renderDashboardCharts()` now checks `typeof Chart === 'undefined'` at start; if Chart.js is not yet loaded, retries once via `setTimeout(fn, 300)` instead of crashing silently
+- **Colors**: Replaced `getComputedStyle` CSS variable reads with hardcoded colors (`#0a7c4e` green, `#c0392b` red, `#b45309` amber, `#9ca3af` grey) — CSS var reads can return empty string in some browsers causing blank/grey charts
+- **Canvas sizing**: Added explicit `height="200"` attribute to all 3 `<canvas>` elements in index.html to ensure Chart.js has a known size at init time
+- **Pills robustness**: `renderPensyarahSectionPills()` now accepts `confirmed === 'true'` (string) as well as `confirmed === true` (boolean) to handle Supabase jsonb deserialization edge cases; added `console.log` debug output
+- **Pills placement**: `renderPensyarahSectionPills()` called before early-return guard so pills always render even when students list is empty
 
 ### Chart.js CDN
 - Added `chart.js@4.4.0` via jsdelivr in `<head>` of index.html (after existing CDN scripts)
