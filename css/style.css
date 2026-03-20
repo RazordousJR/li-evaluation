@@ -286,8 +286,7 @@ textarea{resize:vertical;min-height:70px}
 .audit-section-badge{display:inline-block;background:#e8f0fe;color:#1e3a8a;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;white-space:nowrap}
 
 /* ===== DASHBOARD CHARTS ===== */
-.dash-charts-grid{display:grid;gap:12px;margin-bottom:1.25rem}
-@media(max-width:639px){.dash-charts-grid{grid-template-columns:1fr}}
+.dash-charts-grid{display:grid;gap:12px;margin-bottom:1.25rem;grid-template-columns:1fr}
 @media(min-width:640px){.dash-charts-grid{grid-template-columns:repeat(2,1fr)}}
 .dash-chart-card{background:var(--bg);border:var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem}
 .dash-chart-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem}
