@@ -542,6 +542,44 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.21 — Pages 2-7 Added)
+
+### Overview
+Part 2 of PDF generation adds marks detail pages 2–7 to `#print-area` in `index.html`.
+A new `populatePDFPages()` function populates all pages. It is called from `generatePDF()` after `window._pdfData` is set, before `window.print()`.
+
+### Pages Added (index.html `#print-area`)
+Each page follows the same structure: `.print-header` (with per-page course + student IDs) → `.print-section-title` → `.print-section-subtitle` → `.print-table` (tbody populated by JS) → `.print-footer`.
+
+| Page | Div ID | Section | tbody ID |
+|------|--------|---------|----------|
+| 2 | `#pp-svi` | Penilaian SVI | `pp2-tbody` |
+| 3 | `#pp-svf` | Penilaian SVF | `pp3-tbody` |
+| 4 | `#pp-logbook` | e-Logbook | `pp4-tbody` |
+| 5 | `#pp-presentation` | Pembentangan | `pp5-tbody` |
+| 6 | `#pp-report` | Laporan LI | `pp6-tbody` |
+| 7 | `#pp-obe` | OBE Breakdown | `pp7-tbody` |
+
+Header right IDs per page `N` (2–7): `ppN-course` (course code), `ppN-student` (name | matric).
+Footer date IDs per page `N` (2–7): `ppN-footer-date`.
+Page 7 also has `pp7-sig-svi` and `pp7-sig-svf` signature lines.
+
+### `populatePDFPages()` function (app.js)
+- Reads `window._pdfData` (set by `generatePDF()`) for `marksMap`, totals, and grades
+- Uses `currentStudent` for name, matric, kursus, svi_name, svf_name
+- Inner helpers: `gm(section, field)` — integer from `marksMap`; `sh(id, html)` — innerHTML; `st(id, val)` — textContent; `domVal(id)` — read existing DOM element textContent
+- Populates headers/footers for pages 2–7, then builds each page's table rows as HTML strings injected into `ppN-tbody`
+- Page 6 reads `pilihan` from `mm['meta']['pilihan']` to select correct `rep_a4_tech_p1/p2` and `rep_a4_admin_p1/p2` fields
+- Page 7 reads OBE component values from existing `calcSummary()` DOM elements (e.g. `r_prj1r`, `r_prj1`, `r2_tr1`, etc.)
+
+### Field Mappings per Page
+- **Page 2 (SVI)**: `svi` section — `a1`/10, `a2`/15, `a3`/10, `a4`/15; `b1`–`b10` each /5; `rating`, `ulasan`
+- **Page 3 (SVF)**: `svf` section — `a1_admin`/10, `a1_tech`/20, `a2_admin`/10, `a2_tech`/20, `a3`/30; `b1`/10, `c1`/10; `rating`, `status`, `ulasan`
+- **Page 4 (Logbook)**: `logbook` section — `a1`/50, `b1`/10, `c1`/10
+- **Page 5 (Pembentangan)**: `presentation` section — `svf_b1`/10, `svi_b1`–`svi_b10` each /5; BITU3946 totals from DOM `r2_pr11_psvf_raw`, `r2_pr11_psvi_raw`
+- **Page 6 (Laporan LI)**: `report` section — `rep_a1`–`rep_a7` (Bah.A raw /80 → /40), `rep_b1`–`rep_b4` (Bah.B /40); pilihan from `meta` section
+- **Page 7 (OBE)**: reads all values from `calcSummary()` DOM elements; shows BITU3926 (PRJ-1/2/3/4, LR1, PR1-1) and BITU3946 (TR1, PR1-1, PR1-2) breakdown; includes signature row
+
 ## PDF Report Generation (v4.20.4 — stacked marks/grade display)
 
 ### Change (v4.20.4)
@@ -644,7 +682,7 @@ Track of planned improvements. Tick when done.
 - [ ] Enable RLS (Row-Level Security) di Supabase — attempted v4.14, reverted v4.15 due to PgBouncer GUC persistence; app-layer filtering used instead
 
 ### Export & Reporting
-- [x] Export PDF terus dari sistem — Part 1 structure done (v4.20); Part 2 marks data population pending
+- [x] Export PDF terus dari sistem — Pages 1–7 complete (v4.21); cover + 6 marks detail pages
 - [ ] Generate borang penilaian akhir auto (surat rasmi)
 - [ ] OBE report yang boleh print cantik
 
