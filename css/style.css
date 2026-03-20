@@ -305,11 +305,255 @@ textarea{resize:vertical;min-height:70px}
 .data-table th{background:var(--bg3);padding:8px 10px;text-align:left;font-weight:600;color:var(--text2);border-bottom:var(--border2)}
 .data-table td{padding:8px 10px;border-bottom:var(--border);vertical-align:middle}
 
-@media print{
-  body{background:white}
-  .sidebar,.topbar,.btn-row,.login-overlay,.sidebar-overlay{display:none!important}
-  .main-content{margin-left:0!important;display:block}
-  .content-area{padding:0}
-  .page{display:block!important}
-  .section{break-inside:avoid}
+@media print {
+  /* Hide everything except print area */
+  .sidebar, .topbar, .sidebar-overlay,
+  .login-overlay, #print-area-overlay { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+  .content-area { padding: 0 !important; }
+  .page { display: none !important; }
+  #print-area { display: block !important; }
+
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+
+  /* Page break control */
+  .print-page {
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+  .print-page:last-child {
+    page-break-after: auto;
+  }
+}
+
+/* Print area — hidden on screen */
+#print-area {
+  display: none;
+  font-family: -apple-system, BlinkMacSystemFont,
+               "Segoe UI", sans-serif;
+  font-size: 11pt;
+  color: #000;
+  background: #fff;
+}
+
+/* Print page container */
+.print-page {
+  padding: 0;
+  background: #fff;
+  min-height: 257mm;
+  position: relative;
+}
+
+/* Print header (appears on every page) */
+.print-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2.5px solid #1e3a8a;
+  margin-bottom: 16px;
+}
+.print-header-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #1e3a8a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: -.5px;
+}
+.print-header-text { flex: 1; }
+.print-header-title {
+  font-size: 13pt;
+  font-weight: 700;
+  color: #1e3a8a;
+  line-height: 1.2;
+}
+.print-header-sub {
+  font-size: 9pt;
+  color: #555;
+  margin-top: 2px;
+}
+.print-header-right {
+  text-align: right;
+  font-size: 8.5pt;
+  color: #555;
+}
+
+/* Student info box */
+.print-student-box {
+  background: #f0f4ff;
+  border: 1.5px solid #c7d7fa;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 20px;
+}
+.print-student-box .psb-row {
+  display: flex;
+  gap: 6px;
+  font-size: 9.5pt;
+}
+.print-student-box .psb-label {
+  color: #555;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+.print-student-box .psb-val {
+  font-weight: 600;
+  color: #000;
+}
+
+/* Section title */
+.print-section-title {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #1e3a8a;
+  background: #e8f0fe;
+  padding: 5px 10px;
+  border-left: 4px solid #1e3a8a;
+  margin: 12px 0 8px 0;
+}
+.print-section-subtitle {
+  font-size: 9.5pt;
+  color: #555;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+/* Marks table */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  margin-bottom: 8px;
+}
+.print-table th {
+  background: #1e3a8a;
+  color: #fff;
+  padding: 5px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 9pt;
+}
+.print-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+.print-table tr:nth-child(even) td {
+  background: #f8f9fa;
+}
+.print-table .td-mark {
+  text-align: center;
+  font-weight: 600;
+  min-width: 50px;
+}
+.print-table .td-max {
+  text-align: center;
+  color: #555;
+  min-width: 40px;
+}
+.print-table .tr-subtotal td {
+  background: #dbeafe !important;
+  font-weight: 600;
+  border-top: 1.5px solid #93c5fd;
+}
+.print-table .tr-total td {
+  background: #1e3a8a !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 10pt;
+}
+
+/* Summary/OBE table */
+.print-obe-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.print-obe-card {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.print-obe-card .poc-label {
+  font-size: 8.5pt;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.print-obe-card .poc-val {
+  font-size: 18pt;
+  font-weight: 700;
+  color: #1e3a8a;
+  line-height: 1.1;
+}
+.print-obe-card .poc-sub {
+  font-size: 8pt;
+  color: #777;
+}
+
+/* Signature row */
+.print-signature-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+.print-sig-box {
+  text-align: center;
+}
+.print-sig-line {
+  border-top: 1.5px solid #000;
+  margin: 40px 10px 6px 10px;
+}
+.print-sig-label {
+  font-size: 9pt;
+  font-weight: 600;
+}
+.print-sig-sub {
+  font-size: 8.5pt;
+  color: #555;
+}
+
+/* Footer */
+.print-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8pt;
+  color: #999;
+}
+
+/* Bilingual label helper */
+.bilingual {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.bilingual .bm { font-size: 9.5pt; }
+.bilingual .en {
+  font-size: 8pt;
+  color: #777;
+  font-style: italic;
 }
