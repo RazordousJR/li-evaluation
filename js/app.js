@@ -8,6 +8,11 @@ var currentStudent = null;
 var _pendingStudentEval = null;
 var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
+var _senaraiStudents = [];
+var _senaraiFiltered = [];
+var _senaraiPage = 1;
+var _senaraiPageSize = 20;
+var _senaraiPensyarahMap = {};
 var _currentEvalEmail = null; // evaluator email used for save/load marks
 var _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
 var _chartCompletion = null, _chartApproval = null, _chartProgram = null, _chartSvf = null;
@@ -158,19 +163,19 @@ function showApp(user) {
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
   // Always reset management sidebar items to hidden first
-  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item'].forEach(function(id) {
+  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   if (eff === 'ADMIN') {
-    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
     return;
   }
   if (eff === 'AJK_LI') {
-    ['admin-sep', 'admin-label', 'uruspelajar-nav-item', 'uruspensyarah-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
@@ -227,7 +232,8 @@ var TAB_TITLES = {
   summary: 'Ringkasan & Gred',
   usermgmt: 'Pengurusan Pengguna',
   uruspelajar: 'Urus Pelajar',
-  uruspensyarah: 'Urus Pensyarah'
+  uruspensyarah: 'Urus Pensyarah',
+  senarai: 'Senarai Pelajar'
 };
 
 function showTab(t) {
@@ -243,6 +249,7 @@ function showTab(t) {
   if (t === 'uruspelajar') loadUruspelajar();
   if (t === 'uruspensyarah') loadUruspensyarah();
   if (t === 'dashboard') loadDashboard();
+  if (t === 'senarai') loadSenarai();
 
   // Show eval student bar and SVI/Org indicator only in eval tabs when a student is selected
   var evalTabs = ['info', 'svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
@@ -1693,10 +1700,6 @@ function renderPensyarahSectionPills(students, marksDataByStudent) {
 }
 
 async function loadAjkliDashboard() {
-  var tbody = document.getElementById('dash-ajkli-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
-
   try {
     var results = await Promise.all([
       sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
@@ -1709,19 +1712,6 @@ async function loadAjkliDashboard() {
 
     _ajkliPensyarahMap = {};
     pensyarahList.forEach(function(p) { _ajkliPensyarahMap[p.email] = p.full_name; });
-
-    var filterEl = document.getElementById('dash-filter-pensyarah');
-    if (filterEl) {
-      filterEl.innerHTML = '<option value="">Semua Pensyarah</option>';
-      pensyarahList.forEach(function(p) {
-        filterEl.innerHTML += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
-      });
-      // Always reset to "Semua Pensyarah" on dashboard reload so stale filter
-      // selections don't hide students across navigation cycles
-      filterEl.value = '';
-    }
-    var prFilterEl = document.getElementById('dash-filter-program');
-    if (prFilterEl) prFilterEl.value = '';
 
     // Build svf_email lookup keyed by student id for deterministic completion check
     var svfByStudentId = {};
@@ -1743,66 +1733,140 @@ async function loadAjkliDashboard() {
       s._lengkap = isStudentComplete(marksDataByStudent[s.id] || {});
     });
 
-    var total = _ajkliStudents.length;
-    var done  = _ajkliStudents.filter(function(s) { return s._lengkap; }).length;
-    var pct   = total > 0 ? Math.round(done / total * 100) : 0;
-    var lblEl = document.getElementById('dash-progress-label');
-    if (lblEl) lblEl.textContent = done + ' daripada ' + total + ' pelajar lengkap';
-    var pctEl = document.getElementById('dash-progress-pct');
-    if (pctEl) pctEl.textContent = pct + '%';
-    var barEl = document.getElementById('dash-progress-bar');
-    if (barEl) barEl.style.width = pct + '%';
-
     renderDashboardCharts(_ajkliStudents, marksDataByStudent);
-    filterAjkliDashboard();
   } catch (err) {
     console.error('loadAjkliDashboard error:', err);
-    // Safety net: if students were fetched before the error, still render them as Belum Lengkap
-    if (_ajkliStudents.length > 0) {
-      _ajkliStudents.forEach(function(s) { s._lengkap = false; });
-      filterAjkliDashboard();
-    } else {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:red">Ralat memuatkan data. Sila muat semula halaman.</td></tr>';
-    }
   }
 }
 
-function filterAjkliDashboard() {
-  var pFilter = (document.getElementById('dash-filter-pensyarah') || {}).value || '';
-  var prFilter = (document.getElementById('dash-filter-program') || {}).value || '';
-  var filtered = _ajkliStudents.filter(function(s) {
+// ===== SENARAI PELAJAR =====
+
+async function loadSenarai() {
+  var tbody = document.getElementById('senarai-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
+  try {
+    var results = await Promise.all([
+      sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name, approval_status').order('name'),
+      sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
+      sb.from('marks').select('student_id, evaluator_email, section, data')
+    ]);
+    var students = results[0].data || [];
+    var pensyarahList = results[1].data || [];
+    var mrData = results[2].data || [];
+
+    _senaraiPensyarahMap = {};
+    pensyarahList.forEach(function(p) { _senaraiPensyarahMap[p.email] = p.full_name; });
+
+    var filterEl = document.getElementById('senarai-filter-pensyarah');
+    if (filterEl) {
+      filterEl.innerHTML = '<option value="">Semua Pensyarah</option>';
+      pensyarahList.forEach(function(p) {
+        filterEl.innerHTML += '<option value="' + escHtml(p.email) + '">' + escHtml(p.full_name) + '</option>';
+      });
+    }
+
+    var svfByStudentId = {};
+    students.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
+
+    var marksDataByStudent = {};
+    mrData.forEach(function(m) {
+      var svfEmail = svfByStudentId[m.student_id];
+      if (svfEmail && m.evaluator_email && m.evaluator_email !== svfEmail) return;
+      if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
+      marksDataByStudent[m.student_id][m.section] = m.data;
+    });
+    students.forEach(function(s) {
+      s._lengkap = isStudentComplete(marksDataByStudent[s.id] || {});
+    });
+
+    _senaraiStudents = students;
+    filterSenarai();
+  } catch (err) {
+    console.error('loadSenarai error:', err);
+    var tbody2 = document.getElementById('senarai-tbody');
+    if (tbody2) tbody2.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:red">Ralat memuatkan data. Sila muat semula halaman.</td></tr>';
+  }
+}
+
+function filterSenarai() {
+  var pFilter = (document.getElementById('senarai-filter-pensyarah') || {}).value || '';
+  var prFilter = (document.getElementById('senarai-filter-program') || {}).value || '';
+  var mFilter = (document.getElementById('senarai-filter-markah') || {}).value || '';
+  var kFilter = (document.getElementById('senarai-filter-kelulusan') || {}).value || '';
+  _senaraiFiltered = _senaraiStudents.filter(function(s) {
     if (pFilter && s.svf_email !== pFilter) return false;
     if (prFilter && (s.kursus || '').indexOf(prFilter) === -1) return false;
+    if (mFilter === 'lengkap' && !s._lengkap) return false;
+    if (mFilter === 'belum' && s._lengkap) return false;
+    if (kFilter && (s.approval_status || 'draft') !== kFilter) return false;
     return true;
   });
-  renderAjkliTable(filtered);
+  _senaraiPage = 1;
+  var sumEl = document.getElementById('senarai-summary');
+  if (sumEl) sumEl.textContent = 'Menunjukkan ' + _senaraiFiltered.length + ' daripada ' + _senaraiStudents.length + ' pelajar';
+  renderSenaraiTable();
 }
 
-function renderAjkliTable(students) {
-  var tbody = document.getElementById('dash-ajkli-tbody');
+function renderSenaraiTable() {
+  var tbody = document.getElementById('senarai-tbody');
   if (!tbody) return;
-  if (!students.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pelajar.</td></tr>';
+  if (!_senaraiFiltered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pelajar.</td></tr>';
+    renderSenaraiPagination();
     return;
   }
+  var start = (_senaraiPage - 1) * _senaraiPageSize;
+  var page = _senaraiFiltered.slice(start, start + _senaraiPageSize);
   var html = '';
-  students.forEach(function(s) {
-    var svfName = s.svf_email ? (_ajkliPensyarahMap[s.svf_email] || s.svf_email) : '—';
-    var badge = s._lengkap
+  page.forEach(function(s) {
+    var svfName = s.svf_name || (s.svf_email ? (_senaraiPensyarahMap[s.svf_email] || s.svf_email) : '—');
+    var markahBadge = s._lengkap
       ? '<span class="status-badge status-active">Lengkap</span>'
       : '<span class="status-badge status-inactive">Belum Lengkap</span>';
-    // Use indexOf on the global array so the correct student is opened even when a filter is active
-    var globalIdx = _ajkliStudents.indexOf(s);
-    html += '<tr class="dash-row-clickable" onclick="openStudentEval(_ajkliStudents[' + globalIdx + '])">' +
+    var status = s.approval_status || 'draft';
+    var kelulusanBadge = status === 'approved'
+      ? '<span class="approval-badge-approved">&#10003; Diluluskan</span>'
+      : status === 'submitted'
+        ? '<span class="approval-badge-submitted">Menunggu Kelulusan</span>'
+        : '<span class="approval-badge-draft">Draf</span>';
+    var globalIdx = _senaraiStudents.indexOf(s);
+    html += '<tr class="dash-row-clickable" onclick="openStudentEval(_senaraiStudents[' + globalIdx + '])">' +
       '<td>' + escHtml(s.matric_no) + '</td>' +
       '<td>' + escHtml(s.name || '') + '</td>' +
       '<td style="font-size:12.5px">' + escHtml(s.kursus || '') + '</td>' +
       '<td style="font-size:12.5px">' + escHtml(svfName) + '</td>' +
-      '<td>' + badge + '</td>' +
+      '<td>' + markahBadge + '</td>' +
+      '<td>' + kelulusanBadge + '</td>' +
       '</tr>';
   });
   tbody.innerHTML = html;
+  renderSenaraiPagination();
 }
+
+function renderSenaraiPagination() {
+  var el = document.getElementById('senarai-pagination');
+  if (!el) return;
+  var total = _senaraiFiltered.length;
+  var totalPages = Math.max(1, Math.ceil(total / _senaraiPageSize));
+  if (totalPages <= 1 && total === 0) { el.innerHTML = ''; return; }
+  var prevDisabled = _senaraiPage <= 1 ? ' disabled' : '';
+  var nextDisabled = _senaraiPage >= totalPages ? ' disabled' : '';
+  el.innerHTML =
+    '<button class="btn-secondary"' + prevDisabled + ' onclick="_senaraiPage--;renderSenaraiTable()">&lsaquo; Prev</button>' +
+    '<span>Halaman ' + _senaraiPage + ' / ' + totalPages + '</span>' +
+    '<button class="btn-secondary"' + nextDisabled + ' onclick="_senaraiPage++;renderSenaraiTable()">Next &rsaquo;</button>' +
+    '<span style="color:var(--text3)">' + _senaraiPageSize + ' rekod / halaman</span>';
+}
+
+function resetSenaraiFilters() {
+  ['senarai-filter-pensyarah', 'senarai-filter-program', 'senarai-filter-markah', 'senarai-filter-kelulusan'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  filterSenarai();
+}
+
+// ===== END SENARAI PELAJAR =====
 
 var _pensyarahDashStudents = [];
 

@@ -295,6 +295,16 @@ textarea{resize:vertical;min-height:70px}
 .pill-done{background:var(--green-bg);color:var(--green-text)}
 .pill-pending{background:var(--gray-bg);color:var(--gray-text)}
 
+/* ===== SENARAI PELAJAR ===== */
+.senarai-filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
+.senarai-filter-row select{font-size:13px;padding:5px 8px;border:var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit;min-width:160px}
+.senarai-summary-row{font-size:13px;color:var(--text2);margin-bottom:.75rem}
+.senarai-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:1rem;font-size:13px;color:var(--text2)}
+.table-wrap{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.data-table th{background:var(--bg3);padding:8px 10px;text-align:left;font-weight:600;color:var(--text2);border-bottom:var(--border2)}
+.data-table td{padding:8px 10px;border-bottom:var(--border);vertical-align:middle}
+
 @media print{
   body{background:white}
   .sidebar,.topbar,.btn-row,.login-overlay,.sidebar-overlay{display:none!important}
