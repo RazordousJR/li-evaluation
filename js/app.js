@@ -1780,6 +1780,20 @@ async function loadSenarai() {
     });
 
     _senaraiStudents = students;
+
+    var programFilterEl = document.getElementById('senarai-filter-program');
+    if (programFilterEl) {
+      var programs = Array.from(new Set(
+        _senaraiStudents
+          .map(function(s) { return s.kursus; })
+          .filter(function(k) { return k && k.trim() !== ''; })
+      )).sort();
+      programFilterEl.innerHTML = '<option value="">Semua Program</option>';
+      programs.forEach(function(p) {
+        programFilterEl.innerHTML += '<option value="' + escHtml(p) + '">' + escHtml(p) + '</option>';
+      });
+    }
+
     filterSenarai();
   } catch (err) {
     console.error('loadSenarai error:', err);
