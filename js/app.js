@@ -2459,14 +2459,13 @@ function setText(id, val) {
   if (el) el.textContent = val;
 }
 
-function generatePDF(student) {
+async function generatePDF(student) {
   var s = student || currentStudent;
-  if (!s) { alert('Tiada pelajar dipilih.'); return; }
+  if (!s || !s.id) { alert('Tiada pelajar dipilih.'); return; }
 
-  // Determine course code from kursus
+  // Populate basic student info
   var courseCode = (s.kursus === 'BITE' || s.kursus === 'BITZ')
     ? 'BITU3926' : 'BITU3946';
-
   setText('pp-course-code', courseCode);
   setText('pp-sesi', s.sesi || '—');
   setText('pp-semester', 'Semester ' + (s.semester || '—'));
@@ -2481,11 +2480,93 @@ function generatePDF(student) {
   setText('pp-footer-date',
     'Dijana: ' + new Date().toLocaleDateString('ms-MY'));
 
-  // Summary marks — will be populated in Part 2
-  setText('pp-total-marks', '—');
-  setText('pp-grade', '—');
-  setText('pp-svi-rating', '—');
-  setText('pp-svf-rating', '—');
+  // Fetch marks from Supabase
+  var marksRes = await sb.from('marks')
+    .select('section, data, evaluator_email')
+    .eq('student_id', s.id);
+  var marksRows = marksRes.data || [];
+
+  // Build marks lookup by section — prefer assigned SVF evaluator
+  var marksMap = {};
+  marksRows.forEach(function(m) {
+    if (!marksMap[m.section]) {
+      marksMap[m.section] = m.data;
+    } else if (s.svf_email && m.evaluator_email === s.svf_email) {
+      marksMap[m.section] = m.data;
+    }
+  });
+
+  // Helper to get integer mark value safely
+  function getMark(section, field) {
+    var sec = marksMap[section];
+    if (!sec) return 0;
+    var v = parseInt(sec[field]);
+    return isNaN(v) ? 0 : v;
+  }
+
+  // Recompute OBE summary (same logic as calcSummary)
+  // PRJ-1: SVI A1+A2 /30 * 15
+  var sviA1 = getMark('svi', 'svi_a1') + getMark('svi', 'svi_a2');
+  var prj1 = sviA1 / 30 * 15;
+
+  // PRJ-2: SVI A3+A4 /20 * 15
+  var sviA23 = getMark('svi', 'svi_a3') + getMark('svi', 'svi_a4');
+  var prj2 = sviA23 / 20 * 15;
+
+  // PRJ-3: SVF A1 /30 * 15
+  var svfA1 = getMark('svf', 'svf_a1_admin') + getMark('svf', 'svf_a1_tech');
+  var prj3 = svfA1 / 30 * 15;
+
+  // PRJ-4: SVF A2+A3 /60 * 15
+  var svfA23 = getMark('svf', 'svf_a2_admin') + getMark('svf', 'svf_a2_tech') +
+               getMark('svf', 'svf_a3');
+  var prj4 = svfA23 / 60 * 15;
+
+  // LR1: Logbook /70 * 20
+  var logTotal = getMark('logbook', 'log_a1') + getMark('logbook', 'log_b1') +
+                 getMark('logbook', 'log_c1');
+  var lr1 = logTotal / 70 * 20;
+
+  // PR1-1: Pembentangan SVF B + SVI B /20
+  var svfB = getMark('presentation', 'svf_b1');
+  var sviB = getMark('presentation', 'svi_b1') + getMark('presentation', 'svi_b2') +
+             getMark('presentation', 'svi_b3') + getMark('presentation', 'svi_b4') +
+             getMark('presentation', 'svi_b5') + getMark('presentation', 'svi_b6') +
+             getMark('presentation', 'svi_b7') + getMark('presentation', 'svi_b8') +
+             getMark('presentation', 'svi_b9') + getMark('presentation', 'svi_b10');
+  var pr11 = svfB + sviB / 5;
+
+  var total = prj1 + prj2 + prj3 + prj4 + lr1 + pr11;
+  var totalRounded = Math.round(total * 100) / 100;
+
+  // Grade
+  var grade;
+  if (total >= 85) grade = 'A';
+  else if (total >= 75) grade = 'B+';
+  else if (total >= 65) grade = 'B';
+  else if (total >= 55) grade = 'C+';
+  else if (total >= 45) grade = 'C';
+  else if (total >= 40) grade = 'D';
+  else grade = 'E';
+
+  // SVI and SVF ratings from marks data
+  var sviData = marksMap['svi'] || {};
+  var svfData = marksMap['svf'] || {};
+  var sviRating = sviData['svi_rating'] || '—';
+  var svfRating = svfData['svf_rating'] || '—';
+  var svfStatus = svfData['svf_status'] || '—';
+
+  setText('pp-total-marks', totalRounded.toFixed(2));
+  setText('pp-grade', grade);
+  setText('pp-svi-rating', sviRating);
+  setText('pp-svf-rating', svfRating + ' (' + svfStatus + ')');
+
+  // Mark last page to prevent trailing blank page
+  document.querySelectorAll('.print-page').forEach(function(p) {
+    p.classList.remove('last-page');
+  });
+  var pages = document.querySelectorAll('.print-page');
+  if (pages.length) pages[pages.length - 1].classList.add('last-page');
 
   window.print();
 }
