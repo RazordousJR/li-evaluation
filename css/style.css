@@ -306,12 +306,8 @@ textarea{resize:vertical;min-height:70px}
 .data-table td{padding:8px 10px;border-bottom:var(--border);vertical-align:middle}
 
 @media print {
-  /* Hide everything except print area */
-  .sidebar, .topbar, .sidebar-overlay,
-  .login-overlay, #print-area-overlay { display: none !important; }
-  .main-content { margin-left: 0 !important; }
-  .content-area { padding: 0 !important; }
-  .page { display: none !important; }
+  /* Nuclear option — hide everything, then show only print area */
+  body > * { display: none !important; }
   #print-area { display: block !important; }
 
   /* Page setup */
@@ -321,13 +317,8 @@ textarea{resize:vertical;min-height:70px}
   }
 
   /* Page break control */
-  .print-page {
-    page-break-after: always;
-    page-break-inside: avoid;
-  }
-  .print-page:last-child {
-    page-break-after: auto;
-  }
+  .print-page { page-break-after: always; }
+  .print-page.last-page { page-break-after: auto; }
 }
 
 /* Print area — hidden on screen */

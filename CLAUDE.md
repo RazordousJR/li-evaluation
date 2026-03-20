@@ -542,6 +542,13 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.20.1 — Bugfixes)
+
+### Bugfixes (v4.20.1)
+- **BUG 1 — UI bleed**: `@media print` now uses nuclear option `body > * { display: none !important }` then `#print-area { display: block !important }` — guarantees no sidebar, topbar, eval bars, or modals bleed into print output
+- **BUG 2 — Trailing blank page**: Replaced `:last-child` pseudo-class (unreliable in print) with `.last-page` class. `generatePDF()` now removes `last-page` from all pages then adds it to the final page. CSS: `.print-page { page-break-after: always }` + `.print-page.last-page { page-break-after: auto }`
+- **BUG 3 — Marks showing "—"**: `generatePDF()` is now `async`; fetches marks from Supabase before printing, recomputes full OBE summary (PRJ-1/2/3/4, LR1, PR1-1), derives grade, populates `pp-total-marks`, `pp-grade`, `pp-svi-rating`, `pp-svf-rating`
+
 ## PDF Report Generation (v4.20 — Part 1: Structure & Styling)
 
 ### Overview
@@ -577,9 +584,13 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 | `pp-footer-date` | "Dijana: DD/MM/YYYY" |
 
 ### JS Functions (app.js)
-- `generatePDF(student)` — populates all `pp-*` elements from `student` object (defaults to `currentStudent`); calls `window.print()`
+- `generatePDF(student)` — **async**; populates all `pp-*` elements from `student` object (defaults to `currentStudent`); fetches marks from Supabase; recomputes OBE summary; calls `window.print()`
   - Course code: `BITU3926` if `kursus === 'BITE' || 'BITZ'`; else `BITU3946`
-  - Summary marks fields set to `'—'` pending Part 2 implementation
+  - Fetches `marks` by `student_id`; builds `marksMap{}` keyed by section; prefers SVF-assigned evaluator's rows
+  - `getMark(section, field)` — inner helper; returns integer from `marksMap` or 0
+  - Recomputes PRJ-1/2/3/4, LR1, PR1-1 identical to `calcSummary()`; derives grade A/B+/B/C+/C/D/E
+  - Reads `svi_rating` from `svi` section data; `svf_rating`+`svf_status` from `svf` section data
+  - Marks last `.print-page` with `.last-page` class before printing
 - `setText(id, val)` — helper; safely sets `textContent` of element by ID (null-safe)
 
 ### Button
