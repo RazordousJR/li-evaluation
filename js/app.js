@@ -2586,10 +2586,13 @@ function populatePDFPages() {
     if (el) el.textContent = val;
   }
 
-  // Read textContent from DOM element — works on hidden elements; fallback '0' for numeric use
+  // Read value from DOM element — handles input (.value) and display (.textContent) elements
   function domVal(id) {
     var el = document.getElementById(id);
-    return el ? (el.textContent || el.innerText || '0') : '0';
+    if (!el) return '0';
+    return (el.value !== undefined && el.value !== '')
+           ? el.value
+           : (el.textContent || el.innerText || '0');
   }
 
   // Populate header right and footer date for pages 2-7
@@ -2694,23 +2697,23 @@ function populatePDFPages() {
 
   // ── PAGE 5: PEMBENTANGAN ──
   (function() {
-    var svfB1  = gm('presentation', 'svf_b1');
-    var sviB1  = gm('presentation', 'svi_b1');
-    var sviB2  = gm('presentation', 'svi_b2');
-    var sviB3  = gm('presentation', 'svi_b3');
-    var sviB4  = gm('presentation', 'svi_b4');
-    var sviB5  = gm('presentation', 'svi_b5');
-    var sviB6  = gm('presentation', 'svi_b6');
-    var sviB7  = gm('presentation', 'svi_b7');
-    var sviB8  = gm('presentation', 'svi_b8');
-    var sviB9  = gm('presentation', 'svi_b9');
-    var sviB10 = gm('presentation', 'svi_b10');
+    var svfB1  = parseFloat(domVal('svf_b1'))  || 0;
+    var sviB1  = parseFloat(domVal('svi_b1'))  || 0;
+    var sviB2  = parseFloat(domVal('svi_b2'))  || 0;
+    var sviB3  = parseFloat(domVal('svi_b3'))  || 0;
+    var sviB4  = parseFloat(domVal('svi_b4'))  || 0;
+    var sviB5  = parseFloat(domVal('svi_b5'))  || 0;
+    var sviB6  = parseFloat(domVal('svi_b6'))  || 0;
+    var sviB7  = parseFloat(domVal('svi_b7'))  || 0;
+    var sviB8  = parseFloat(domVal('svi_b8'))  || 0;
+    var sviB9  = parseFloat(domVal('svi_b9'))  || 0;
+    var sviB10 = parseFloat(domVal('svi_b10')) || 0;
     var sviBTotal = sviB1 + sviB2 + sviB3 + sviB4 + sviB5 +
                     sviB6 + sviB7 + sviB8 + sviB9 + sviB10;
     var pr11_3926 = svfB1 + (sviBTotal / 5);
-    // Read BITU3946 totals from calcSummary DOM
-    var psvfRaw = parseFloat(domVal('r2_pr11_psvf_raw')) || 0;
-    var psviRaw = parseFloat(domVal('r2_pr11_psvi_raw')) || 0;
+    // Read BITU3946 presentation totals from calcSummary stat cards
+    var psvfRaw = parseFloat(domVal('sum_psvf')) || 0;
+    var psviRaw = parseFloat(domVal('sum_psvi')) || 0;
     var pr11_3946 = Math.round((psvfRaw + psviRaw) / 200 * 20 * 100) / 100;
     var sviBArr = [sviB1,sviB2,sviB3,sviB4,sviB5,sviB6,sviB7,sviB8,sviB9,sviB10];
     var sviLabels = [
@@ -2744,19 +2747,34 @@ function populatePDFPages() {
 
   // ── PAGE 6: LAPORAN LI ──
   (function() {
-    var pilihan = parseInt((mm['meta'] || {})['pilihan']) || 1;
-    var a1 = gm('report', 'rep_a1'), a2 = gm('report', 'rep_a2'), a3 = gm('report', 'rep_a3');
-    var a4Tech = pilihan === 2
-      ? gm('report', 'rep_a4_tech_p2') : gm('report', 'rep_a4_tech_p1');
-    var a4Admin = pilihan === 2
-      ? gm('report', 'rep_a4_admin_p2') : gm('report', 'rep_a4_admin_p1');
-    var a5 = gm('report', 'rep_a5'), a6 = gm('report', 'rep_a6'), a7 = gm('report', 'rep_a7');
-    var aRaw = a1 + a2 + a3 + a4Tech + a4Admin + a5 + a6 + a7;
-    var aConverted = Math.round(aRaw / 2 * 10) / 10;
-    var b1 = gm('report', 'rep_b1'), b2 = gm('report', 'rep_b2');
-    var b3 = gm('report', 'rep_b3'), b4 = gm('report', 'rep_b4');
-    var bSub = b1 + b2 + b3 + b4;
+    var p1btn = document.getElementById('opt-p1');
+    var pilihan = (p1btn && p1btn.classList.contains('selected')) ? 1 : 2;
+    var repA1 = parseFloat(domVal('rep_a1')) || 0;
+    var repA2 = parseFloat(domVal('rep_a2')) || 0;
+    var repA3 = parseFloat(domVal('rep_a3')) || 0;
+    var repA4tech, repA4admin;
+    if (pilihan === 1) {
+      repA4tech  = parseFloat(domVal('rep_a4_tech_p1'))  || 0;
+      repA4admin = parseFloat(domVal('rep_a4_admin_p1')) || 0;
+    } else {
+      repA4tech  = parseFloat(domVal('rep_a4_tech_p2'))  || 0;
+      repA4admin = parseFloat(domVal('rep_a4_admin_p2')) || 0;
+    }
+    var repA5 = parseFloat(domVal('rep_a5')) || 0;
+    var repA6 = parseFloat(domVal('rep_a6')) || 0;
+    var repA7 = parseFloat(domVal('rep_a7')) || 0;
+    var repB1 = parseFloat(domVal('rep_b1')) || 0;
+    var repB2 = parseFloat(domVal('rep_b2')) || 0;
+    var repB3 = parseFloat(domVal('rep_b3')) || 0;
+    var repB4 = parseFloat(domVal('rep_b4')) || 0;
+    var aRaw = repA1 + repA2 + repA3 + repA4tech + repA4admin + repA5 + repA6 + repA7;
+    var aConverted = aRaw / 2;
+    var bSub = repB1 + repB2 + repB3 + repB4;
     var repTotal = aRaw + bSub;
+    // alias for HTML rows
+    var a1 = repA1, a2 = repA2, a3 = repA3, a4Tech = repA4tech, a4Admin = repA4admin;
+    var a5 = repA5, a6 = repA6, a7 = repA7;
+    var b1 = repB1, b2 = repB2, b3 = repB3, b4 = repB4;
     var r = '';
     r += '<tr><td colspan="3" style="background:#dbeafe;font-weight:700;color:#1e3a8a;padding:5px 8px">BAHAGIAN A — Kandungan Laporan / Report Content (raw /80 &rarr; /40)</td></tr>';
     r += '<tr><td>A1. Pengenalan / Introduction</td><td class="td-mark">' + a1 + '</td><td class="td-max">/10</td></tr>';

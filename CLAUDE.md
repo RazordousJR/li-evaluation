@@ -542,6 +542,22 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.21.3 — DOM-based reads for pages 5 & 6)
+
+### Bugfixes (v4.21.3)
+- **ROOT CAUSE**: `gm()` reads from `window._pdfData.marksMap` but `presentation` and `report`
+  section data was not reliably present in marksMap. Page 7 works because it uses `domVal()` to
+  read from `calcSummary()` DOM elements.
+- **FIX — `domVal()` updated**: Now handles both `<input>` elements (reads `.value`) and display
+  elements (reads `.textContent`/`.innerText`). Check: `el.value !== undefined && el.value !== ''`.
+- **FIX — Page 5**: Replaced all `gm('presentation', ...)` calls with `parseFloat(domVal(id))`.
+  Field IDs match the eval form inputs directly (`svf_b1`, `svi_b1`–`svi_b10`). BITU3946 totals
+  now read from `sum_psvf` and `sum_psvi` stat card divs (instead of `r2_pr11_psvf_raw`/`psvi_raw`).
+- **FIX — Page 6**: Replaced all `gm('report', ...)` calls with `parseFloat(domVal(id))`.
+  Pilihan detection changed from `mm['meta']['pilihan']` to DOM check:
+  `p1btn.classList.contains('selected')` on `#opt-p1`. Field IDs: `rep_a1`–`rep_a7`,
+  `rep_a4_tech_p1/p2`, `rep_a4_admin_p1/p2`, `rep_b1`–`rep_b4`.
+
 ## PDF Report Generation (v4.21.2 — populatePDFPages() Data Fixes)
 
 ### Bugfixes (v4.21.2)
