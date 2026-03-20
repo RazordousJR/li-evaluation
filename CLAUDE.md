@@ -542,6 +542,16 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.20.3 — DOM-based totals)
+
+### Bugfix (v4.20.3)
+- **BUG 5 — Wrong totals from recalculation**: `generatePDF()` was recomputing OBE marks from raw jsonb data but producing incorrect results (e.g. 73.25 vs actual 93.3). Root cause: `calcSummary()` already has the correct values rendered in the DOM; duplicating the logic introduced drift.
+- **Fix**: Removed all PRJ-1/2/3/4, LR1, PR1-1 recalculation variables. `generatePDF()` now reads totals and grades directly from `calcSummary()` DOM output (`sum_3926_total`, `sum_3926_grade`, `sum_3946_total`, `sum_3946_grade`). Marks fetch retained for ratings only.
+- `getMark()` inner helper retained (available for Part 2 detail pages).
+- Cover page now shows both course totals: `pp-total-marks` = `"BITU3926: X | BITU3946: Y"`, `pp-grade` = `"G1 / G2"`.
+- `window._pdfData` object stored with all computed values for use in Part 2 pages.
+- **Constraint**: `generatePDF()` must be called from `#page-summary` only (after `calcSummary()` has run). This is already enforced — button lives in `#page-summary .btn-row`.
+
 ## PDF Report Generation (v4.20.2 — getMark field name fix)
 
 ### Bugfix (v4.20.2)
