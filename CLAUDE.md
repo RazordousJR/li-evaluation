@@ -554,9 +554,12 @@ Track of planned improvements. Tick when done.
 
 ## Dashboard Charts (v4.18 — 4th Chart & 2×2 Grid)
 
+### Bugfixes (v4.18.1)
+- **Grid breakpoint fix**: Moved `grid-template-columns:1fr` into the base `.dash-charts-grid` rule (mobile-first); removed `@media(max-width:639px)` query. This ensures 1-column layout is the explicit default before the `min-width:640px` override, preventing 3-column bleed on tablet
+
 ### Changes (v4.18)
 - **4th chart added** — "Status Assign SVF" (`chart-svf`, `_chartSvf`): Dah Assign (blue `#1a56db`) vs Belum Assign (red `#c0392b`); counts by `svf_email` null/non-null; no extra Supabase query
-- **2×2 responsive grid**: Removed all horizontal scroll/snap CSS from v4.17.2–4.17.3. `.dash-charts-grid` is now a plain CSS grid — 1 column on phones (`max-width:639px`), 2 columns on tablet/desktop (`min-width:640px`)
+- **2×2 responsive grid**: Removed all horizontal scroll/snap CSS from v4.17.2–4.17.3. `.dash-charts-grid` is now a plain CSS grid — 1 column on phones (`<640px`), 2 columns on tablet/desktop (`min-width:640px`)
 - **`.dash-chart-card` cleaned up**: Removed `flex:0 0 80vw`, `max-width:320px`, `scroll-snap-align` — card is now a plain grid cell
 
 ### Bugfixes (v4.17.3)
