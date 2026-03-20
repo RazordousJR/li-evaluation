@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="css/style.css?v=3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -150,6 +151,23 @@
 
   <!-- AJK_LI dashboard -->
   <div id="dash-ajkli" style="display:none">
+    <div class="dash-charts-grid" id="dash-charts-row">
+      <!-- Chart 1: Status Penilaian -->
+      <div class="dash-chart-card">
+        <div class="dash-chart-title">Status Penilaian</div>
+        <div class="dash-chart-wrap"><canvas id="chart-completion"></canvas></div>
+      </div>
+      <!-- Chart 2: Status Kelulusan -->
+      <div class="dash-chart-card">
+        <div class="dash-chart-title">Status Kelulusan</div>
+        <div class="dash-chart-wrap"><canvas id="chart-approval"></canvas></div>
+      </div>
+      <!-- Chart 3: Agihan Program -->
+      <div class="dash-chart-card">
+        <div class="dash-chart-title">Agihan Program</div>
+        <div class="dash-chart-wrap"><canvas id="chart-program"></canvas></div>
+      </div>
+    </div>
     <div class="section">
       <div class="section-title">Kemajuan Penilaian</div>
       <div class="dash-progress-wrap">
@@ -191,6 +209,10 @@
 
   <!-- PENSYARAH dashboard -->
   <div id="dash-pensyarah" style="display:none">
+    <div class="section" id="dash-pensyarah-sections">
+      <div class="section-title">Kemajuan Bahagian</div>
+      <div id="pensyarah-section-pills" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.5rem"></div>
+    </div>
     <div class="section">
       <div class="section-title" style="justify-content:space-between;align-items:center">
         <span>Senarai Pelajar Anda</span>

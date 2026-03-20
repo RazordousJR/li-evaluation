@@ -10,6 +10,7 @@ var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
 var _currentEvalEmail = null; // evaluator email used for save/load marks
 var _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
+var _chartCompletion = null, _chartApproval = null, _chartProgram = null;
 
 // ===== PASSWORD HASHING =====
 async function hashPassword(pw) {
@@ -1556,6 +1557,111 @@ async function renderAdminDashboard() {
   }
 }
 
+function renderDashboardCharts(students, marksDataByStudent) {
+  var cs = getComputedStyle(document.documentElement);
+  var green = cs.getPropertyValue('--green').trim() || '#16a34a';
+  var red   = cs.getPropertyValue('--red').trim()   || '#dc2626';
+  var amber = cs.getPropertyValue('--amber').trim() || '#d97706';
+  var grey  = '#9ca3af';
+
+  // Chart 1 — Status Penilaian (Lengkap vs Belum Lengkap)
+  var lengkap = students.filter(function(s) { return s._lengkap; }).length;
+  var belum   = students.length - lengkap;
+  var canv1 = document.getElementById('chart-completion');
+  if (canv1) {
+    if (_chartCompletion) { _chartCompletion.destroy(); }
+    _chartCompletion = new Chart(canv1, {
+      type: 'doughnut',
+      data: {
+        labels: ['Lengkap', 'Belum Lengkap'],
+        datasets: [{ data: [lengkap, belum], backgroundColor: [green, red], borderWidth: 2 }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 } } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw; } } }
+        }
+      }
+    });
+  }
+
+  // Chart 2 — Status Kelulusan (by approval_status)
+  var approved  = students.filter(function(s) { return s.approval_status === 'approved'; }).length;
+  var submitted = students.filter(function(s) { return s.approval_status === 'submitted'; }).length;
+  var draft     = students.filter(function(s) { return !s.approval_status || s.approval_status === 'draft'; }).length;
+  var canv2 = document.getElementById('chart-approval');
+  if (canv2) {
+    if (_chartApproval) { _chartApproval.destroy(); }
+    _chartApproval = new Chart(canv2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Diluluskan', 'Menunggu Kelulusan', 'Draf'],
+        datasets: [{ data: [approved, submitted, draft], backgroundColor: [green, amber, grey], borderWidth: 2 }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 } } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw; } } }
+        }
+      }
+    });
+  }
+
+  // Chart 3 — Agihan Program (by kursus)
+  var programCounts = {};
+  students.forEach(function(s) {
+    var k = s.kursus || 'Lain-lain';
+    programCounts[k] = (programCounts[k] || 0) + 1;
+  });
+  var programLabels = Object.keys(programCounts);
+  var programData   = programLabels.map(function(k) { return programCounts[k]; });
+  var palette = ['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#06b6d4','#ec4899','#f97316'];
+  var programColors = programLabels.map(function(_, i) { return palette[i % palette.length]; });
+  var canv3 = document.getElementById('chart-program');
+  if (canv3) {
+    if (_chartProgram) { _chartProgram.destroy(); }
+    _chartProgram = new Chart(canv3, {
+      type: 'doughnut',
+      data: {
+        labels: programLabels,
+        datasets: [{ data: programData, backgroundColor: programColors, borderWidth: 2 }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 } } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw; } } }
+        }
+      }
+    });
+  }
+}
+
+function renderPensyarahSectionPills(students, marksDataByStudent) {
+  var container = document.getElementById('pensyarah-section-pills');
+  if (!container) return;
+  var sections = [
+    { key: 'svi',          label: 'SVI' },
+    { key: 'svf',          label: 'SVF' },
+    { key: 'logbook',      label: 'Logbook' },
+    { key: 'presentation', label: 'Pembentangan' },
+    { key: 'report',       label: 'Laporan' }
+  ];
+  var total = students.length;
+  var html = '';
+  sections.forEach(function(sec) {
+    var count = students.filter(function(s) {
+      var sData = marksDataByStudent[s.id] && marksDataByStudent[s.id][sec.key];
+      return sData && sData.confirmed === true;
+    }).length;
+    var cls = count > 0 ? 'pensyarah-section-pill pill-done' : 'pensyarah-section-pill pill-pending';
+    html += '<span class="' + cls + '">' + escHtml(sec.label) + ' ' + count + '/' + total + ' pelajar</span>';
+  });
+  container.innerHTML = html;
+}
+
 async function loadAjkliDashboard() {
   var tbody = document.getElementById('dash-ajkli-tbody');
   if (!tbody) return;
@@ -1564,7 +1670,7 @@ async function loadAjkliDashboard() {
   try {
     var results = await Promise.all([
       sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
-      sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name').order('name'),
+      sb.from('students').select('id, matric_no, name, kursus, svf_email, svf_name, approval_status').order('name'),
       sb.from('marks').select('student_id, evaluator_email, section, data')
     ]);
     var pensyarahList = results[0].data || [];
@@ -1617,6 +1723,7 @@ async function loadAjkliDashboard() {
     var barEl = document.getElementById('dash-progress-bar');
     if (barEl) barEl.style.width = pct + '%';
 
+    renderDashboardCharts(_ajkliStudents, marksDataByStudent);
     filterAjkliDashboard();
   } catch (err) {
     console.error('loadAjkliDashboard error:', err);
@@ -1690,6 +1797,8 @@ async function loadPensyarahDashboard() {
     if (!marksDataByStudent[m.student_id]) marksDataByStudent[m.student_id] = {};
     marksDataByStudent[m.student_id][m.section] = m.data;
   });
+
+  renderPensyarahSectionPills(_pensyarahDashStudents, marksDataByStudent);
 
   if (!_pensyarahDashStudents.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pelajar ditetapkan kepada anda.</td></tr>';
