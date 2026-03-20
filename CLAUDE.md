@@ -548,6 +548,10 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - **FIX — Page 7 PR1-1 mentah column**: Was showing `"—"`. Now computes
   `svfB1val + (sviBsum / 5)` from DOM inputs (`svf_b1`, `svi_b1`–`svi_b10`)
   and displays as e.g. `"20.0"` to match the markah column value.
+- **FIX (revised) — pr11mentah was 0**: `svi_b1`–`svi_b10` are SVI soft-skills
+  inputs, not presentation marks. Changed to read `r_pr11_svfb_raw` and
+  `r_pr11_svib_raw` (already populated by `calcSummary()`) for both `pr11mentah`
+  and the `pr11Markah` fallback. Formula: `(svfBraw + sviBraw).toFixed(1)`.
 
 ## PDF Report Generation (v4.21.3 — DOM-based reads for pages 5 & 6)
 
