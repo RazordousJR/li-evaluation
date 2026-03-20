@@ -2463,6 +2463,14 @@ async function generatePDF(student) {
   var s = student || currentStudent;
   if (!s || !s.id) { alert('Tiada pelajar dipilih.'); return; }
 
+  // Resolve SVF display name from map if svf_name is empty
+  var svfDisplayName = s.svf_name || '';
+  if (!svfDisplayName && s.svf_email) {
+    svfDisplayName = (_ajkliPensyarahMap && _ajkliPensyarahMap[s.svf_email]) ||
+      (_senaraiPensyarahMap && _senaraiPensyarahMap[s.svf_email]) ||
+      s.svf_email;
+  }
+
   // Populate basic student info
   var courseCode = (s.kursus === 'BITE' || s.kursus === 'BITZ')
     ? 'BITU3926' : 'BITU3946';
@@ -2474,9 +2482,9 @@ async function generatePDF(student) {
   setText('pp-program', s.kursus || '—');
   setText('pp-syarikat', s.organisasi || '—');
   setText('pp-svi', s.svi_name || '—');
-  setText('pp-svf', s.svf_name || '—');
+  setText('pp-svf', svfDisplayName || '—');
   setText('pp-sig-svi', s.svi_name || '—');
-  setText('pp-sig-svf', s.svf_name || '—');
+  setText('pp-sig-svf', svfDisplayName || '—');
   setText('pp-footer-date',
     'Dijana: ' + new Date().toLocaleDateString('ms-MY'));
 

@@ -542,6 +542,16 @@ Three additional bugs found in v4.16 code causing zero students to appear on das
 - `isStudentComplete()` is the sole arbiter of completion: checks `confirmed: true` in all 5 sections
   (`svi`, `svf`, `logbook`, `presentation`, `report`). `approval_status` is completely separate.
 
+## PDF Report Generation (v4.21.5 — SVF name fallback in cover page)
+
+### Bugfix (v4.21.5)
+- **FIX — pp-svf and pp-sig-svf showing "—"**: `s.svf_name` can be empty even when `s.svf_email` is assigned (e.g. when the student object came from a context where `svf_name` wasn't populated).
+- **Fix**: In `generatePDF()`, after resolving `s`, compute `svfDisplayName`:
+  1. Use `s.svf_name` if present.
+  2. Otherwise look up `s.svf_email` in `_ajkliPensyarahMap` or `_senaraiPensyarahMap` (already in memory).
+  3. Fall back to `s.svf_email` itself as last resort.
+- `pp-svf` and `pp-sig-svf` now use `svfDisplayName || '—'` instead of `s.svf_name || '—'`.
+
 ## PDF Report Generation (v4.21.4 — Page 7 PR1-1 mentah fix)
 
 ### Bugfix (v4.21.4)
