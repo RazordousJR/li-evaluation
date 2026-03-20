@@ -552,6 +552,13 @@ Track of planned improvements. Tick when done.
 
 ## Dashboard Charts (v4.17.3 — Mobile Chart Scroll Isolation Fix)
 
+## Dashboard Charts (v4.18 — 4th Chart & 2×2 Grid)
+
+### Changes (v4.18)
+- **4th chart added** — "Status Assign SVF" (`chart-svf`, `_chartSvf`): Dah Assign (blue `#1a56db`) vs Belum Assign (red `#c0392b`); counts by `svf_email` null/non-null; no extra Supabase query
+- **2×2 responsive grid**: Removed all horizontal scroll/snap CSS from v4.17.2–4.17.3. `.dash-charts-grid` is now a plain CSS grid — 1 column on phones (`max-width:639px`), 2 columns on tablet/desktop (`min-width:640px`)
+- **`.dash-chart-card` cleaned up**: Removed `flex:0 0 80vw`, `max-width:320px`, `scroll-snap-align` — card is now a plain grid cell
+
 ### Bugfixes (v4.17.3)
 - **Page scroll isolation**: Added `overscroll-behavior-x:contain` and `overflow-y:hidden` to `.dash-charts-grid` on mobile — prevents chart row scroll from propagating to the page
 - **Explicit sizing**: Added `width:100%;box-sizing:border-box` to ensure container never overflows its parent

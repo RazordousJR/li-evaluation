@@ -10,7 +10,7 @@ var _ajkliStudents = [];
 var _ajkliPensyarahMap = {};
 var _currentEvalEmail = null; // evaluator email used for save/load marks
 var _studentApprovalStatus = { status: 'draft', submitted_at: null, approved_at: null, approved_by: null };
-var _chartCompletion = null, _chartApproval = null, _chartProgram = null;
+var _chartCompletion = null, _chartApproval = null, _chartProgram = null, _chartSvf = null;
 
 // ===== PASSWORD HASHING =====
 async function hashPassword(pw) {
@@ -1633,6 +1633,28 @@ function renderDashboardCharts(students, marksDataByStudent) {
       data: {
         labels: programLabels,
         datasets: [{ data: programData, backgroundColor: programColors, borderWidth: 2 }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 } } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw; } } }
+        }
+      }
+    });
+  }
+
+  // Chart 4 — Status Assign SVF
+  var dahAssign  = students.filter(function(s) { return s.svf_email && s.svf_email.trim() !== ''; }).length;
+  var belumAssign = students.length - dahAssign;
+  var canv4 = document.getElementById('chart-svf');
+  if (canv4) {
+    if (_chartSvf) { _chartSvf.destroy(); }
+    _chartSvf = new Chart(canv4, {
+      type: 'doughnut',
+      data: {
+        labels: ['Dah Assign', 'Belum Assign'],
+        datasets: [{ data: [dahAssign, belumAssign], backgroundColor: ['#1a56db', red], borderWidth: 2 }]
       },
       options: {
         maintainAspectRatio: false,
