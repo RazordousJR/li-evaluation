@@ -550,13 +550,17 @@ Track of planned improvements. Tick when done.
 - [x] Approval flow: pensyarah submit → AJK_LI approve → lock markah
 - [ ] History/versioning markah (boleh tengok versi sebelum edit)
 
-## Dashboard Charts (v4.17.2 — Mobile Chart Scroll Fix)
+## Dashboard Charts (v4.17.3 — Mobile Chart Scroll Isolation Fix)
+
+### Bugfixes (v4.17.3)
+- **Page scroll isolation**: Added `overscroll-behavior-x:contain` and `overflow-y:hidden` to `.dash-charts-grid` on mobile — prevents chart row scroll from propagating to the page
+- **Explicit sizing**: Added `width:100%;box-sizing:border-box` to ensure container never overflows its parent
+- **Swipe hint removed**: `.dash-charts-swipe-hint` element and CSS class removed entirely
 
 ### Bugfixes (v4.17.2)
-- **Mobile chart layout**: On mobile (`max-width:768px`) `.dash-charts-grid` switches from `grid` to `flex` with `overflow-x:auto` and `scroll-snap-type:x mandatory` — charts scroll horizontally without breaking page layout
+- **Mobile chart layout**: On mobile (`max-width:768px`) `.dash-charts-grid` switches from `grid` to `flex` with `overflow-x:scroll` and `scroll-snap-type:x mandatory` — charts scroll horizontally without breaking page layout
 - **Card sizing on mobile**: `.dash-chart-card` set to `flex:0 0 80vw; max-width:320px; scroll-snap-align:start` so each card snaps cleanly into view
 - **Scrollbar hidden**: `scrollbar-width:none` (Firefox) + `.dash-charts-grid::-webkit-scrollbar{display:none}` (Chrome/Android)
-- **Swipe hint**: `.dash-charts-swipe-hint` `<p>` element added below the charts row; visible only on mobile via `display:none` / `@media display:block`
 - **Desktop unchanged**: 3-column grid layout preserved for `min-width:769px`
 
 ### Bugfixes (v4.17.1)
