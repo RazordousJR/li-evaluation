@@ -2810,17 +2810,13 @@ function populatePDFPages() {
     r += '<tr><td>LR1 (e-Logbook)</td><td class="td-mark">' + domVal('r_lr1r') + '</td><td class="td-max">20%</td><td class="td-mark">' + domVal('r_lr1') + '</td></tr>';
     var pr11Markah = domVal('r_pr11');
     if (!pr11Markah || pr11Markah === '0') {
-      var svf1 = gm('presentation', 'svf_b1');
-      var sviS = 0;
-      for (var ki = 1; ki <= 10; ki++) sviS += gm('presentation', 'svi_b' + ki);
-      pr11Markah = (svf1 + sviS / 5).toFixed(1) + ' / 20';
+      var svfBraw2 = parseFloat(domVal('r_pr11_svfb_raw')) || 0;
+      var sviBraw2 = parseFloat(domVal('r_pr11_svib_raw')) || 0;
+      pr11Markah = (svfBraw2 + sviBraw2).toFixed(1) + ' / 20';
     }
-    var svfB1val = parseFloat(domVal('svf_b1')) || 0;
-    var sviBsum = 0;
-    for (var i = 1; i <= 10; i++) {
-      sviBsum += parseFloat(domVal('svi_b' + i)) || 0;
-    }
-    var pr11mentah = (svfB1val + (sviBsum / 5)).toFixed(1);
+    var svfBraw = parseFloat(domVal('r_pr11_svfb_raw')) || 0;
+    var sviBraw = parseFloat(domVal('r_pr11_svib_raw')) || 0;
+    var pr11mentah = (svfBraw + sviBraw).toFixed(1);
     r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">' + pr11mentah + '</td><td class="td-max">20%</td><td class="td-mark">' + pr11Markah + '</td></tr>';
     r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3926 / Gred</strong></td><td class="td-mark"><strong>' + d.total3926.toFixed(2) + ' / ' + d.grade3926 + '</strong></td></tr>';
     // BITU3946
