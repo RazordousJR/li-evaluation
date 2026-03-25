@@ -199,6 +199,9 @@ textarea{resize:vertical;min-height:70px}
 .modal-msg{font-size:13px;padding:8px 12px;border-radius:var(--radius);display:none}
 .modal-err{background:var(--red-bg);color:var(--red-text);border-left:3px solid var(--red-text)}
 
+/* ===== MOBILE SAVE BAR ===== */
+.mobile-save-bar{display:none}
+
 /* ===== MOBILE ===== */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}
@@ -207,6 +210,26 @@ textarea{resize:vertical;min-height:70px}
   .hamburger-btn{display:flex}
   .topbar-badges{display:none}
   .main-content{margin-left:0}
+
+  /* Tap targets */
+  .nav-item{min-height:48px;display:flex;align-items:center}
+  button{min-height:44px}
+  input,select{min-height:44px}
+  input[type="checkbox"]{width:20px;height:20px;min-height:20px}
+
+  /* Form spacing */
+  .content-area{padding:1rem 0.75rem}
+  .section{padding:0.875rem 1rem}
+  .field{gap:10px}
+
+  /* Prevent iOS zoom on focus for mark inputs */
+  .score-input-wrap input[type="number"]{font-size:16px}
+
+  /* Mobile save bar */
+  .mobile-save-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--bg);border-top:var(--border);padding:10px 16px;box-shadow:0 -2px 8px rgba(0,0,0,.08)}
+  .mobile-save-btn{flex-shrink:0}
+  /* Ensure content doesn't hide behind fixed save bar */
+  .content-area{padding-bottom:72px}
 }
 
 /* ===== URUS PELAJAR ===== */
