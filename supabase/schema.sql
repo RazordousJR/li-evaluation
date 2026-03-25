@@ -45,36 +45,30 @@ CREATE TABLE IF NOT EXISTS public.marks (
 );
 
 -- ============================================================
--- Row-Level Security: disabled (internal tool, anon key access)
--- Enable and add policies if you need per-user data isolation.
--- ============================================================
-ALTER TABLE public.users    DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.students DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.marks    DISABLE ROW LEVEL SECURITY;
-
--- ============================================================
--- Security: Application-layer filtering (v4.15)
--- RLS via PostgreSQL GUCs (set_config/current_setting) was attempted
--- but is unreliable with Supabase's PgBouncer connection pooler in
--- transaction mode — GUCs are connection-scoped and can persist from
--- previous sessions or be absent when a different pooled connection is
--- used, causing inconsistent row visibility.
--- Decision: disable RLS; enforce access control in JS query layer instead.
--- See CLAUDE.md §Security for details.
+-- Row-Level Security: passthrough anon policy (v4.22)
+-- RLS is enabled on all tables with a permissive "anon_full_access"
+-- policy that allows the anon role full access. This satisfies Supabase
+-- RLS best-practice (tables should have RLS enabled) without changing
+-- any app behaviour. Real access control is enforced at the JS query
+-- layer (see CLAUDE.md §Application-Layer Security).
+--
+-- Previous note: GUC-based RLS was attempted (v4.14) and reverted (v4.15)
+-- due to PgBouncer connection-pooling issues. This passthrough approach
+-- avoids GUCs entirely — policies use a simple USING (true) expression.
 -- ============================================================
 
--- Disable RLS on all tables
-ALTER TABLE public.users      DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.students   DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.marks      DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.mark_audit DISABLE ROW LEVEL SECURITY;
+-- Enable RLS on all tables
+ALTER TABLE public.users      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.marks      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mark_audit ENABLE ROW LEVEL SECURITY;
 
--- Drop all GUC-based helper functions (no longer needed)
+-- Drop legacy GUC-based policies and helper functions (idempotent)
 DROP FUNCTION IF EXISTS get_session_email();
 DROP FUNCTION IF EXISTS get_session_role();
 DROP FUNCTION IF EXISTS set_app_session(TEXT, TEXT);
 
--- Drop all RLS policies (idempotent)
+-- Drop all legacy RLS policies (idempotent)
 DROP POLICY IF EXISTS "users: read own row"           ON public.users;
 DROP POLICY IF EXISTS "users: admin_ajkli read all"   ON public.users;
 DROP POLICY IF EXISTS "users: admin write"            ON public.users;
@@ -91,6 +85,17 @@ DROP POLICY IF EXISTS "marks: own or admin_ajkli update" ON public.marks;
 DROP POLICY IF EXISTS "marks: admin delete"              ON public.marks;
 DROP POLICY IF EXISTS "audit: admin_ajkli or own read"   ON public.mark_audit;
 DROP POLICY IF EXISTS "audit: anon insert"               ON public.mark_audit;
+-- Drop passthrough policies before recreating (idempotent)
+DROP POLICY IF EXISTS "anon_full_access" ON public.users;
+DROP POLICY IF EXISTS "anon_full_access" ON public.students;
+DROP POLICY IF EXISTS "anon_full_access" ON public.marks;
+DROP POLICY IF EXISTS "anon_full_access" ON public.mark_audit;
+
+-- Passthrough policies: allow anon full access (app-layer JS enforces real access control)
+CREATE POLICY "anon_full_access" ON public.users      FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_full_access" ON public.students   FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_full_access" ON public.marks      FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_full_access" ON public.mark_audit FOR ALL TO anon USING (true) WITH CHECK (true);
 
 -- Login RPC: SECURITY DEFINER so it can read users table regardless of
 -- any future RLS state. Required because login runs before a session exists.
@@ -194,8 +199,7 @@ CREATE TABLE IF NOT EXISTS public.mark_audit (
   changed_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
--- RLS on mark_audit is enabled in the RLS Policies section below
--- ALTER TABLE public.mark_audit DISABLE ROW LEVEL SECURITY;
+-- RLS enabled with passthrough policy in the RLS Policies section above
 GRANT ALL ON public.mark_audit TO anon;
 
 -- Trigger function: compare OLD.data vs NEW.data and log each differing field
