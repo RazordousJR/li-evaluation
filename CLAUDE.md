@@ -47,7 +47,7 @@ Covers two courses: BITU3926 (Latihan Industri) and BITU3946 (Laporan Latihan In
 - CDN: `@supabase/supabase-js@2` via jsdelivr (no npm/build step)
 - SheetJS CDN: `xlsx@0.18.5` via jsdelivr (for .xlsx/.csv upload parsing)
 - Client initialized as `sb` global in `initAuth()`
-- RLS disabled on all tables; anon role granted full access; access control enforced at app layer
+- RLS enabled on all tables with passthrough `anon_full_access` policy (v4.22); anon role retains full access; real access control enforced at app layer
 - **Setup**: Run `supabase/schema.sql` once in Supabase Dashboard → SQL Editor
 - **Upgrade existing DB**: The migration section at the bottom of schema.sql has `ALTER TABLE IF NOT EXISTS` statements to add new columns
 
@@ -406,9 +406,9 @@ BITU3946 OBE components:
   unreliable with Supabase's PgBouncer connection pooler in transaction mode. GUCs are connection-scoped;
   when connections are reused from the pool, GUCs from previous sessions can persist or be absent, causing
   inconsistent row visibility across queries. Retries and `_sessionReady` flags could not reliably solve this.
-- **Decision**: RLS disabled on all tables. Access control enforced entirely in JavaScript query layer.
-- **RLS is OFF**: `DISABLE ROW LEVEL SECURITY` on all 4 tables. GUC helper functions (`get_session_email`,
-  `get_session_role`, `set_app_session`) and all policies dropped from `supabase/schema.sql`.
+- **Decision**: Access control enforced entirely in JavaScript query layer. RLS enabled with passthrough policies (v4.22) — does not change app behaviour.
+- **RLS is ON (passthrough)**: `ENABLE ROW LEVEL SECURITY` on all 4 tables with `"anon_full_access"` policy (`USING (true) WITH CHECK (true)`) granting the anon role full access. GUC helper functions (`get_session_email`,
+  `get_session_role`, `set_app_session`) dropped. Run `supabase/enable_rls.sql` to apply to live DB.
 - **`get_user_for_login(p_email)`** SECURITY DEFINER RPC retained — still needed for pre-session login lookup.
 - **App-layer enforcement rules** (implemented in `js/app.js`):
   - `loadPensyarahDashboard()` — queries `students` with `.eq('svf_email', session.email)`; marks with `.eq('evaluator_email', session.email)`
@@ -747,7 +747,7 @@ Track of planned improvements. Tick when done.
 ### Security
 - [x] Password hashing proper (SHA-256 via Web Crypto API)
 - [x] Session timeout bila idle (5 minit)
-- [ ] Enable RLS (Row-Level Security) di Supabase — attempted v4.14, reverted v4.15 due to PgBouncer GUC persistence; app-layer filtering used instead
+- [x] Enable RLS (Row-Level Security) di Supabase — passthrough anon policy (v4.22); GUC-based approach reverted v4.15, replaced with USING (true) policies; app-layer filtering remains primary access control
 
 ### Export & Reporting
 - [x] Export PDF terus dari sistem — Pages 1–7 complete (v4.21); cover + 6 marks detail pages
