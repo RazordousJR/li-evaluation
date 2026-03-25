@@ -741,6 +741,22 @@ Page 7 also has `pp7-sig-svi` and `pp7-sig-svf` signature lines.
 - `.print-footer`
 - `.bilingual` / `.bm` / `.en` — bilingual label helper
 
+## Mobile UX Improvements (v4.23)
+
+### Changes (v4.23)
+- **`inputmode="numeric"`** added to all 64 `<input type="number">` mark entry fields across SVI, SVF, e-Logbook, Pembentangan, and Laporan LI sections — triggers numeric keypad on iOS/Android without the decimal/text keyboard
+- **Larger tap targets** (inside `@media(max-width:768px)`):
+  - `.nav-item` min-height 48px (with flex align)
+  - `button` min-height 44px
+  - `input, select` min-height 44px
+  - `input[type="checkbox"]` width and height 20px
+- **Mobile save bar** — fixed bottom bar (`.mobile-save-bar`) shown only on mobile:
+  - `position:fixed; bottom:0` with border-top and drop shadow
+  - Shows save-status indicator (`#mobile-save-status`) + "Simpan" button calling `saveAll()`
+  - `.content-area` gets `padding-bottom:72px` on mobile to prevent content hiding behind bar
+- **Form spacing on mobile**: `.content-area` padding `1rem 0.75rem`, `.section` padding `0.875rem 1rem`, `.field` gap `10px`
+- **Font size**: `.score-input-wrap input[type="number"]` forced to `font-size:16px` on mobile — prevents iOS auto-zoom on focus
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
@@ -764,7 +780,7 @@ Track of planned improvements. Tick when done.
 ### Dashboard & UX
 - [x] Chart/graf — % pelajar lengkap, distribution markah
 - [x] Panel Senarai — paginated student list with 4 filters (pensyarah, program, markah, kelulusan)
-- [ ] Mobile input UX yang lebih baik
+- [x] Mobile input UX yang lebih baik
 
 ### Workflow
 - [x] Approval flow: pensyarah submit → AJK_LI approve → lock markah
