@@ -183,7 +183,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
 
 ## Dashboard (v4.19 — Charts Only)
 
-> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24.
+> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected.
 
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)
@@ -819,6 +819,33 @@ The Laporan LI page (`#page-report`) did not show the Pilihan radio selector (Pi
 - All weighted mark displays in `calcSummary()` now show 2 decimal places (e.g. `13.50`, `89.98`)
 - Any inline `.toFixed(1)` calls in `calcSummary()` also changed to `.toFixed(2)`
 - `calcReport()`, `calcSVI()`, `calcSVF()`, `calcLog()`, `calcPres()` NOT changed — raw integer subtotals do not need decimal formatting
+
+## PR1-2 Soft Skills Formula Fix (v4.24.1)
+
+### Bug
+PR1-2 (Soft Skills) was computed as `sviB / 50 * 10` — using SVI Bah. B raw total divided by 50. This was incorrect and did not match the official Excel form formula.
+
+### Correct Formula (from official Excel form)
+```
+PR1-2 = (PRJ-1 weighted + PRJ-2 weighted + PR1-1 SVF weighted) / 40 × 10
+```
+
+- PRJ-1 weighted = `prj1` (already in `calcSummary()`)
+- PRJ-2 weighted = `prj2` (already in `calcSummary()`)
+- PR1-1 SVF weighted = `pr11_svfb` (already in `calcSummary()`)
+- Max = 10
+
+### Fix
+In `calcSummary()`, the `pr12` line changed from:
+```javascript
+var pr12 = sviB / 50 * 10;
+```
+To:
+```javascript
+var pr12 = fmt((prj1 + prj2 + pr11_svfb) / 40 * 10);
+```
+
+All three variables (`prj1`, `prj2`, `pr11_svfb`) are computed earlier in `calcSummary()` before `pr12` — no reordering needed.
 
 ## PDF Page 7 — Grouped OBE Format (v4.24)
 
