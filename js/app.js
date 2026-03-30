@@ -2817,40 +2817,93 @@ function populatePDFPages() {
   // ── PAGE 7: OBE BREAKDOWN ──
   (function() {
     var r = '';
-    // BITU3926
-    r += '<tr><td colspan="4" style="background:#1e3a8a;color:#fff;font-weight:700;padding:6px 8px">BITU3926 — Latihan Industri</td></tr>';
-    r += '<tr><td>PRJ-1 (SVI A1+A2)</td><td class="td-mark">' + domVal('r_prj1r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj1') + '</td></tr>';
-    r += '<tr><td>PRJ-2 (SVI A3+A4)</td><td class="td-mark">' + domVal('r_prj2r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj2') + '</td></tr>';
-    r += '<tr><td>PRJ-3 (SVF A1)</td><td class="td-mark">' + domVal('r_prj3r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj3') + '</td></tr>';
-    r += '<tr><td>PRJ-4 (SVF A2+A3)</td><td class="td-mark">' + domVal('r_prj4r') + '</td><td class="td-max">15%</td><td class="td-mark">' + domVal('r_prj4') + '</td></tr>';
-    r += '<tr><td>LR1 (e-Logbook)</td><td class="td-mark">' + domVal('r_lr1r') + '</td><td class="td-max">20%</td><td class="td-mark">' + domVal('r_lr1') + '</td></tr>';
-    var pr11Markah = domVal('r_pr11');
-    if (!pr11Markah || pr11Markah === '0') {
-      var svfBraw2 = parseFloat(domVal('r_pr11_svfb_raw')) || 0;
-      var sviBraw2 = parseFloat(domVal('r_pr11_svib_raw')) || 0;
-      var sviBforCalc2 = sviBraw2 > 10 ? sviBraw2 / 5 : sviBraw2;
-      pr11Markah = (svfBraw2 + sviBforCalc2).toFixed(2) + ' / 20';
-    }
-    var svfBraw = parseFloat(domVal('r_pr11_svfb_raw')) || 0;
-    var sviBraw = parseFloat(domVal('r_pr11_svib_raw')) || 0;
-    var sviBforCalc = sviBraw > 10 ? sviBraw / 5 : sviBraw;
-    var pr11mentah = (svfBraw + sviBforCalc).toFixed(2);
-    r += '<tr><td>PR1-1 (Pembentangan)</td><td class="td-mark">' + pr11mentah + '</td><td class="td-max">20%</td><td class="td-mark">' + pr11Markah + '</td></tr>';
-    r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3926 / Gred</strong></td><td class="td-mark"><strong>' + d.total3926.toFixed(2) + ' / ' + d.grade3926 + '</strong></td></tr>';
-    // BITU3946
-    r += '<tr><td colspan="4" style="background:#1e3a8a;color:#fff;font-weight:700;padding:6px 8px;border-top:8px solid #fff">BITU3946 — Laporan Latihan Industri</td></tr>';
-    r += '<tr><td colspan="4" style="background:#eff6ff;font-weight:700;color:#1e4291;padding:4px 8px">TR1 — Laporan LI (70%)</td></tr>';
-    r += '<tr><td style="padding-left:16px">Laporan A (Jumlah A &divide; 2)</td><td class="td-mark">' + domVal('r2_tr1_lapa_raw') + '</td><td class="td-max">&rarr; /40</td><td class="td-mark">' + domVal('r2_tr1_lapa') + '</td></tr>';
-    r += '<tr><td style="padding-left:16px">Laporan B ((Jumlah B &divide; 40) &times; 10)</td><td class="td-mark">' + domVal('r2_tr1_lapb_raw') + '</td><td class="td-max">&rarr; /10</td><td class="td-mark">' + domVal('r2_tr1_lapb') + '</td></tr>';
-    r += '<tr><td style="padding-left:16px">SVF Komitmen</td><td class="td-mark">' + domVal('r2_tr1_svfc_raw') + '</td><td class="td-max">/10</td><td class="td-mark">' + domVal('r2_tr1_svfc') + '</td></tr>';
-    r += '<tr><td style="padding-left:16px">Logbook Penghantaran</td><td class="td-mark">' + domVal('r2_tr1_logc_raw') + '</td><td class="td-max">/10</td><td class="td-mark">' + domVal('r2_tr1_logc') + '</td></tr>';
-    r += '<tr class="tr-subtotal"><td>TR1 Jumlah</td><td></td><td class="td-max">70%</td><td class="td-mark">' + domVal('r2_tr1') + '</td></tr>';
-    r += '<tr><td colspan="4" style="background:#eff6ff;font-weight:700;color:#1e4291;padding:4px 8px">PR1-1 — Pembentangan (20%)</td></tr>';
-    r += '<tr><td style="padding-left:16px">Pembentangan SVF</td><td class="td-mark">' + domVal('r2_pr11_psvf_raw') + '</td><td class="td-max">/100</td><td class="td-mark">' + domVal('r2_pr11_psvf') + '</td></tr>';
-    r += '<tr><td style="padding-left:16px">Pembentangan SVI</td><td class="td-mark">' + domVal('r2_pr11_psvi_raw') + '</td><td class="td-max">/100</td><td class="td-mark">' + domVal('r2_pr11_psvi') + '</td></tr>';
-    r += '<tr class="tr-subtotal"><td>PR1-1 Jumlah</td><td></td><td class="td-max">20%</td><td class="td-mark">' + domVal('r2_pr11') + '</td></tr>';
-    r += '<tr><td>PR1-2 (Soft Skills / SVI Bah. B &divide; 5)</td><td class="td-mark">' + domVal('r2_pr12r') + '</td><td class="td-max">10%</td><td class="td-mark">' + domVal('r2_pr12') + '</td></tr>';
-    r += '<tr class="tr-total"><td colspan="3"><strong>JUMLAH BITU3946 / Gred</strong></td><td class="td-mark"><strong>' + d.total3946.toFixed(2) + ' / ' + d.grade3946 + '</strong></td></tr>';
+    var d = window._pdfData;
+
+    // ── BITU3926 ──
+    var prj1r  = domVal('r_prj1r');
+    var prj1   = domVal('r_prj1');
+    var prj2r  = domVal('r_prj2r');
+    var prj2   = domVal('r_prj2');
+    var prj3r  = domVal('r_prj3r');
+    var prj3   = domVal('r_prj3');
+    var prj4r  = domVal('r_prj4r');
+    var prj4   = domVal('r_prj4');
+    var lr1r   = domVal('r_lr1r');
+    var lr1    = domVal('r_lr1');
+    var pr11svfbRaw = domVal('r_pr11_svfb_raw');
+    var pr11svfb    = domVal('r_pr11_svfb');
+    var pr11svibRaw = domVal('r_pr11_svib_raw');
+    var pr11svib    = domVal('r_pr11_svib');
+    var pr11   = domVal('r_pr11');
+
+    // Group subtotals for BITU3926
+    var grp1Total = (parseFloat(prj1) || 0) + (parseFloat(prj2) || 0);
+    var grp2Total = (parseFloat(prj3) || 0) + (parseFloat(prj4) || 0) + (parseFloat(lr1) || 0);
+    var grp3Total = pr11;  // already formatted
+
+    // BITU3926 section header
+    r += '<tr style="background:#0f2560"><td colspan="4" style="color:#fff;font-weight:700;padding:5px 10px;font-size:9pt">BITU3926 — Latihan Industri</td></tr>';
+
+    // Group 1: Penyelia Industri (30%)
+    r += '<tr class="pp7-group-header"><td style="color:#fff;font-weight:700">Penyelia Industri (30%)</td><td></td><td></td><td style="color:#fff;font-weight:700;text-align:right">' + grp1Total.toFixed(2) + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Penyelia Industri</td><td>PRJ-1 (15%)</td><td class="td-mark">' + prj1r + '</td><td class="td-mark">' + prj1 + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Penyelia Industri</td><td>PRJ-2 (15%)</td><td class="td-mark">' + prj2r + '</td><td class="td-mark">' + prj2 + '</td></tr>';
+
+    // Group 2: Penyelia Fakulti (50%)
+    r += '<tr class="pp7-group-header"><td style="color:#fff;font-weight:700">Penyelia Fakulti (50%)</td><td></td><td></td><td style="color:#fff;font-weight:700;text-align:right">' + grp2Total.toFixed(2) + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Penyelia Fakulti</td><td>PRJ-3 (15%)</td><td class="td-mark">' + prj3r + '</td><td class="td-mark">' + prj3 + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Penyelia Fakulti</td><td>PRJ-4 (15%)</td><td class="td-mark">' + prj4r + '</td><td class="td-mark">' + prj4 + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Penyelia Fakulti</td><td>LR1 (20%)</td><td class="td-mark">' + lr1r + '</td><td class="td-mark">' + lr1 + '</td></tr>';
+
+    // Group 3: Pembentangan (20%)
+    r += '<tr class="pp7-group-header"><td style="color:#fff;font-weight:700">Penyelia Industri (10%) + Penyelia Fakulti (10%)</td><td></td><td></td><td style="color:#fff;font-weight:700;text-align:right">' + grp3Total + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Penyelia Industri &amp; Fakulti</td><td>PR1-1 &mdash; SVF Bah. B</td><td class="td-mark">' + pr11svfbRaw + '</td><td class="td-mark">' + pr11svfb + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Penyelia Industri &amp; Fakulti</td><td>PR1-1 &mdash; SVI Bah. B (&divide;5)</td><td class="td-mark">' + pr11svibRaw + '</td><td class="td-mark">' + pr11svib + '</td></tr>';
+
+    // BITU3926 total row
+    r += '<tr class="pp7-total-row"><td colspan="3"><strong>JUMLAH MARKAH KESELURUHAN BITU3926</strong></td><td class="td-mark"><strong>' + d.total3926.toFixed(2) + ' / ' + d.grade3926 + '</strong></td></tr>';
+
+    // Spacer
+    r += '<tr><td colspan="4" style="padding:6px 0;border:none;background:transparent"></td></tr>';
+
+    // ── BITU3946 ──
+    var tr1lapaRaw = domVal('r2_tr1_lapa_raw');
+    var tr1lapa    = domVal('r2_tr1_lapa');
+    var tr1lapbRaw = domVal('r2_tr1_lapb_raw');
+    var tr1lapb    = domVal('r2_tr1_lapb');
+    var tr1komr    = domVal('r2_tr1_komr');
+    var tr1kom     = domVal('r2_tr1_kom');
+    var tr1logr    = domVal('r2_tr1_logr');
+    var tr1log     = domVal('r2_tr1_log');
+    var tr1        = domVal('r2_tr1');
+    var pr11psvfRaw = domVal('r2_pr11_psvf_raw');
+    var pr11psviRaw = domVal('r2_pr11_psvi_raw');
+    var pr11_46    = domVal('r2_pr11');
+    var pr12r      = domVal('r2_pr12r');
+    var pr12       = domVal('r2_pr12');
+
+    // BITU3946 section header
+    r += '<tr style="background:#0f2560"><td colspan="4" style="color:#fff;font-weight:700;padding:5px 10px;font-size:9pt">BITU3946 — Laporan Latihan Industri</td></tr>';
+
+    // Group 1: TR1 — Laporan LI (70%)
+    r += '<tr class="pp7-group-header"><td style="color:#fff;font-weight:700">TR1 &mdash; Laporan LI (70%)</td><td></td><td></td><td style="color:#fff;font-weight:700;text-align:right">' + tr1 + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Laporan LI</td><td>TR1 (70%) &mdash; Laporan A</td><td class="td-mark">' + tr1lapaRaw + '</td><td class="td-mark">' + tr1lapa + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Laporan LI</td><td>TR1 (70%) &mdash; Laporan B</td><td class="td-mark">' + tr1lapbRaw + '</td><td class="td-mark">' + tr1lapb + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">SVF Komitmen</td><td>&mdash;</td><td class="td-mark">' + tr1komr + '</td><td class="td-mark">' + tr1kom + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Logbook Penghantaran</td><td>&mdash;</td><td class="td-mark">' + tr1logr + '</td><td class="td-mark">' + tr1log + '</td></tr>';
+
+    // Group 2: PR1-1 — Pembentangan (20%)
+    r += '<tr class="pp7-group-header"><td style="color:#fff;font-weight:700">PR1-1 &mdash; Pembentangan (20%)</td><td></td><td></td><td style="color:#fff;font-weight:700;text-align:right">' + pr11_46 + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Pembentangan SVF</td><td>PR1-1 (20%)</td><td class="td-mark">' + pr11psvfRaw + '</td><td class="td-mark">' + pr11psvfRaw + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Pembentangan SVI</td><td>PR1-1 (20%)</td><td class="td-mark">' + pr11psviRaw + '</td><td class="td-mark">' + pr11psviRaw + '</td></tr>';
+
+    // Group 3: PR1-2 — Soft Skills (10%)
+    r += '<tr class="pp7-group-header"><td style="color:#fff;font-weight:700">PR1-2 &mdash; Soft Skills (10%)</td><td></td><td></td><td style="color:#fff;font-weight:700;text-align:right">' + pr12 + '</td></tr>';
+    r += '<tr><td style="padding-left:16px">Soft Skills / SVI Bah. B &divide; 5</td><td>PR1-2 (10%)</td><td class="td-mark">' + pr12r + '</td><td class="td-mark">&mdash;</td></tr>';
+
+    // BITU3946 total row
+    r += '<tr class="pp7-total-row"><td colspan="3"><strong>JUMLAH MARKAH KESELURUHAN BITU3946</strong></td><td class="td-mark"><strong>' + d.total3946.toFixed(2) + ' / ' + d.grade3946 + '</strong></td></tr>';
+
     sh('pp7-tbody', r);
   })();
 }
