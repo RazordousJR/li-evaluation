@@ -636,3 +636,7 @@ textarea{resize:vertical;min-height:70px}
   color: #777;
   font-style: italic;
 }
+
+/* PDF Page 7 — grouped OBE table rows */
+.pp7-group-header td { background: #1e3a8a !important; color: #fff !important; font-weight: 700; padding: 5px 8px; }
+.pp7-total-row td { background: #0f2560 !important; color: #fff !important; font-weight: 700; font-size: 10pt; padding: 6px 8px; }
