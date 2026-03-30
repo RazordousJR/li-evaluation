@@ -270,7 +270,7 @@ function selectHadir(n) { hadir = n; scheduleSave(); }
 function selectR(id, val, el) { document.getElementById(id).value = val; el.closest(".radio-group").querySelectorAll(".radio-opt").forEach(function(r) { r.classList.remove("selected"); }); el.classList.add("selected"); scheduleSave(); }
 function v(id) { var el = document.getElementById(id); return el ? Math.max(0, parseInt(el.value) || 0) : 0; }
 function setBar(id, val, max) { var el = document.getElementById(id); if (el) el.style.width = Math.min(100, Math.round(val / max * 100)) + "%"; }
-function fmt(n) { return parseFloat(n.toFixed(2)); }
+function fmt(n) { return parseFloat((Math.round(n * 100) / 100).toFixed(2)); }
 function calcSVI() { var a = v("svi_a1") + v("svi_a2") + v("svi_a3") + v("svi_a4"); var b = v("svi_b1") + v("svi_b2") + v("svi_b3") + v("svi_b4") + v("svi_b5") + v("svi_b6") + v("svi_b7") + v("svi_b8") + v("svi_b9") + v("svi_b10"); document.getElementById("svi_a_total").textContent = a + " / 50"; document.getElementById("svi_b_total").textContent = b + " / 50"; document.getElementById("svi_total").textContent = (a + b) + " / 100"; setBar("svi_a_bar", a, 50); setBar("svi_b_bar", b, 50); scheduleSave(); }
 function calcSVF() {
   var a1 = v("svf_a1_admin") + v("svf_a1_tech");
