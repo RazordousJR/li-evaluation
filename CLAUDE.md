@@ -807,6 +807,42 @@ The Laporan LI page (`#page-report`) did not show the Pilihan radio selector (Pi
 - Both radio groups stay in sync — selecting Pilihan from either page updates both
 - `rep_p1_wrap` / `rep_p2_wrap` show/hide behaviour unchanged
 
+## Cosmetic & Precision Fixes (v4.24)
+
+### Fix 1 — Bahagian A label shows /80 instead of /60
+- `calcReport()` now sets `rep_a_total` display to `a + " / 80"` (raw max is 80, not 60)
+- Initial value in `index.html` `<span id="rep_a_total">` changed from `0 / 60` to `0 / 80`
+- Calculation logic unchanged — ÷2 conversion to /40 for TR1 in `calcSummary()` unaffected
+
+### Fix 2 — OBE weighted marks now show 2 decimal places
+- `fmt()` helper changed from `toFixed(1)` to `toFixed(2)`
+- All weighted mark displays in `calcSummary()` now show 2 decimal places (e.g. `13.50`, `89.98`)
+- Any inline `.toFixed(1)` calls in `calcSummary()` also changed to `.toFixed(2)`
+- `calcReport()`, `calcSVI()`, `calcSVF()`, `calcLog()`, `calcPres()` NOT changed — raw integer subtotals do not need decimal formatting
+
+## PDF Page 7 — Grouped OBE Format (v4.24)
+
+### Overview
+PDF Page 7 (`#pp-obe`) updated to match the new grouped screen table. The page 7 IIFE in `populatePDFPages()` was fully rewritten.
+
+### Changes
+- `<thead>` in `#pp-obe` updated from (Komponen, Mentah, Pemberat, Markah) to (Penilaian, Kod Metod, Markah, Jumlah Markah)
+- Page 7 IIFE now generates grouped rows identical in structure to the screen version
+- BITU3926 groups: Penyelia Industri (30%) | Penyelia Fakulti (50%) | Pembentangan (20%)
+- BITU3946 groups: TR1 Laporan LI (70%) | PR1-1 Pembentangan (20%) | PR1-2 Soft Skills (10%)
+- Each group has a dark blue (`#1e3a8a`) header row with group subtotal in last column
+- Total rows use dark navy (`#0f2560`) background
+- Sub-rows indented 16px
+
+### CSS Classes Added
+- `.pp7-group-header td` — `#1e3a8a` background, white text, bold
+- `.pp7-total-row td` — `#0f2560` background, white text, bold, 10pt
+
+### Data Sources
+- All values read via `domVal()` from existing `calcSummary()` DOM IDs — no new IDs introduced
+- Course totals and grades read from `window._pdfData` (`d.total3926`, `d.grade3926`, `d.total3946`, `d.grade3946`)
+- Pages 2–6 and all other logic NOT affected
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
