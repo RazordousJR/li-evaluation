@@ -183,7 +183,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
 
 ## Dashboard (v4.19 — Charts Only)
 
-> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19.
+> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24.
 
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)
@@ -757,6 +757,56 @@ Page 7 also has `pp7-sig-svi` and `pp7-sig-svf` signature lines.
 - **Form spacing on mobile**: `.content-area` padding `1rem 0.75rem`, `.section` padding `0.875rem 1rem`, `.field` gap `10px`
 - **Font size**: `.score-input-wrap input[type="number"]` forced to `font-size:16px` on mobile — prevents iOS auto-zoom on focus
 
+## Ringkasan OBE Redesign — Nested Group Table (v4.24)
+
+### Overview
+The flat OBE breakdown tables in `#page-summary` were replaced with nested-group tables that match the structure of the official evaluation form (Image 4 reference). Both BITU3926 and BITU3946 tables now show grouped rows with group-level subtotals and a final JUMLAH MARKAH row.
+
+### Table Columns
+PENILAIAN (40%) | KOD METOD (20%) | MARKAH (20%) | JUMLAH MARKAH (20%)
+
+### BITU3926 Groups
+- **Penyelia Industri (30%)** — PRJ-1 (15%) + PRJ-2 (15%)
+  - DOM IDs: `r_prj1r`, `r_prj1`, `r_prj2r`, `r_prj2`
+- **Penyelia Fakulti (50%)** — PRJ-3 (15%) + PRJ-4 (15%) + LR1 (20%)
+  - DOM IDs: `r_prj3r`, `r_prj3`, `r_prj4r`, `r_prj4`, `r_lr1r`, `r_lr1`
+- **Penyelia Industri (10%) + Penyelia Fakulti (10%)** — PR1-1 (20%)
+  - DOM IDs: `r_pr11_svfb_raw`, `r_pr11_svfb`, `r_pr11_svib_raw`, `r_pr11_svib`, `r_pr11`
+- **Total row**: `sum_3926_total` + `sum_3926_grade`
+
+### BITU3946 Groups
+- **TR1 — Laporan LI (70%)** — Laporan A + Laporan B + SVF Komitmen + Logbook Penghantaran
+  - DOM IDs: `r2_tr1_lapa_raw`, `r2_tr1_lapa`, `r2_tr1_lapb_raw`, `r2_tr1_lapb`, `r2_tr1_komr`, `r2_tr1_kom`, `r2_tr1_logr`, `r2_tr1_log`, `r2_tr1`
+- **PR1-1 — Pembentangan (20%)** — Pembentangan SVF + Pembentangan SVI
+  - DOM IDs: `r2_pr11_psvf_raw`, `r2_pr11_psvi_raw`, `r2_pr11`
+- **PR1-2 — Soft Skills (10%)**
+  - DOM IDs: `r2_pr12r`, `r2_pr12`
+- **Total row**: `sum_3946_total` + `sum_3946_grade`
+
+### CSS Classes Added
+- `.obe-group-header` — dark blue (`#1e3a8a`) group header row; white text; bold
+- `.obe-group-total-cell` — cell in group header showing subtotal; bold, ~13pt
+- `.obe-total-row` — dark navy (`#0f2560`) final total row; white text; 11pt bold
+- `.obe-sub-row td:first-child` — padding-left 20px for indented sub-rows
+
+### Important Constraints
+- All existing DOM element IDs remain in the DOM (inside new table cells) — `calcSummary()` continues to write to them unchanged
+- Stat-cards above the table (SVI Bah. A, SVI Bah. B, SVF Bah. A, e-Logbook totals) are NOT removed
+- PDF print pages (pp7-tbody etc.) are NOT affected — they remain unchanged
+- `calcSummary()` logic is NOT modified — only HTML structure and CSS changed
+
+## Pilihan 60/40 Bug Fix (v4.24)
+
+### Bug
+The Laporan LI page (`#page-report`) did not show the Pilihan radio selector (Pilihan 1 / Pilihan 2). Only Pilihan 1 (80/20) was selectable because the radio buttons `opt-p1` and `opt-p2` existed only in `#page-info`, not `#page-report`. Since HTML `id` must be unique, `selectPilihan()` could not reliably target the correct elements from the report page context.
+
+### Fix
+- Added a second Pilihan radio group directly inside `#page-report`, above the `pilihan-note` div
+- New button IDs: `opt-p1-rep` and `opt-p2-rep` (to avoid duplicate IDs with `page-info`)
+- `selectPilihan(n)` updated to toggle both pairs: `opt-p1`/`opt-p2` (page-info) AND `opt-p1-rep`/`opt-p2-rep` (page-report)
+- Both radio groups stay in sync — selecting Pilihan from either page updates both
+- `rep_p1_wrap` / `rep_p2_wrap` show/hide behaviour unchanged
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
@@ -768,7 +818,7 @@ Track of planned improvements. Tick when done.
 ### Export & Reporting
 - [x] Export PDF terus dari sistem — Pages 1–7 complete (v4.21); cover + 6 marks detail pages
 - [ ] Generate borang penilaian akhir auto (surat rasmi)
-- [ ] OBE report yang boleh print cantik
+- [x] OBE report yang boleh print cantik
 
 ### Notifikasi
 - [ ] Email reminder kat pensyarah yang belum confirm markah

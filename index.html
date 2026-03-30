@@ -96,7 +96,7 @@
       <div class="topbar-badges">
         <span class="badge badge-blue">BITU3926</span>
         <span class="badge badge-green">BITU3946</span>
-        <span class="badge badge-gray">v4.19</span>
+        <span class="badge badge-gray">v4.24</span>
       </div>
       <span class="save-status" id="save-status"></span>
       <button class="btn-logout" onclick="doLogout()">Log Keluar</button>
@@ -591,6 +591,14 @@
     <div class="score-row"><div class="score-label">A1. Abstrak<small>Ringkasan eksekutif: tempat, kerja, hasil &amp; kesimpulan umum</small></div><div class="score-input-wrap"><input type="number" inputmode="numeric" min="0" max="3" value="0" id="rep_a1" oninput="clamp(this,3);calcReport()"><span class="score-max">/3</span></div></div>
     <div class="score-row"><div class="score-label">A2. Pengenalan<small>Tempat LI &amp; objektif LI</small></div><div class="score-input-wrap"><input type="number" inputmode="numeric" min="0" max="2" value="0" id="rep_a2" oninput="clamp(this,2);calcReport()"><span class="score-max">/2</span></div></div>
     <div class="score-row"><div class="score-label">A3. Latar Belakang Organisasi<small>Sejarah, orientasi perniagaan, carta organisasi &amp; fungsi jabatan</small></div><div class="score-input-wrap"><input type="number" inputmode="numeric" min="0" max="5" value="0" id="rep_a3" oninput="clamp(this,5);calcReport()"><span class="score-max">/5</span></div></div>
+    <div class="field-row">
+      <div class="field"><label>Jenis Tugasan (Laporan LI)</label>
+        <div class="radio-group">
+          <div class="radio-opt selected" id="opt-p1-rep" onclick="selectPilihan(1)">Pilihan 1 &mdash; Teknikal 80%</div>
+          <div class="radio-opt" id="opt-p2-rep" onclick="selectPilihan(2)">Pilihan 2 &mdash; Teknikal 60%</div>
+        </div>
+      </div>
+    </div>
     <div class="note-box" id="pilihan-note">Menggunakan <strong>Pilihan 1</strong> &mdash; Tugasan Teknikal 80% (max 40m) + Pentadbiran 20% (max 10m)</div>
     <div id="rep_p1_wrap">
       <div class="score-row"><div class="score-label">A4. Deskripsi Projek &mdash; Tugasan Teknikal (80%)</div><div class="score-input-wrap"><input type="number" inputmode="numeric" min="0" max="40" value="0" id="rep_a4_tech_p1" oninput="clamp(this,40);calcReport()"><span class="score-max">/40</span></div></div>
@@ -649,22 +657,46 @@
       <div class="stat-card"><div class="stat-label">SVF Bah. A</div><div class="stat-val" id="sum_svf_a">0</div><div class="stat-sub">/ 90</div></div>
       <div class="stat-card"><div class="stat-label">e-Logbook</div><div class="stat-val" id="sum_log">0</div><div class="stat-sub">/ 70</div></div>
     </div>
-    <div class="result-row">
-      <div><div class="result-label">Jumlah Markah BITU3926</div><div class="result-score" id="sum_3926_total">0</div></div>
-      <div class="grade-pill grade-E" id="sum_3926_grade">&mdash;</div>
-    </div>
-    <table class="print-table">
-      <thead><tr><th>Komponen OBE</th><th>Markah Mentah</th><th>Wajaran</th><th>Markah Wajaran</th></tr></thead>
+    <table class="obe-nested-table">
+      <colgroup><col style="width:40%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup>
+      <thead>
+        <tr class="obe-col-header"><th>PENILAIAN</th><th>KOD METOD</th><th>MARKAH</th><th>JUMLAH MARKAH</th></tr>
+      </thead>
       <tbody>
-        <tr><td>PRJ-1 (SVI A1+A2)</td><td id="r_prj1r">0</td><td>15%</td><td id="r_prj1">0</td></tr>
-        <tr><td>PRJ-2 (SVI A3+A4)</td><td id="r_prj2r">0</td><td>15%</td><td id="r_prj2">0</td></tr>
-        <tr><td>PRJ-3 (SVF A1)</td><td id="r_prj3r">0</td><td>15%</td><td id="r_prj3">0</td></tr>
-        <tr><td>PRJ-4 (SVF A2+A3)</td><td id="r_prj4r">0</td><td>15%</td><td id="r_prj4">0</td></tr>
-        <tr><td>LR1 (e-Logbook)</td><td id="r_lr1r">0</td><td>20%</td><td id="r_lr1">0</td></tr>
-        <tr style="background:#f0f7ff"><td colspan="4" style="font-weight:600;color:#1e3a8a;padding:6px 12px">PR1-1 &mdash; Pembentangan (Jumlah / 20)</td></tr>
-        <tr><td style="padding-left:20px">SVF Bah. B</td><td id="r_pr11_svfb_raw">0</td><td>/ 10</td><td id="r_pr11_svfb">0 / 10</td></tr>
-        <tr><td style="padding-left:20px">SVI Bah. B (Jumlah &divide; 5)</td><td id="r_pr11_svib_raw">0</td><td>&divide; 5 &rarr; /10</td><td id="r_pr11_svib">0 / 10</td></tr>
-        <tr style="font-weight:600;background:#e8f0fe"><td>PR1-1 Jumlah</td><td></td><td>20%</td><td id="r_pr11">0 / 20</td></tr>
+        <tr class="obe-group-header">
+          <td>Penyelia Industri (30%)</td><td>&mdash;</td><td>&mdash;</td><td><span id="r_grp1_total">0</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Penyelia Industri</td><td>PRJ-1 (15%)</td><td><span id="r_prj1r">0</span></td><td><span id="r_prj1">0</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Penyelia Industri</td><td>PRJ-2 (15%)</td><td><span id="r_prj2r">0</span></td><td><span id="r_prj2">0</span></td>
+        </tr>
+        <tr class="obe-group-header">
+          <td>Penyelia Fakulti (50%)</td><td>&mdash;</td><td>&mdash;</td><td><span id="r_grp2_total">0</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Penyelia Fakulti</td><td>PRJ-3 (15%)</td><td><span id="r_prj3r">0</span></td><td><span id="r_prj3">0</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Penyelia Fakulti</td><td>PRJ-4 (15%)</td><td><span id="r_prj4r">0</span></td><td><span id="r_prj4">0</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Penyelia Fakulti</td><td>LR1 (20%)</td><td><span id="r_lr1r">0</span></td><td><span id="r_lr1">0</span></td>
+        </tr>
+        <tr class="obe-group-header">
+          <td>Penyelia Industri (10%) + Penyelia Fakulti (10%)</td><td>&mdash;</td><td>&mdash;</td><td><span id="r_pr11">0 / 20</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Penyelia Industri &amp; Fakulti</td><td>PR1-1 &mdash; SVF Bah. B</td><td><span id="r_pr11_svfb_raw">0</span></td><td><span id="r_pr11_svfb">0 / 10</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Penyelia Industri &amp; Fakulti</td><td>PR1-1 &mdash; SVI Bah. B (&divide;5)</td><td><span id="r_pr11_svib_raw">0</span></td><td><span id="r_pr11_svib">0 / 10</span></td>
+        </tr>
+        <tr class="obe-total-row">
+          <td colspan="2">JUMLAH MARKAH KESELURUHAN BITU3926</td><td>100%</td>
+          <td><span id="sum_3926_total">0</span>&nbsp;<span class="grade-pill grade-E" id="sum_3926_grade">&mdash;</span></td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -676,24 +708,46 @@
       <div class="stat-card"><div class="stat-label">Pbtangan SVI</div><div class="stat-val" id="sum_psvi">0</div><div class="stat-sub">/ 100</div></div>
       <div class="stat-card"><div class="stat-label">Soft Skills</div><div class="stat-val" id="sum_soft">0</div><div class="stat-sub">/ 50</div></div>
     </div>
-    <div class="result-row">
-      <div><div class="result-label">Jumlah Markah BITU3946</div><div class="result-score" id="sum_3946_total">0</div></div>
-      <div class="grade-pill grade-E" id="sum_3946_grade">&mdash;</div>
-    </div>
-    <table class="print-table">
-      <thead><tr><th>Komponen OBE</th><th>Markah Mentah</th><th>Wajaran</th><th>Markah Wajaran</th></tr></thead>
+    <table class="obe-nested-table">
+      <colgroup><col style="width:40%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup>
+      <thead>
+        <tr class="obe-col-header"><th>PENILAIAN</th><th>KOD METOD</th><th>MARKAH</th><th>JUMLAH MARKAH</th></tr>
+      </thead>
       <tbody>
-        <tr style="background:#f0f7ff"><td colspan="4" style="font-weight:600;color:#1e3a8a;padding:6px 12px">TR1 &mdash; Laporan LI (Jumlah / 70)</td></tr>
-        <tr><td style="padding-left:20px">Laporan A (Jumlah A &divide; 2)</td><td id="r2_tr1_lapa_raw">0</td><td>&divide; 2 &rarr; /40</td><td id="r2_tr1_lapa">0 / 40</td></tr>
-        <tr><td style="padding-left:20px">Laporan B ((Jumlah B / 40) &times; 10)</td><td id="r2_tr1_lapb_raw">0</td><td>(/40) &times; 10 &rarr; /10</td><td id="r2_tr1_lapb">0 / 10</td></tr>
-        <tr><td style="padding-left:20px">SVF Komitmen</td><td id="r2_tr1_svfc_raw">0</td><td>/ 10</td><td id="r2_tr1_svfc">0 / 10</td></tr>
-        <tr><td style="padding-left:20px">Logbook Penghantaran</td><td id="r2_tr1_logc_raw">0</td><td>/ 10</td><td id="r2_tr1_logc">0 / 10</td></tr>
-        <tr style="font-weight:600;background:#e8f0fe"><td>TR1 Jumlah</td><td></td><td>70%</td><td id="r2_tr1">0 / 70</td></tr>
-        <tr style="background:#f0f7ff"><td colspan="4" style="font-weight:600;color:#1e3a8a;padding:6px 12px">PR1-1 &mdash; Pembentangan (Purata SVF &amp; SVI / 20)</td></tr>
-        <tr><td style="padding-left:20px">Pembentangan SVF</td><td id="r2_pr11_psvf_raw">0</td><td>/ 100</td><td id="r2_pr11_psvf">0</td></tr>
-        <tr><td style="padding-left:20px">Pembentangan SVI</td><td id="r2_pr11_psvi_raw">0</td><td>/ 100</td><td id="r2_pr11_psvi">0</td></tr>
-        <tr style="font-weight:600;background:#e8f0fe"><td>PR1-1 Jumlah ((SVF+SVI) &divide; 2 &rarr; /20)</td><td></td><td>20%</td><td id="r2_pr11">0 / 20</td></tr>
-        <tr><td>PR1-2 (Soft Skills / SVI Bah. B &divide; 5)</td><td id="r2_pr12r">0</td><td>10%</td><td id="r2_pr12">0</td></tr>
+        <tr class="obe-group-header">
+          <td>TR1 &mdash; Laporan LI (70%)</td><td>&mdash;</td><td>&mdash;</td><td><span id="r2_tr1">0 / 70</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Laporan LI</td><td>TR1 (70%) &mdash; Laporan A</td><td><span id="r2_tr1_lapa_raw">0</span></td><td><span id="r2_tr1_lapa">0 / 40</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Laporan LI</td><td>TR1 (70%) &mdash; Laporan B</td><td><span id="r2_tr1_lapb_raw">0</span></td><td><span id="r2_tr1_lapb">0 / 10</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">SVF Komitmen</td><td>&mdash;</td><td><span id="r2_tr1_svfc_raw">0</span></td><td><span id="r2_tr1_svfc">0 / 10</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Logbook Penghantaran</td><td>&mdash;</td><td><span id="r2_tr1_logc_raw">0</span></td><td><span id="r2_tr1_logc">0 / 10</span></td>
+        </tr>
+        <tr class="obe-group-header">
+          <td>PR1-1 &mdash; Pembentangan (20%)</td><td>&mdash;</td><td>&mdash;</td><td><span id="r2_pr11">0 / 20</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Pembentangan SVF</td><td>PR1-1 (20%)</td><td><span id="r2_pr11_psvf_raw">0</span></td><td><span id="r2_pr11_psvf">0</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Pembentangan SVI</td><td>PR1-1 (20%)</td><td><span id="r2_pr11_psvi_raw">0</span></td><td><span id="r2_pr11_psvi">0</span></td>
+        </tr>
+        <tr class="obe-group-header">
+          <td>PR1-2 &mdash; Soft Skills (10%)</td><td>&mdash;</td><td>&mdash;</td><td><span id="r2_pr12">0</span></td>
+        </tr>
+        <tr class="obe-sub-row">
+          <td class="obe-sub-label">Soft Skills / SVI Bah. B &divide; 5</td><td>PR1-2 (10%)</td><td><span id="r2_pr12r">0</span></td><td>&mdash;</td>
+        </tr>
+        <tr class="obe-total-row">
+          <td colspan="2">JUMLAH MARKAH KESELURUHAN BITU3946</td><td>100%</td>
+          <td><span id="sum_3946_total">0</span>&nbsp;<span class="grade-pill grade-E" id="sum_3946_grade">&mdash;</span></td>
+        </tr>
       </tbody>
     </table>
   </div>
