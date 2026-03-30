@@ -183,7 +183,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
 
 ## Dashboard (v4.19 — Charts Only)
 
-> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected.
+> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected (use SVI weighted, not SVF; row order swapped to match official form).
 
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)
@@ -823,29 +823,35 @@ The Laporan LI page (`#page-report`) did not show the Pilihan radio selector (Pi
 ## PR1-2 Soft Skills Formula Fix (v4.24.1)
 
 ### Bug
-PR1-2 (Soft Skills) was computed as `sviB / 50 * 10` — using SVI Bah. B raw total divided by 50. This was incorrect and did not match the official Excel form formula.
+PR1-2 (Soft Skills) was computed incorrectly. Two issues found:
+1. Wrong evaluator portion used — was using `pr11_svfb` (SVF weighted) instead of `pr11_svib` (SVI weighted)
+2. Display row order was SVF first, SVI second — opposite of official form layout
 
-### Correct Formula (from official Excel form)
+### Correct Formula (confirmed from official Excel form)
 ```
-PR1-2 = (PRJ-1 weighted + PRJ-2 weighted + PR1-1 SVF weighted) / 40 × 10
+PR1-2 = (PRJ-1 weighted + PRJ-2 weighted + PR1-1 SVI weighted) / 40 × 10
 ```
 
-- PRJ-1 weighted = `prj1` (already in `calcSummary()`)
-- PRJ-2 weighted = `prj2` (already in `calcSummary()`)
-- PR1-1 SVF weighted = `pr11_svfb` (already in `calcSummary()`)
+- `prj1` = PRJ-1 weighted (SVI A1 group) — JS variable, not DOM read
+- `prj2` = PRJ-2 weighted (SVI A2+A3 group) — JS variable, not DOM read
+- `pr11_svib` = PR1-1 SVI Bah. B weighted (e.g. 8.8 / 10) — JS variable, not DOM read
 - Max = 10
 
-### Fix
-In `calcSummary()`, the `pr12` line changed from:
+### Fix in calcSummary() (js/app.js)
 ```javascript
-var pr12 = sviB / 50 * 10;
-```
-To:
-```javascript
+// BEFORE (wrong)
 var pr12 = fmt((prj1 + prj2 + pr11_svfb) / 40 * 10);
+
+// AFTER (correct)
+var pr12 = fmt((prj1 + prj2 + pr11_svib) / 40 * 10);
 ```
 
-All three variables (`prj1`, `prj2`, `pr11_svfb`) are computed earlier in `calcSummary()` before `pr12` — no reordering needed.
+### Display Row Order Fix
+PR1-1 sub-rows in `#page-summary` grouped table and PDF page 7 IIFE swapped to match official form:
+- Row 1: SVI Bah. B (÷5) — shown first
+- Row 2: SVF Bah. B — shown second
+
+DOM element IDs (`r_pr11_svfb_raw`, `r_pr11_svfb`, `r_pr11_svib_raw`, `r_pr11_svib`) remain unchanged — only visual row order changed.
 
 ## PDF Page 7 — Grouped OBE Format (v4.24)
 
