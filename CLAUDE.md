@@ -64,6 +64,13 @@ Columns: `id` (uuid PK), `name`, `matric_no` (unique), `kursus`, `semester`, `se
 - `svf_email` — links to `public.users.email` for SVF assignment in Urus Pelajar panel
 - Bulk-uploadable via Urus Pelajar → Upload Pelajar
 
+### `public.programs`
+Columns: `code` (text PK), `name` (text NOT NULL), `description` (text NOT NULL DEFAULT ''), `created_at` (timestamptz)
+- Stores program definitions; used to populate all program dropdowns dynamically
+- Default seed: BITC, BITD, BITM, BITI, BITS, BITE, BITZ
+- Managed via Urus Program page (ADMIN only)
+- **Setup**: Run `## SQL: programs table migration` block in Supabase SQL Editor
+
 ### `public.marks`
 Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `section`, `data` (jsonb), `submitted_at`, `updated_at`
 - `section` values: `'svi'` | `'svf'` | `'logbook'` | `'presentation'` | `'report'` | `'meta'`
@@ -182,13 +189,13 @@ Both upload flows perform duplicate checking against Supabase before showing the
 ## Navigation
 - `showTab(t)` in app.js handles page switching, updates sidebar nav active state and topbar title
 - `openSidebar()` / `closeSidebar()` handle mobile sidebar toggle
-- Tab names: `dashboard`, `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`, `senarai`, `laporan`, `statuspensyarah`
+- Tab names: `dashboard`, `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`, `urusProgram`, `senarai`, `laporan`, `statuspensyarah`
 - **Dashboard** is the new landing page for all roles (replaces `info` as default)
 - `loadDashboard()` detects role and calls role-specific render function
 
 ## Dashboard (v4.19 — Charts Only)
 
-> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected (use SVI weighted, not SVF; row order swapped to match official form).
+> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected (use SVI weighted, not SVF; row order swapped to match official form). v4.26: version badge updated to v4.26.
 
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)
@@ -989,6 +996,54 @@ The student detail panel in the Laporan page (accordion expand row) was redesign
 - `.laporan-detail-table tfoot td` — `border:1px solid #0f2560`
 - Removed: `.laporan-group-hdr`, `.laporan-subtotal-row` (no longer used in 4-col design)
 - Removed: `.laporan-detail-table tbody td:last-child` override (handled by explicit classes)
+
+## Urus Program Page (v4.26 — ADMIN only)
+- Accessible via "Urus Program" sidebar nav item (`urusProgram-nav-item`), shown for ADMIN only
+- Page ID: `#page-urusProgram`; tab name: `urusProgram`; topbar title: "Urus Program"
+- **Programs table**: Kod Program, Nama Program, Deskripsi, Bil. Pelajar, Tindakan
+  - Bil. Pelajar = count of students with matching `kursus` code
+  - Tindakan: Edit (opens `edit-program-modal`) + Padam (red, calls `deleteProgram(code)`)
+- **Tambah Program** button: opens `add-program-modal` with fields Kod Program (text, uppercase enforced), Nama Program, Deskripsi (optional textarea)
+- **Add modal** (`add-program-modal`): `ap-code` (uppercase oninput), `ap-name`, `ap-desc`, `ap-error`. Validates code+name not empty; checks `_programsCache` for duplicate code.
+- **Edit modal** (`edit-program-modal`): hidden `ep-old-code`, `ep-code` (uppercase), `ep-name`, `ep-desc`, `ep-error`. Rename case: inserts new code, migrates `students.kursus`, deletes old code.
+- **deleteProgram(code)**: queries student count, shows confirm with count, updates `students.kursus=''`, deletes from `programs`.
+- All mutation functions call `loadProgramsCache()` then repopulate `kursus`, `adp-kursus`, `edp-kursus` dropdowns.
+- `laporan-filter-kursus` populated dynamically from `_programsCache` inside `loadLaporan()`.
+
+## Programs Cache (v4.26)
+- `_programsCache = []` — module-level global storing all programs from `public.programs`
+- `loadProgramsCache()` — async; queries `public.programs` ordered by code; updates `_programsCache`; called in `initAuth()` after Supabase client init
+- `populateProgramDropdown(selectEl, includeBlank)` — clears select and repopulates from `_programsCache`; adds blank "-- Pilih Program --" option if `includeBlank=true`
+- Called at init: `populateProgramDropdown(document.getElementById('kursus'), true)` pre-populates the main form dropdown
+- Called in `openAddPelajarModal()` and `openEditPelajarModal()` to ensure dropdowns are always current
+- All hardcoded program `<option>` elements removed from `kursus`, `adp-kursus`, `edp-kursus` selects in index.html
+
+## SQL: programs table migration
+Run this in Supabase Dashboard → SQL Editor:
+
+```sql
+CREATE TABLE IF NOT EXISTS public.programs (
+  code        TEXT PRIMARY KEY,
+  name        TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO public.programs (code, name, description) VALUES
+  ('BITC', 'Kejuruteraan Komputer', ''),
+  ('BITD', 'Keselamatan Digital', ''),
+  ('BITM', 'Multimedia', ''),
+  ('BITI', 'Teknologi Maklumat', ''),
+  ('BITS', 'Sains Komputer', ''),
+  ('BITE', 'Kejuruteraan Perisian', ''),
+  ('BITZ', 'Rangkaian Komputer', '')
+ON CONFLICT (code) DO NOTHING;
+
+ALTER TABLE public.programs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY IF NOT EXISTS "anon_full_access" ON public.programs
+  FOR ALL TO anon USING (true) WITH CHECK (true);
+```
 
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.

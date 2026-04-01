@@ -1,5 +1,29 @@
 # Session Log
 
+## Session 2026-04-01 (4) — Urus Program page & dynamic program dropdowns (v4.26)
+
+### What was done
+- Added `public.programs` Supabase table with SQL migration (code PK, name, description, created_at); seeded with 7 default programs (BITC, BITD, BITM, BITI, BITS, BITE, BITZ); RLS enabled with passthrough anon policy
+- Added `_programsCache = []` global and `loadProgramsCache()` async function; called in `initAuth()` after Supabase client init with `await`
+- Added `populateProgramDropdown(selectEl, includeBlank)` helper that clears and repopulates any select from `_programsCache`
+- Removed all hardcoded program `<option>` elements from `kursus`, `adp-kursus`, `edp-kursus` selects in index.html; left only blank option
+- `initAuth()` now calls `populateProgramDropdown(kursus, true)` after cache load to pre-populate the main form dropdown
+- `openAddPelajarModal()` and `openEditPelajarModal()` now call `populateProgramDropdown()` before showing their modals
+- `loadLaporan()` populates `laporan-filter-kursus` dynamically from `_programsCache` before calling `filterLaporan()`
+- Added "Urus Program" nav item (`urusProgram-nav-item`) in sidebar default nav, after Urus Pensyarah; ADMIN only
+- Added `#page-urusProgram` page with programs table (Kod, Nama, Deskripsi, Bil. Pelajar, Tindakan) and note-box
+- Added `add-program-modal` (ap-code uppercase enforced, ap-name, ap-desc, ap-error) and `edit-program-modal` (ep-old-code hidden, ep-code uppercase, ep-name, ep-desc, ep-error)
+- Added URUS PROGRAM section in app.js: `loadUrusProgram()`, `openAddProgramModal()`, `closeAddProgramModal()`, `addProgram()`, `openEditProgramModal()`, `closeEditProgramModal()`, `saveEditProgram()`, `deleteProgram()`
+  - Rename case in `saveEditProgram()`: inserts new code → migrates students.kursus → deletes old code
+  - `deleteProgram()`: queries student count, shows confirm dialog with count, clears kursus then deletes program
+- Updated `applyRoleRestrictions()`, `TAB_TITLES`, `showTab()` for `urusProgram` tab
+- SQL migration block added to CLAUDE.md under `## SQL: programs table migration`
+
+### Files changed
+- index.html — removed hardcoded program options from kursus/adp-kursus/edp-kursus/laporan-filter-kursus; added urusProgram-nav-item; added #page-urusProgram; added add-program-modal and edit-program-modal
+- js/app.js — added _programsCache, loadProgramsCache(), populateProgramDropdown(); updated initAuth(), applyRoleRestrictions(), TAB_TITLES, showTab(), openAddPelajarModal(), openEditPelajarModal(), loadLaporan(); added URUS PROGRAM section with all functions
+- CLAUDE.md — added public.programs table schema, Programs Cache section, Urus Program Page section, SQL migration block; updated tab names list and version badge to v4.26
+
 ## Session 2026-04-01 (3) — Export Senarai Pelajar Excel button
 
 ### What was done
