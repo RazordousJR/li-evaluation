@@ -1135,11 +1135,13 @@ async function confirmUploadPelajar() {
 // ===== URUS PELAJAR =====
 var _pensyarahList = [];
 var _pelajarStudentsCache = [];
+var _pelajarFiltered = [];
+var _pelajarPensyarahMap = {};
 
 async function loadUruspelajar() {
   var tbody = document.getElementById('pelajar-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>';
 
   var prResp = await sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name');
   _pensyarahList = prResp.data || [];
@@ -1152,8 +1154,8 @@ async function loadUruspelajar() {
     });
   }
 
-  var pensyarahMap = {};
-  _pensyarahList.forEach(function(p) { pensyarahMap[p.email] = p.full_name; });
+  _pelajarPensyarahMap = {};
+  _pensyarahList.forEach(function(p) { _pelajarPensyarahMap[p.email] = p.full_name; });
 
   var session = getSession();
   var eff = getEffectiveRole(session ? session.roles : []);
@@ -1168,16 +1170,59 @@ async function loadUruspelajar() {
   }
   var students = stResp.data || [];
 
-  if (!students.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:1.5rem">Tiada pelajar. Muat naik senarai pelajar terlebih dahulu.</td></tr>';
+  _pelajarStudentsCache = students;
+  populateProgramDropdown(document.getElementById('filter-pelajar-program'), true);
+  applyFilterPelajar();
+}
+
+function applyFilterPelajar() {
+  var filterProgram = (document.getElementById('filter-pelajar-program') || {}).value || '';
+  var filterSvf = (document.getElementById('filter-pelajar-svf') || {}).value || '';
+
+  _pelajarFiltered = _pelajarStudentsCache.filter(function(s) {
+    if (filterProgram && s.kursus !== filterProgram) return false;
+    if (filterSvf === 'belum' && s.svf_email && s.svf_email !== '') return false;
+    if (filterSvf === 'assign' && (!s.svf_email || s.svf_email === '')) return false;
+    return true;
+  });
+
+  var countEl = document.getElementById('filter-pelajar-count');
+  if (countEl) countEl.textContent = _pelajarFiltered.length + ' pelajar';
+
+  var selectAll = document.getElementById('select-all-students');
+  if (selectAll) selectAll.checked = false;
+
+  renderPelajarTable(_pelajarFiltered);
+}
+
+function resetFilterPelajar() {
+  var p = document.getElementById('filter-pelajar-program');
+  var sv = document.getElementById('filter-pelajar-svf');
+  if (p) p.value = '';
+  if (sv) sv.value = '';
+  applyFilterPelajar();
+}
+
+function renderPelajarTable(studentsArr) {
+  var tbody = document.getElementById('pelajar-tbody');
+  if (!tbody) return;
+
+  if (!studentsArr || !studentsArr.length) {
+    var msg = _pelajarStudentsCache.length === 0
+      ? 'Tiada pelajar. Muat naik senarai pelajar terlebih dahulu.'
+      : 'Tiada pelajar sepadan dengan tapisan.';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:1.5rem">' + msg + '</td></tr>';
     return;
   }
 
+  var session = getSession();
+  var eff = getEffectiveRole(session ? session.roles : []);
   var showDelete = (eff === 'ADMIN' || eff === 'AJK_LI');
-  _pelajarStudentsCache = students;
+
   var html = '';
-  students.forEach(function(s, i) {
-    var assignedName = s.svf_email ? (pensyarahMap[s.svf_email] || s.svf_email) : null;
+  studentsArr.forEach(function(s) {
+    var cacheIdx = _pelajarStudentsCache.indexOf(s);
+    var assignedName = s.svf_email ? (_pelajarPensyarahMap[s.svf_email] || s.svf_email) : null;
     var svfBadge = assignedName
       ? '<span class="status-badge status-active">' + escHtml(assignedName) + '</span>'
       : '<span class="belum-assign-badge">Belum Assign</span>';
@@ -1201,7 +1246,7 @@ async function loadUruspelajar() {
       approvalBadge = '<span class="approval-badge-draft" style="font-size:11px;padding:2px 9px">Draf</span>';
     }
     var actionBtns = showDelete
-      ? '<button class="btn-sm btn-sm-edit" onclick="openEditPelajarModal(' + i + ')" style="margin-right:4px">Edit</button>' +
+      ? '<button class="btn-sm btn-sm-edit" onclick="openEditPelajarModal(' + cacheIdx + ')" style="margin-right:4px">Edit</button>' +
         '<button class="btn-sm btn-sm-del" onclick="deleteStudent(\'' + mid + '\',\'' + sname.replace(/'/g, "\\'") + '\')">Padam</button>'
       : '';
     html += '<tr>' +
@@ -1216,9 +1261,6 @@ async function loadUruspelajar() {
       '</tr>';
   });
   tbody.innerHTML = html;
-
-  var selectAll = document.getElementById('select-all-students');
-  if (selectAll) selectAll.checked = false;
 }
 
 function toggleAllStudents(cb) {
