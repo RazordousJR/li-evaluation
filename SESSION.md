@@ -1,5 +1,25 @@
 # Session Log
 
+## Session 2026-04-01 (5) — Profil Saya page & Upload Pensyarah mapping verification (v4.27)
+
+### What was done
+- **Part 1 — Upload Pensyarah mapping verified**: Confirmed `handleUploadPensyarah()` already correctly maps all four official Excel columns (`Nama Penuh` → `full_name`, `No Staf` → `no_staf`, `Jabatan` → `jabatan`, `Email` → `email`) via `normalizeRow()`. No code changes needed.
+- **Part 2 — Profil Saya page** added for ALL roles (PENSYARAH, AJK_LI, ADMIN):
+  - Added `profil-nav-item` ("👤 Profil Saya") to `#sidebar-nav-default` after Dashboard, before `admin-sep` — visible to all roles
+  - Added `#page-profil` page with two sections: Maklumat Profil and Tukar Kata Laluan
+  - Added `profil: 'Profil Saya'` to `TAB_TITLES`; added `if (t === 'profil') loadProfil()` in `showTab()`
+  - `loadProfil()` — fetches `full_name, no_staf, jabatan, email` from `public.users` and populates form fields
+  - `saveProfilMaklumat()` — updates `full_name, no_staf, jabatan`; updates `li_session.displayName` in localStorage and `#sidebar-user-name` on success
+  - `saveProfilPassword()` — validates old password hash match via `hashPassword()`, then updates `password_hash` in DB; clears password fields on success
+  - `profil-nav-item` is NOT in any role restriction hide list — visible by default
+- Updated version badge from v4.24 → v4.27
+- Updated CLAUDE.md: added Profil Saya Page section, Upload Pensyarah Column Format section, version note in Dashboard section
+
+### Files changed
+- index.html — added `profil-nav-item` nav item; added `#page-profil` page with two sections; updated version badge to v4.27
+- js/app.js — added `profil` to TAB_TITLES; added loadProfil() case in showTab(); added PROFIL SAYA section with loadProfil(), saveProfilMaklumat(), saveProfilPassword()
+- CLAUDE.md — added Profil Saya Page section, Upload Pensyarah Column Format section; updated version badge note to v4.27
+
 ## Session 2026-04-01 (4) — Urus Program page & dynamic program dropdowns (v4.26)
 
 ### What was done
