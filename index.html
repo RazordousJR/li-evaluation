@@ -62,6 +62,7 @@
         <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
         <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
         <a class="nav-item" id="uruspensyarah-nav-item" data-tab="uruspensyarah" onclick="showTab('uruspensyarah')" style="display:none">Urus Pensyarah</a>
+        <a class="nav-item" id="urusProgram-nav-item" data-tab="urusProgram" onclick="showTab('urusProgram')" style="display:none">Urus Program</a>
         <a class="nav-item" id="senarai-nav-item" data-tab="senarai" onclick="showTab('senarai')" style="display:none">Senarai Pelajar</a>
         <a class="nav-item" id="laporan-nav-item" data-tab="laporan" onclick="showTab('laporan')" style="display:none">&#128202; Laporan</a>
         <a class="nav-item" id="statuspensyarah-nav-item" data-tab="statuspensyarah" onclick="showTab('statuspensyarah')" style="display:none">&#128101; Status Pensyarah</a>
@@ -273,13 +274,6 @@
       <div class="field"><label>Kursus</label>
         <select id="kursus" onchange="scheduleSave()">
           <option value="">-- Pilih Kursus --</option>
-          <option>BITC - Kejuruteraan Komputer</option>
-          <option>BITD - Keselamatan Digital</option>
-          <option>BITM - Multimedia</option>
-          <option>BITI - Teknologi Maklumat</option>
-          <option>BITS - Sains Komputer</option>
-          <option>BITE - Kejuruteraan Perisian</option>
-          <option>BITZ - Rangkaian Komputer</option>
         </select></div>
       <div class="field"><label>Semester</label><select id="semester" onchange="scheduleSave()"><option value="1">Semester 1</option><option value="2">Semester 2</option></select></div>
       <div class="field"><label>Sesi Akademik</label>
@@ -929,6 +923,33 @@
   </div>
 </div>
 
+<!-- URUS PROGRAM (ADMIN only) -->
+<div class="page" id="page-urusProgram">
+  <div class="section">
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Senarai Program</span>
+      <button class="btn-primary" onclick="openAddProgramModal()">+ Tambah Program</button>
+    </div>
+    <div class="table-wrap">
+      <table class="print-table um-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Kod Program</th>
+            <th>Nama Program</th>
+            <th>Deskripsi</th>
+            <th>Bil. Pelajar</th>
+            <th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="program-tbody">
+          <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem">Memuatkan...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-info" style="margin-top:1rem;font-size:13px">Padam program hanya boleh dilakukan jika anda faham bahawa pelajar berkenaan akan kehilangan maklumat program dan perlu ditetapkan semula.</div>
+  </div>
+</div>
+
 <!-- LAPORAN PAGE -->
 <div class="page" id="page-laporan">
   <div class="section">
@@ -939,8 +960,6 @@
     <div class="laporan-filter-row">
       <select id="laporan-filter-kursus" onchange="filterLaporan()">
         <option value="">Semua Kursus</option>
-        <option value="BITE">BITE</option>
-        <option value="BITM">BITM</option>
       </select>
       <select id="laporan-filter-status" onchange="filterLaporan()">
         <option value="">Semua Status</option>
@@ -1170,13 +1189,6 @@
       <div class="field"><label>Nama Program / Kursus <span style="color:red">*</span></label>
         <select id="adp-kursus">
           <option value="">-- Pilih Program --</option>
-          <option value="BITC">BITC - Kejuruteraan Komputer</option>
-          <option value="BITD">BITD - Keselamatan Digital</option>
-          <option value="BITM">BITM - Multimedia</option>
-          <option value="BITI">BITI - Teknologi Maklumat</option>
-          <option value="BITS">BITS - Sains Komputer</option>
-          <option value="BITE">BITE - Kejuruteraan Perisian</option>
-          <option value="BITZ">BITZ - Rangkaian Komputer</option>
         </select>
       </div>
       <div class="modal-msg modal-err" id="adp-error"></div>
@@ -1203,13 +1215,6 @@
       <div class="field"><label>Nama Program / Kursus <span style="color:red">*</span></label>
         <select id="edp-kursus">
           <option value="">-- Pilih Program --</option>
-          <option value="BITC">BITC - Kejuruteraan Komputer</option>
-          <option value="BITD">BITD - Keselamatan Digital</option>
-          <option value="BITM">BITM - Multimedia</option>
-          <option value="BITI">BITI - Teknologi Maklumat</option>
-          <option value="BITS">BITS - Sains Komputer</option>
-          <option value="BITE">BITE - Kejuruteraan Perisian</option>
-          <option value="BITZ">BITZ - Rangkaian Komputer</option>
         </select>
       </div>
       <div class="modal-msg modal-err" id="edp-error"></div>
@@ -1217,6 +1222,47 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeEditPelajarModal()">Batal</button>
       <button class="btn-primary" id="edp-save-btn" onclick="saveEditPelajar()">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PROGRAM MODAL -->
+<div class="modal-overlay" id="add-program-modal" style="display:none">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-header">
+      <span>Tambah Program</span>
+      <button class="modal-close" onclick="closeAddProgramModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Kod Program <span style="color:red">*</span></label><input type="text" id="ap-code" placeholder="cth: BITX" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field"><label>Nama Program <span style="color:red">*</span></label><input type="text" id="ap-name" placeholder="Nama penuh program"></div>
+      <div class="field"><label>Deskripsi</label><textarea id="ap-desc" rows="2" placeholder="Deskripsi program (pilihan)" style="width:100%;resize:vertical"></textarea></div>
+      <div class="modal-msg modal-err" id="ap-error" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAddProgramModal()">Batal</button>
+      <button class="btn-primary" onclick="addProgram()">Tambah Program</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROGRAM MODAL -->
+<div class="modal-overlay" id="edit-program-modal" style="display:none">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-header">
+      <span>Edit Program</span>
+      <button class="modal-close" onclick="closeEditProgramModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-old-code">
+      <div class="field"><label>Kod Program <span style="color:red">*</span></label><input type="text" id="ep-code" placeholder="cth: BITX" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field"><label>Nama Program <span style="color:red">*</span></label><input type="text" id="ep-name" placeholder="Nama penuh program"></div>
+      <div class="field"><label>Deskripsi</label><textarea id="ep-desc" rows="2" placeholder="Deskripsi program (pilihan)" style="width:100%;resize:vertical"></textarea></div>
+      <div class="modal-msg modal-err" id="ep-error" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeEditProgramModal()">Batal</button>
+      <button class="btn-primary" onclick="saveEditProgram()">Simpan Perubahan</button>
     </div>
   </div>
 </div>

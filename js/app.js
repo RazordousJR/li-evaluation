@@ -3,6 +3,38 @@ var SUPABASE_URL = 'https://lvbtzoqkgmjztolwdchi.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_ChFCyvoYGVutAaFdwKZbtA_bq0P3DAR';
 var sb = null;
 
+// ===== PROGRAMS CACHE =====
+var _programsCache = [];
+
+async function loadProgramsCache() {
+  try {
+    var resp = await sb.from('programs').select('code, name, description').order('code');
+    if (!resp.error && resp.data && resp.data.length > 0) {
+      _programsCache = resp.data;
+    }
+  } catch(e) {
+    // _programsCache stays as []
+  }
+}
+
+function populateProgramDropdown(selectEl, includeBlank) {
+  if (!selectEl) return;
+  selectEl.innerHTML = '';
+  if (includeBlank) {
+    var blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '-- Pilih Program --';
+    selectEl.appendChild(blank);
+  }
+  _programsCache.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.code;
+    opt.textContent = p.code + ' - ' + p.name;
+    selectEl.appendChild(opt);
+  });
+}
+// ===== END PROGRAMS CACHE =====
+
 // ===== DASHBOARD GLOBALS =====
 var currentStudent = null;
 var _pendingStudentEval = null;
@@ -85,6 +117,8 @@ function getSession() {
 
 async function initAuth() {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  await loadProgramsCache();
+  populateProgramDropdown(document.getElementById('kursus'), true);
   var session = getSession();
   if (session && session.email && session.roles) {
     showApp(session);
@@ -163,12 +197,12 @@ function showApp(user) {
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
   // Always reset management sidebar items to hidden first
-  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item', 'laporan-nav-item', 'statuspensyarah-nav-item'].forEach(function(id) {
+  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'urusProgram-nav-item', 'senarai-nav-item', 'laporan-nav-item', 'statuspensyarah-nav-item'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   if (eff === 'ADMIN') {
-    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item', 'laporan-nav-item', 'statuspensyarah-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'urusProgram-nav-item', 'senarai-nav-item', 'laporan-nav-item', 'statuspensyarah-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
@@ -235,7 +269,8 @@ var TAB_TITLES = {
   uruspensyarah: 'Urus Pensyarah',
   senarai: 'Senarai Pelajar',
   laporan: 'Laporan',
-  statuspensyarah: 'Status Pensyarah'
+  statuspensyarah: 'Status Pensyarah',
+  urusProgram: 'Urus Program'
 };
 
 function showTab(t) {
@@ -254,6 +289,7 @@ function showTab(t) {
   if (t === 'senarai') loadSenarai();
   if (t === 'laporan') loadLaporan();
   if (t === 'statuspensyarah') loadStatusPensyarah();
+  if (t === 'urusProgram') loadUrusProgram();
 
   // Show eval student bar and SVI/Org indicator only in eval tabs when a student is selected
   var evalTabs = ['info', 'svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
@@ -1210,6 +1246,7 @@ function openEditPelajarModal(idx) {
   document.getElementById('edp-name').value = s.name || '';
   document.getElementById('edp-matric').value = s.matric_no || '';
   var kursusEl = document.getElementById('edp-kursus');
+  populateProgramDropdown(kursusEl, true);
   if (kursusEl) { kursusEl.value = s.kursus || ''; }
   document.getElementById('edp-error').style.display = 'none';
   document.getElementById('edp-error').textContent = '';
@@ -1441,6 +1478,7 @@ async function saveAddPensyarah() {
 function openAddPelajarModal() {
   document.getElementById('adp-name').value   = '';
   document.getElementById('adp-matric').value = '';
+  populateProgramDropdown(document.getElementById('adp-kursus'), true);
   document.getElementById('adp-kursus').value = '';
   document.getElementById('adp-error').style.display   = 'none';
   document.getElementById('adp-success').style.display = 'none';
@@ -3035,6 +3073,16 @@ async function loadLaporan() {
 
     _laporanStudents = students;
     _laporanOpenIdx  = -1;
+
+    // Populate kursus filter from programs cache
+    var lFilterEl = document.getElementById('laporan-filter-kursus');
+    if (lFilterEl) {
+      lFilterEl.innerHTML = '<option value="">Semua Kursus</option>';
+      _programsCache.forEach(function(p) {
+        lFilterEl.innerHTML += '<option value="' + p.code + '">' + p.code + '</option>';
+      });
+    }
+
     filterLaporan();
   } catch (err) {
     console.error('loadLaporan error:', err);
@@ -3613,5 +3661,162 @@ function fallbackCopy(text) {
   document.body.removeChild(ta);
 }
 // ===== END STATUS PENSYARAH =====
+
+// ===== URUS PROGRAM (ADMIN only) =====
+async function loadUrusProgram() {
+  var tbody = document.getElementById('program-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
+  try {
+    await loadProgramsCache();
+
+    // Count students per kursus
+    var studResp = await sb.from('students').select('kursus');
+    var counts = {};
+    (studResp.data || []).forEach(function(s) {
+      if (s.kursus) counts[s.kursus] = (counts[s.kursus] || 0) + 1;
+    });
+
+    if (!_programsCache.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada program didaftarkan.</td></tr>';
+      return;
+    }
+
+    var html = '';
+    _programsCache.forEach(function(p) {
+      var cnt = counts[p.code] || 0;
+      var desc = p.description ? escHtml(p.description) : '<span style="color:var(--text3)">—</span>';
+      html += '<tr>' +
+        '<td><strong>' + escHtml(p.code) + '</strong></td>' +
+        '<td>' + escHtml(p.name) + '</td>' +
+        '<td>' + desc + '</td>' +
+        '<td style="text-align:center">' + cnt + '</td>' +
+        '<td>' +
+          '<button class="btn-sm btn-sm-edit" onclick="openEditProgramModal(\'' + escHtml(p.code) + '\')" style="margin-right:4px">Edit</button>' +
+          '<button class="btn-sm" style="color:var(--red-text,#c0392b);background:transparent;border:1px solid var(--red-text,#c0392b)" onclick="deleteProgram(\'' + escHtml(p.code) + '\')">Padam</button>' +
+        '</td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+  } catch(e) {
+    console.error('loadUrusProgram error:', e);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:red">Ralat memuatkan data.</td></tr>';
+  }
+}
+
+function openAddProgramModal() {
+  document.getElementById('ap-code').value = '';
+  document.getElementById('ap-name').value = '';
+  document.getElementById('ap-desc').value = '';
+  var errEl = document.getElementById('ap-error');
+  errEl.textContent = ''; errEl.style.display = 'none';
+  var modal = document.getElementById('add-program-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
+}
+
+function closeAddProgramModal() {
+  var modal = document.getElementById('add-program-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+}
+
+async function addProgram() {
+  var code = (document.getElementById('ap-code').value || '').trim().toUpperCase();
+  var name = (document.getElementById('ap-name').value || '').trim();
+  var desc = (document.getElementById('ap-desc').value || '').trim();
+  var errEl = document.getElementById('ap-error');
+  errEl.textContent = ''; errEl.style.display = 'none';
+
+  if (!code || !name) {
+    errEl.textContent = 'Sila isi Kod Program dan Nama Program.'; errEl.style.display = 'block'; return;
+  }
+  if (_programsCache.some(function(p) { return p.code === code; })) {
+    errEl.textContent = 'Kod program sudah wujud.'; errEl.style.display = 'block'; return;
+  }
+
+  var resp = await sb.from('programs').insert({ code: code, name: name, description: desc });
+  if (resp.error) {
+    errEl.textContent = 'Ralat: ' + resp.error.message; errEl.style.display = 'block'; return;
+  }
+  closeAddProgramModal();
+  await loadProgramsCache();
+  loadUrusProgram();
+  populateProgramDropdown(document.getElementById('kursus'), true);
+  populateProgramDropdown(document.getElementById('adp-kursus'), true);
+  populateProgramDropdown(document.getElementById('edp-kursus'), true);
+}
+
+function openEditProgramModal(code) {
+  var prog = _programsCache.find(function(p) { return p.code === code; });
+  if (!prog) return;
+  document.getElementById('ep-old-code').value = prog.code;
+  document.getElementById('ep-code').value = prog.code;
+  document.getElementById('ep-name').value = prog.name || '';
+  document.getElementById('ep-desc').value = prog.description || '';
+  var errEl = document.getElementById('ep-error');
+  errEl.textContent = ''; errEl.style.display = 'none';
+  var modal = document.getElementById('edit-program-modal');
+  modal.style.display = 'flex'; modal.classList.add('open');
+}
+
+function closeEditProgramModal() {
+  var modal = document.getElementById('edit-program-modal');
+  modal.style.display = 'none'; modal.classList.remove('open');
+}
+
+async function saveEditProgram() {
+  var oldCode = (document.getElementById('ep-old-code').value || '').trim();
+  var newCode = (document.getElementById('ep-code').value || '').trim().toUpperCase();
+  var name    = (document.getElementById('ep-name').value || '').trim();
+  var desc    = (document.getElementById('ep-desc').value || '').trim();
+  var errEl   = document.getElementById('ep-error');
+  errEl.textContent = ''; errEl.style.display = 'none';
+
+  if (!newCode || !name) {
+    errEl.textContent = 'Sila isi Kod Program dan Nama Program.'; errEl.style.display = 'block'; return;
+  }
+
+  if (newCode !== oldCode) {
+    // Rename case — check for conflict
+    if (_programsCache.some(function(p) { return p.code === newCode; })) {
+      errEl.textContent = 'Kod program "' + newCode + '" sudah wujud. Sila gunakan kod lain.'; errEl.style.display = 'block'; return;
+    }
+    // Insert new code, migrate students, delete old
+    var r1 = await sb.from('programs').insert({ code: newCode, name: name, description: desc });
+    if (r1.error) { errEl.textContent = 'Ralat: ' + r1.error.message; errEl.style.display = 'block'; return; }
+    await sb.from('students').update({ kursus: newCode }).eq('kursus', oldCode);
+    await sb.from('programs').delete().eq('code', oldCode);
+  } else {
+    var r2 = await sb.from('programs').update({ name: name, description: desc }).eq('code', oldCode);
+    if (r2.error) { errEl.textContent = 'Ralat: ' + r2.error.message; errEl.style.display = 'block'; return; }
+  }
+
+  closeEditProgramModal();
+  await loadProgramsCache();
+  loadUrusProgram();
+  populateProgramDropdown(document.getElementById('kursus'), true);
+  populateProgramDropdown(document.getElementById('adp-kursus'), true);
+  populateProgramDropdown(document.getElementById('edp-kursus'), true);
+}
+
+async function deleteProgram(code) {
+  // Count students on this program
+  var studResp = await sb.from('students').select('id').eq('kursus', code);
+  var cnt = (studResp.data || []).length;
+  var msg = 'Padam program "' + code + '"?' +
+    (cnt > 0 ? '\n\n' + cnt + ' pelajar akan kehilangan maklumat program dan perlu ditetapkan semula.' : '') +
+    '\n\nTeruskan?';
+  if (!confirm(msg)) return;
+
+  await sb.from('students').update({ kursus: '' }).eq('kursus', code);
+  var delResp = await sb.from('programs').delete().eq('code', code);
+  if (delResp.error) { alert('Ralat: ' + delResp.error.message); return; }
+
+  await loadProgramsCache();
+  loadUrusProgram();
+  populateProgramDropdown(document.getElementById('kursus'), true);
+  populateProgramDropdown(document.getElementById('adp-kursus'), true);
+  populateProgramDropdown(document.getElementById('edp-kursus'), true);
+}
+// ===== END URUS PROGRAM =====
 
 initAuth();
