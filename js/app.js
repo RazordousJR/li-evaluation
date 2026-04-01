@@ -3083,6 +3083,7 @@ function renderLaporanExpandedRow(idx) {
   var svfName = s.svf_name || (s.svf_email ? (_laporanPensyarahMap[s.svf_email] || s.svf_email) : '—');
   var g3926   = getGrade(obe.b3926 || 0);
   var g3946   = getGrade(obe.b3946 || 0);
+  function fn(v) { return (parseFloat(v) || 0).toFixed(2); }
 
   // ── Info Pelajar ──
   var infoHtml =
@@ -3096,58 +3097,82 @@ function renderLaporanExpandedRow(idx) {
     '<tr><td>Penyelia Industri</td><td>' + escHtml(s.svi_name || '—') + '</td></tr>' +
     '</table></div>';
 
-  // ── BITU3926 Detail ──
-  var grp1Sub = parseFloat(((obe.prj1 || 0) + (obe.prj2 || 0)).toFixed(2));
-  var grp2Sub = parseFloat(((obe.prj3 || 0) + (obe.prj4 || 0) + (obe.lr1 || 0)).toFixed(2));
-  var grp3Sub = obe.pr11 || 0;
+  // ── BITU3926 Detail — 4-column with rowspan ──
+  var prjPI   = fn(parseFloat(obe.prj1||0) + parseFloat(obe.prj2||0));
+  var prjPF   = fn(parseFloat(obe.prj3||0) + parseFloat(obe.prj4||0) + parseFloat(obe.lr1||0));
+  var prjPres = fn(parseFloat(obe.pr11||0));
   var obe3926Html =
     '<div class="laporan-obe-detail">' +
-    '<div class="laporan-expand-title">BITU3926 &mdash; Detail</div>' +
+    '<div class="laporan-expand-title">BITU3926 &mdash; Latihan Industri</div>' +
     '<table class="laporan-detail-table">' +
-    '<thead><tr><th>Komponen</th><th style="text-align:right;width:80px">Markah</th></tr></thead>' +
+    '<thead><tr>' +
+    '<th style="width:26%">Penilaian</th><th>Komponen</th>' +
+    '<th style="text-align:right;width:14%">Markah</th><th style="text-align:right;width:14%">Jumlah</th>' +
+    '</tr></thead>' +
     '<tbody>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Penyelia Industri (30%)</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-1 (PI 15%)</td><td>' + (obe.prj1 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-2 (PI 15%)</td><td>' + (obe.prj2 || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal PI</td><td>' + grp1Sub + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Penyelia Fakulti (50%)</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-3 (PF 15%)</td><td>' + (obe.prj3 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-4 (PF 15%)</td><td>' + (obe.prj4 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">LR1 &mdash; Log Report (20%)</td><td>' + (obe.lr1 || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal PF</td><td>' + grp2Sub + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Pembentangan (20%)</td></tr>' +
-    '<tr><td style="padding-left:16px">PR1-1 Presentation PI (10%)</td><td>' + (obe.pr11_svib || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">PR1-1 Presentation PF (10%)</td><td>' + (obe.pr11_svfb || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Pembentangan</td><td>' + grp3Sub + '</td></tr>' +
+    '<tr>' +
+    '<td rowspan="2" class="laporan-penilaian-cell">Penyelia Industri<br><small>(30%)</small></td>' +
+    '<td>PRJ-1 (PI 15%)</td><td class="laporan-markah-cell">' + fn(obe.prj1) + '</td>' +
+    '<td rowspan="2" class="laporan-jumlah-cell">' + prjPI + '</td>' +
+    '</tr>' +
+    '<tr><td>PRJ-2 (PI 15%)</td><td class="laporan-markah-cell">' + fn(obe.prj2) + '</td></tr>' +
+    '<tr>' +
+    '<td rowspan="3" class="laporan-penilaian-cell">Penyelia Fakulti<br><small>(50%)</small></td>' +
+    '<td>PRJ-3 (PF 15%)</td><td class="laporan-markah-cell">' + fn(obe.prj3) + '</td>' +
+    '<td rowspan="3" class="laporan-jumlah-cell">' + prjPF + '</td>' +
+    '</tr>' +
+    '<tr><td>PRJ-4 (PF 15%)</td><td class="laporan-markah-cell">' + fn(obe.prj4) + '</td></tr>' +
+    '<tr><td>LR1 &mdash; Log Report (20%)</td><td class="laporan-markah-cell">' + fn(obe.lr1) + '</td></tr>' +
+    '<tr>' +
+    '<td rowspan="2" class="laporan-penilaian-cell">Pembentangan<br><small>(20%)</small></td>' +
+    '<td>PR1-1 Presentation PI (10%)</td><td class="laporan-markah-cell">' + fn(obe.pr11_svib) + '</td>' +
+    '<td rowspan="2" class="laporan-jumlah-cell">' + prjPres + '</td>' +
+    '</tr>' +
+    '<tr><td>PR1-1 Presentation PF (10%)</td><td class="laporan-markah-cell">' + fn(obe.pr11_svfb) + '</td></tr>' +
     '</tbody>' +
     '<tfoot>' +
-    '<tr class="laporan-total-row"><td>Jumlah Keseluruhan</td><td>' + (obe.b3926 || 0) + ' / 100</td></tr>' +
-    '<tr class="laporan-grade-row"><td>Gred</td><td><span class="grade-pill ' + g3926.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3926.g + '</span></td></tr>' +
+    '<tr class="laporan-total-row"><td colspan="3">Jumlah Keseluruhan</td><td style="text-align:right">' + fn(obe.b3926) + ' / 100</td></tr>' +
+    '<tr class="laporan-grade-row"><td colspan="3">Gred</td><td style="text-align:right"><span class="grade-pill ' + g3926.cls + '" style="font-size:12px;padding:2px 8px;min-width:unset;display:inline-block">' + g3926.g + '</span></td></tr>' +
     '</tfoot></table></div>';
 
-  // ── BITU3946 Detail ──
+  // ── BITU3946 Detail — 4-column with rowspan ──
+  var tr1_rep  = fn(parseFloat(obe.tr1_lapa||0) + parseFloat(obe.tr1_lapb||0));
+  var tr1Sub   = fn(parseFloat(obe.tr1||0));
+  var psvfPbt  = fn(parseFloat(obe.psvfT||0) / 10);
+  var psviPbt  = fn(parseFloat(obe.psviT||0) / 10);
+  var presSub  = fn(parseFloat(obe.pr11_pbt||0));
+  var skillSub = fn(parseFloat(obe.pr12||0));
   var obe3946Html =
     '<div class="laporan-obe-detail">' +
-    '<div class="laporan-expand-title">BITU3946 &mdash; Detail</div>' +
+    '<div class="laporan-expand-title">BITU3946 &mdash; Laporan Latihan Industri</div>' +
     '<table class="laporan-detail-table">' +
-    '<thead><tr><th>Komponen</th><th style="text-align:right;width:80px">Markah</th></tr></thead>' +
+    '<thead><tr>' +
+    '<th style="width:26%">Penilaian</th><th>Komponen</th>' +
+    '<th style="text-align:right;width:14%">Markah</th><th style="text-align:right;width:14%">Jumlah</th>' +
+    '</tr></thead>' +
     '<tbody>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Laporan (70%)</td></tr>' +
-    '<tr><td style="padding-left:16px">TR1 &mdash; LI Report (70%)</td><td>' + (obe.tr1 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">Buku Log (10%)</td><td>' + (obe.tr1_logc || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">Komitmen (10%)</td><td>' + (obe.tr1_svfc || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Laporan</td><td>' + (obe.tr1 || 0) + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Pembentangan (20%)</td></tr>' +
-    '<tr><td style="padding-left:16px">Presentation PF (10%)</td><td>' + (obe.psvfT || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">Presentation PI (10%)</td><td>' + (obe.psviT || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Pembentangan</td><td>' + (obe.pr11_pbt || 0) + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Soft Skills (10%)</td></tr>' +
-    '<tr><td style="padding-left:16px">Soft Skills (10%)</td><td>' + (obe.pr12 || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Soft Skills</td><td>' + (obe.pr12 || 0) + '</td></tr>' +
+    '<tr>' +
+    '<td rowspan="3" class="laporan-penilaian-cell">Laporan<br><small>(70%)</small></td>' +
+    '<td>TR1 &mdash; LI Report</td><td class="laporan-markah-cell">' + tr1_rep + '</td>' +
+    '<td rowspan="3" class="laporan-jumlah-cell">' + tr1Sub + '</td>' +
+    '</tr>' +
+    '<tr><td>Buku Log (10%)</td><td class="laporan-markah-cell">' + fn(obe.tr1_logc) + '</td></tr>' +
+    '<tr><td>Komitmen (10%)</td><td class="laporan-markah-cell">' + fn(obe.tr1_svfc) + '</td></tr>' +
+    '<tr>' +
+    '<td rowspan="2" class="laporan-penilaian-cell">Pembentangan<br><small>(20%)</small></td>' +
+    '<td>Presentation PF (10%)</td><td class="laporan-markah-cell">' + psvfPbt + '</td>' +
+    '<td rowspan="2" class="laporan-jumlah-cell">' + presSub + '</td>' +
+    '</tr>' +
+    '<tr><td>Presentation PI (10%)</td><td class="laporan-markah-cell">' + psviPbt + '</td></tr>' +
+    '<tr>' +
+    '<td class="laporan-penilaian-cell">Soft Skills<br><small>(10%)</small></td>' +
+    '<td>Soft Skills (10%)</td><td class="laporan-markah-cell">' + skillSub + '</td>' +
+    '<td class="laporan-jumlah-cell">' + skillSub + '</td>' +
+    '</tr>' +
     '</tbody>' +
     '<tfoot>' +
-    '<tr class="laporan-total-row"><td>Jumlah Keseluruhan</td><td>' + (obe.b3946 || 0) + ' / 100</td></tr>' +
-    '<tr class="laporan-grade-row"><td>Gred</td><td><span class="grade-pill ' + g3946.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3946.g + '</span></td></tr>' +
+    '<tr class="laporan-total-row"><td colspan="3">Jumlah Keseluruhan</td><td style="text-align:right">' + fn(obe.b3946) + ' / 100</td></tr>' +
+    '<tr class="laporan-grade-row"><td colspan="3">Gred</td><td style="text-align:right"><span class="grade-pill ' + g3946.cls + '" style="font-size:12px;padding:2px 8px;min-width:unset;display:inline-block">' + g3946.g + '</span></td></tr>' +
     '</tfoot></table></div>';
 
   var printBtn =
@@ -3195,8 +3220,8 @@ function printLaporanStudent(idx) {
     '<style>' +
     'body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:20px}' +
     'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
-    'th{padding:6px 8px;border:1px solid #1e3a8a;background:#1e3a8a;color:#fff}' +
-    'td{padding:5px 8px;border:1px solid #ccc}' +
+    'th{padding:6px 8px;border:1px solid #333;background:#1e3a8a;color:#fff}' +
+    'td{padding:5px 8px;border:1px solid #333}' +
     '.cell-header{background:#f0f4ff;font-weight:600;width:35%}' +
     '.cell-group{vertical-align:middle;font-weight:600;background:#f8f8f8}' +
     '.cell-num{text-align:right}' +
@@ -3296,8 +3321,8 @@ function printLaporanStudent(idx) {
       '<tbody>' +
         '<tr>' +
           '<td rowspan="3" class="cell-group">Laporan<br><span style="font-weight:400;font-size:11px">(70%)</span></td>' +
-          '<td>TR1 &mdash; LI Report (70%)</td>' +
-          '<td class="cell-num">' + fn(o.tr1_lapa) + '</td>' +
+          '<td>TR1 &mdash; LI Report</td>' +
+          '<td class="cell-num">' + fn(parseFloat(o.tr1_lapa||0) + parseFloat(o.tr1_lapb||0)) + '</td>' +
           '<td rowspan="3" class="cell-jumlah">' + tr1Sub + '</td>' +
         '</tr>' +
         '<tr>' +
@@ -3311,12 +3336,12 @@ function printLaporanStudent(idx) {
         '<tr>' +
           '<td rowspan="2" class="cell-group">Pembentangan<br><span style="font-weight:400;font-size:11px">(20%)</span></td>' +
           '<td>Presentation PF (10%)</td>' +
-          '<td class="cell-num">' + fn(o.psvfT) + '</td>' +
+          '<td class="cell-num">' + fn(parseFloat(o.psvfT||0) / 10) + '</td>' +
           '<td rowspan="2" class="cell-jumlah">' + presSub + '</td>' +
         '</tr>' +
         '<tr>' +
           '<td>Presentation PI (10%)</td>' +
-          '<td class="cell-num">' + fn(o.psviT) + '</td>' +
+          '<td class="cell-num">' + fn(parseFloat(o.psviT||0) / 10) + '</td>' +
         '</tr>' +
         '<tr>' +
           '<td class="cell-group">Soft Skills<br><span style="font-weight:400;font-size:11px">(10%)</span></td>' +

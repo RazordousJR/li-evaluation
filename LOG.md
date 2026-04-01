@@ -1,5 +1,30 @@
 # Bug & Fix Log
 
+## 2026-04-01 — BITU3946 TR1 row showed full total instead of report sub-total
+
+**Type:** Bug
+**Page/Feature:** Laporan — expanded row BITU3946 detail table
+**Symptom:** "TR1 — LI Report" row displayed the full tr1 total (all 4 sub-components including logbook and komitmen) instead of just the Laporan document contribution (tr1_lapa + tr1_lapb)
+**Root cause:** `renderLaporanExpandedRow()` used `obe.tr1` for both the TR1 row and the Laporan group Jumlah column. `printLaporanStudent()` used `fn(o.tr1_lapa)` (Laporan A only, missing Laporan B).
+**Fix:** Screen: use `tr1_lapa + tr1_lapb` for TR1 row, keep `tr1` for Jumlah column. Print: same fix applied.
+
+## 2026-04-01 — BITU3946 Presentation rows showed raw 0–100 scores instead of weighted 0–10
+
+**Type:** Bug
+**Page/Feature:** Laporan — expanded row BITU3946 detail table
+**Symptom:** Presentation PF and PI rows showed raw evaluation scores (e.g. 82.00, 94.00) instead of their weighted contribution to the 20% Pembentangan component (e.g. 8.20, 9.40)
+**Root cause:** Both `renderLaporanExpandedRow()` and `printLaporanStudent()` used `obe.psvfT` and `obe.psviT` directly (raw 0–100 totals). Correct formula: each / 10 (since `pr11_pbt = (psvfT + psviT) / 200 * 20`).
+**Fix:** Divide by 10: `psvfT / 10` and `psviT / 10` for the individual row display.
+
+## 2026-04-01 — Print report had inconsistent border colors
+
+**Type:** Bug
+**Page/Feature:** Laporan — printLaporanStudent() print output
+**Symptom:** `<th>` had `border:1px solid #1e3a8a` (blue) while `<td>` had `border:1px solid #ccc` (light grey). Grid lines were visually inconsistent.
+**Fix:** Both `th` and `td` changed to `border:1px solid #333` throughout print CSS.
+
+
+
 ## 2026-04-01 — Laporan detail table rendered as flat rows
 
 **Type:** Bug

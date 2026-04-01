@@ -941,6 +941,50 @@ PDF Page 7 (`#pp-obe`) updated to match the new grouped screen table. The page 7
 - Course totals and grades read from `window._pdfData` (`d.total3926`, `d.grade3926`, `d.total3946`, `d.grade3946`)
 - Pages 2–6 and all other logic NOT affected
 
+## Laporan Expand Panel Redesign (v4.25)
+
+### Overview
+The student detail panel in the Laporan page (accordion expand row) was redesigned to use 4-column grouped tables with rowspan, matching the official evaluation form layout. The print report (`printLaporanStudent()`) was updated to mirror the screen panel exactly.
+
+### Screen Panel — `renderLaporanExpandedRow()` (js/app.js)
+- **3-column flex layout** (unchanged): Info Pelajar (left, 220px fixed) | BITU3926 table (flex 1) | BITU3946 table (flex 1)
+- **Old**: 2-column tables (Komponen | Markah) with group header rows spanning both columns
+- **New**: 4-column tables (Penilaian | Komponen | Markah | Jumlah) with rowspan on Penilaian and Jumlah cells
+- **Penilaian cell** (`.laporan-penilaian-cell`): light blue bg, bold blue text, `vertical-align:middle`, rowspan spans all rows in the group
+- **Jumlah cell** (`.laporan-jumlah-cell`): bold blue, right-aligned, `vertical-align:middle`, rowspan on first row of group
+- **Total row** (`.laporan-total-row`): dark navy bg (#0f2560), white, bold, `colspan=3` + Jumlah value
+- **Grade row** (`.laporan-grade-row`): dark navy, grade pill in Jumlah column
+
+### BITU3926 Groups
+- Penyelia Industri (30%): PRJ-1 | PRJ-2 → Jumlah = prj1 + prj2
+- Penyelia Fakulti (50%): PRJ-3 | PRJ-4 | LR1 → Jumlah = prj3 + prj4 + lr1
+- Pembentangan (20%): PR1-1 PI (pr11_svib) | PR1-1 PF (pr11_svfb) → Jumlah = pr11
+
+### BITU3946 Groups
+- Laporan (70%): TR1 LI Report (tr1_lapa+tr1_lapb) | Buku Log (tr1_logc) | Komitmen (tr1_svfc) → Jumlah = tr1
+- Pembentangan (20%): Presentation PF (psvfT/10) | Presentation PI (psviT/10) → Jumlah = pr11_pbt
+- Soft Skills (10%): Soft Skills (pr12) → Jumlah = pr12
+
+### Bug Fixes in `renderLaporanExpandedRow()`
+- **BIT3946 TR1 row**: was showing `obe.tr1` (full 70% total); now shows `tr1_lapa + tr1_lapb` (Report document sub-total only)
+- **BITU3946 Presentation rows**: were showing raw psvfT/psviT (0–100 scale); now show weighted individual contributions (psvfT/10, psviT/10)
+
+### Bug Fixes in `printLaporanStudent()` (print mirror)
+- **TR1 row**: fixed same as screen — `fn(o.tr1_lapa)` → `fn(parseFloat(o.tr1_lapa||0) + parseFloat(o.tr1_lapb||0))`
+- **Presentation PF**: `fn(o.psvfT)` → `fn(parseFloat(o.psvfT||0) / 10)`
+- **Presentation PI**: `fn(o.psviT)` → `fn(parseFloat(o.psviT||0) / 10)`
+- **Print borders**: `td{border:1px solid #ccc}` → `border:1px solid #333`; `th{border:1px solid #1e3a8a}` → `border:1px solid #333` (consistent throughout)
+
+### CSS Classes Added/Updated (style.css)
+- `.laporan-penilaian-cell` — group label cell with rowspan; blue bg (`#f0f4ff`), bold blue (`#1e3a8a`) text, `text-align:center`, `vertical-align:middle`
+- `.laporan-jumlah-cell` — group subtotal cell with rowspan; bold blue, `text-align:right`, `vertical-align:middle`
+- `.laporan-markah-cell` — individual mark cell; `text-align:right`
+- `.laporan-detail-table thead th` — updated with `border:1px solid #1e3a8a`
+- `.laporan-detail-table tbody td` — full `border:1px solid #ddd` (was `border-bottom` only)
+- `.laporan-detail-table tfoot td` — `border:1px solid #0f2560`
+- Removed: `.laporan-group-hdr`, `.laporan-subtotal-row` (no longer used in 4-col design)
+- Removed: `.laporan-detail-table tbody td:last-child` override (handled by explicit classes)
+
 ## Future Upgrade Checklist
 Track of planned improvements. Tick when done.
 
