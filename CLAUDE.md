@@ -160,6 +160,11 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
 - **Bulk assign**: checkboxes per row + "Assign SVF Terpilih" button + bulk SVF dropdown
   - `toggleAllStudents()` selects/deselects all via header checkbox
   - `bulkAssignSVF()` updates all selected students' `svf_email` in parallel
+- **Export Excel** button ("⬇ Export Excel") — calls `exportSenaraiPelajar()`; placed before "Muat Semula" button in the Senarai Pelajar section-title bar
+  - Exports `_pelajarStudentsCache` as a single-sheet XLSX ("Senarai Pelajar")
+  - Columns: Bil, Nama Pelajar, No Matrik, Program, Status Kelulusan (no SVF column)
+  - Status Kelulusan: "Diluluskan" if `approval_status === 'approved'`, else "Draf"
+  - Filename: `Senarai_Pelajar_YYYY-MM-DD.xlsx`
 - **PENSYARAH role**: if a PENSYARAH accesses this page, only students where `svf_email = their email` are shown (no Padam button)
 
 ## Upload Duplicate Detection (Upload Pensyarah & Upload Pelajar)
