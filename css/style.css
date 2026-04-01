@@ -640,3 +640,53 @@ textarea{resize:vertical;min-height:70px}
 /* PDF Page 7 — grouped OBE table rows */
 .pp7-group-header td { background: #1e3a8a !important; color: #fff !important; font-weight: 700; padding: 5px 8px; }
 .pp7-total-row td { background: #0f2560 !important; color: #fff !important; font-weight: 700; font-size: 10pt; padding: 6px 8px; }
+
+/* ===== LAPORAN PAGE ===== */
+.laporan-filter-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:.875rem; }
+.laporan-filter-row select { font-size:13px; padding:7px 10px; border:var(--border2); border-radius:var(--radius); background:var(--bg); color:var(--text); font-family:inherit; }
+.laporan-row { cursor:pointer; }
+.laporan-row:hover td { background:var(--bg2); }
+.laporan-row-open td { background:var(--blue-bg) !important; }
+.laporan-expand-row td { padding:0 !important; border-bottom:2px solid var(--blue-text); background:var(--bg2); }
+.laporan-expand-panel { padding:1rem 1.25rem; display:flex; gap:1.5rem; flex-wrap:wrap; }
+.laporan-expand-info { min-width:180px; flex:0 0 220px; }
+.laporan-expand-obe { flex:1; display:flex; gap:1rem; flex-wrap:wrap; min-width:0; }
+.laporan-obe-detail { flex:1; min-width:260px; }
+.laporan-expand-title { font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.625rem; }
+.laporan-info-table { width:100%; font-size:13px; border-collapse:collapse; }
+.laporan-info-table td { padding:6px 8px; border-bottom:var(--border); vertical-align:top; }
+.laporan-info-table td:first-child { color:var(--text2); font-weight:500; font-size:12px; width:46%; white-space:nowrap; }
+.laporan-detail-table { width:100%; font-size:12.5px; border-collapse:collapse; }
+.laporan-detail-table thead th { background:var(--blue-text); color:#fff; padding:5px 8px; text-align:left; font-size:11px; font-weight:600; }
+.laporan-detail-table tbody td { padding:5px 8px; border-bottom:var(--border); }
+.laporan-detail-table tbody td:last-child,.laporan-detail-table tfoot td:last-child { text-align:right; font-weight:500; }
+.laporan-group-hdr td { background:var(--blue-bg) !important; color:var(--blue-text); font-weight:600; font-size:11.5px; padding:5px 8px; }
+.laporan-subtotal-row td { background:var(--bg3); font-weight:600; font-size:12px; color:var(--text2); }
+.laporan-total-row td { background:#0f2560; color:#fff; font-weight:700; font-size:12.5px; padding:6px 8px; }
+.laporan-grade-row td { background:#0f2560; color:#fff; padding:4px 8px; }
+@media(max-width:700px){.laporan-expand-info{flex:0 0 100%}.laporan-expand-obe{flex-direction:column}}
+
+/* ===== STATUS PENSYARAH PAGE ===== */
+.sp-group { background:var(--bg); border:var(--border); border-radius:var(--radius-lg); margin-bottom:.625rem; overflow:hidden; }
+.sp-group-open { border-color:var(--blue); box-shadow:0 0 0 1px var(--blue); }
+.sp-group-header { display:flex; align-items:center; gap:12px; padding:.875rem 1rem; cursor:pointer; user-select:none; transition:background .15s; }
+.sp-group-header:hover { background:var(--bg2); }
+.sp-group-info { flex:1; min-width:0; }
+.sp-group-name { font-size:14px; font-weight:600; color:var(--text); }
+.sp-group-count { font-size:12px; color:var(--text2); margin-top:2px; }
+.sp-group-right { display:flex; align-items:center; gap:10px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+.sp-progress-wrap { display:flex; align-items:center; gap:6px; }
+.sp-progress-bar { width:90px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; flex-shrink:0; }
+.sp-progress-fill { height:100%; background:var(--green); border-radius:3px; transition:width .4s; }
+.sp-pct-label { font-size:12px; color:var(--text2); min-width:32px; text-align:right; }
+.sp-badge { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+.sp-badge-selesai { background:var(--green-bg); color:var(--green-text); }
+.sp-badge-pending { background:var(--amber-bg); color:var(--amber-text); }
+.sp-copy-btn { font-size:12px !important; padding:4px 10px !important; min-height:unset !important; }
+.sp-copy-btn-success { background:var(--green-bg) !important; color:var(--green-text) !important; border-color:var(--green-text) !important; }
+.sp-chevron { font-size:10px; color:var(--text3); margin-left:2px; }
+.sp-group-body { border-top:var(--border); }
+.sp-group-section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:.5rem 1.125rem .375rem; }
+.sp-label-pending { background:var(--amber-bg); color:var(--amber-text); }
+.sp-label-selesai { background:var(--green-bg); color:var(--green-text); }
+@media(max-width:600px){.sp-progress-wrap{display:none}.sp-group-right{gap:6px}}

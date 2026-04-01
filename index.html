@@ -63,6 +63,8 @@
         <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
         <a class="nav-item" id="uruspensyarah-nav-item" data-tab="uruspensyarah" onclick="showTab('uruspensyarah')" style="display:none">Urus Pensyarah</a>
         <a class="nav-item" id="senarai-nav-item" data-tab="senarai" onclick="showTab('senarai')" style="display:none">Senarai Pelajar</a>
+        <a class="nav-item" id="laporan-nav-item" data-tab="laporan" onclick="showTab('laporan')" style="display:none">&#128202; Laporan</a>
+        <a class="nav-item" id="statuspensyarah-nav-item" data-tab="statuspensyarah" onclick="showTab('statuspensyarah')" style="display:none">&#128101; Status Pensyarah</a>
         <a class="nav-item" id="admin-nav-item" data-tab="usermgmt" onclick="showTab('usermgmt')" style="display:none">Pengurusan Pengguna</a>
       </div>
       <!-- EVAL SIDEBAR: shown when a student is selected for evaluation -->
@@ -1185,6 +1187,55 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeStudentProfileModal()">Batal</button>
       <button class="btn-primary" id="spm-save-btn" onclick="saveStudentProfile()">Simpan &amp; Teruskan</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAPORAN PAGE -->
+<div class="page" id="page-laporan">
+  <div class="section">
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Laporan Markah Pelajar</span>
+      <button class="btn-primary" onclick="exportLaporanExcel()">&#11015; Export Excel</button>
+    </div>
+    <div class="laporan-filter-row">
+      <select id="laporan-filter-kursus" onchange="filterLaporan()">
+        <option value="">Semua Kursus</option>
+        <option value="BITE">BITE</option>
+        <option value="BITM">BITM</option>
+      </select>
+      <select id="laporan-filter-status" onchange="filterLaporan()">
+        <option value="">Semua Status</option>
+        <option value="selesai">Selesai</option>
+        <option value="pending">Pending</option>
+      </select>
+    </div>
+    <div id="laporan-summary" class="senarai-summary-row"></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Nama</th><th>No. Matrik</th><th>Kursus</th>
+            <th>BITU3926</th><th>Gred 3926</th><th>BITU3946</th><th>Gred 3946</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="laporan-tbody">
+          <tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS PENSYARAH PAGE -->
+<div class="page" id="page-statuspensyarah">
+  <div class="section">
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Status Pensyarah</span>
+      <button class="btn-secondary" onclick="loadStatusPensyarah()">&#8635; Muat Semula</button>
+    </div>
+    <div id="sp-list">
+      <div style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</div>
     </div>
   </div>
 </div>
