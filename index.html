@@ -58,6 +58,7 @@
       <!-- DEFAULT SIDEBAR: shown when no student is selected -->
       <div id="sidebar-nav-default">
         <a class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</a>
+        <a class="nav-item" id="profil-nav-item" data-tab="profil" onclick="showTab('profil')">&#128100; Profil Saya</a>
         <div class="sidebar-section-sep" id="admin-sep" style="display:none"></div>
         <div class="sidebar-section-label" id="admin-label" style="display:none">Pengurusan</div>
         <a class="nav-item" id="uruspelajar-nav-item" data-tab="uruspelajar" onclick="showTab('uruspelajar')" style="display:none">Urus Pelajar</a>
@@ -99,7 +100,7 @@
       <div class="topbar-badges">
         <span class="badge badge-blue">BITU3926</span>
         <span class="badge badge-green">BITU3946</span>
-        <span class="badge badge-gray">v4.24</span>
+        <span class="badge badge-gray">v4.27</span>
       </div>
       <span class="save-status" id="save-status"></span>
       <button class="btn-logout" onclick="doLogout()">Log Keluar</button>
@@ -981,6 +982,52 @@
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- PROFIL SAYA PAGE (All roles) -->
+<div class="page" id="page-profil">
+  <div class="section">
+    <div class="section-title">Maklumat Profil</div>
+    <div class="field">
+      <label>Nama Penuh <span style="color:var(--red)">*</span></label>
+      <input type="text" id="profil-nama" placeholder="Nama penuh anda">
+    </div>
+    <div class="field">
+      <label>No Staf</label>
+      <input type="text" id="profil-nostaf" placeholder="No staf (jika berkenaan)">
+    </div>
+    <div class="field">
+      <label>Jabatan</label>
+      <input type="text" id="profil-jabatan" placeholder="Jabatan (jika berkenaan)">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="text" id="profil-email" disabled style="opacity:.65;cursor:not-allowed">
+    </div>
+    <div class="field" style="margin-top:1rem">
+      <button class="btn-primary" onclick="saveProfilMaklumat()">Simpan Maklumat</button>
+    </div>
+    <div id="profil-maklumat-msg" style="margin-top:.5rem;font-size:13.5px"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Tukar Kata Laluan</div>
+    <div class="field">
+      <label>Kata Laluan Lama <span style="color:var(--red)">*</span></label>
+      <input type="password" id="profil-pw-lama" placeholder="Kata laluan semasa">
+    </div>
+    <div class="field">
+      <label>Kata Laluan Baru <span style="color:var(--red)">*</span></label>
+      <input type="password" id="profil-pw-baru" placeholder="Minimum 4 aksara">
+    </div>
+    <div class="field">
+      <label>Sahkan Kata Laluan Baru <span style="color:var(--red)">*</span></label>
+      <input type="password" id="profil-pw-sahkan" placeholder="Ulang kata laluan baru">
+    </div>
+    <div class="field" style="margin-top:1rem">
+      <button class="btn-primary" onclick="saveProfilPassword()">Tukar Kata Laluan</button>
+    </div>
+    <div id="profil-pw-msg" style="margin-top:.5rem;font-size:13.5px"></div>
   </div>
 </div>
 

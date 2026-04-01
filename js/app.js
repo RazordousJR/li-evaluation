@@ -270,7 +270,8 @@ var TAB_TITLES = {
   senarai: 'Senarai Pelajar',
   laporan: 'Laporan',
   statuspensyarah: 'Status Pensyarah',
-  urusProgram: 'Urus Program'
+  urusProgram: 'Urus Program',
+  profil: 'Profil Saya'
 };
 
 function showTab(t) {
@@ -290,6 +291,7 @@ function showTab(t) {
   if (t === 'laporan') loadLaporan();
   if (t === 'statuspensyarah') loadStatusPensyarah();
   if (t === 'urusProgram') loadUrusProgram();
+  if (t === 'profil') loadProfil();
 
   // Show eval student bar and SVI/Org indicator only in eval tabs when a student is selected
   var evalTabs = ['info', 'svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
@@ -3818,5 +3820,100 @@ async function deleteProgram(code) {
   populateProgramDropdown(document.getElementById('edp-kursus'), true);
 }
 // ===== END URUS PROGRAM =====
+
+// ===== PROFIL SAYA =====
+async function loadProfil() {
+  var session = getSession();
+  if (!session) return;
+  document.getElementById('profil-maklumat-msg').textContent = '';
+  document.getElementById('profil-pw-msg').textContent = '';
+  var resp = await sb.from('users').select('full_name, no_staf, jabatan, email').eq('email', session.email).single();
+  if (resp.error || !resp.data) return;
+  var u = resp.data;
+  document.getElementById('profil-nama').value    = u.full_name || '';
+  document.getElementById('profil-nostaf').value  = u.no_staf  || '';
+  document.getElementById('profil-jabatan').value = u.jabatan  || '';
+  document.getElementById('profil-email').value   = u.email    || '';
+}
+
+async function saveProfilMaklumat() {
+  var session = getSession();
+  if (!session) return;
+  var msgEl = document.getElementById('profil-maklumat-msg');
+  var nama    = (document.getElementById('profil-nama').value    || '').trim();
+  var nostaf  = (document.getElementById('profil-nostaf').value  || '').trim();
+  var jabatan = (document.getElementById('profil-jabatan').value || '').trim();
+  if (!nama) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Nama penuh tidak boleh kosong.';
+    return;
+  }
+  var resp = await sb.from('users').update({ full_name: nama, no_staf: nostaf, jabatan: jabatan }).eq('email', session.email);
+  if (resp.error) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Ralat: ' + resp.error.message;
+    return;
+  }
+  // Update session displayName in localStorage
+  try {
+    var stored = JSON.parse(localStorage.getItem('li_session') || '{}');
+    stored.displayName = nama;
+    localStorage.setItem('li_session', JSON.stringify(stored));
+  } catch(e) {}
+  // Update sidebar user name
+  var nameEl = document.getElementById('sidebar-user-name');
+  if (nameEl) nameEl.textContent = nama;
+  msgEl.style.color = 'var(--green)';
+  msgEl.textContent = 'Maklumat berjaya dikemaskini.';
+}
+
+async function saveProfilPassword() {
+  var session = getSession();
+  if (!session) return;
+  var msgEl  = document.getElementById('profil-pw-msg');
+  var lama   = document.getElementById('profil-pw-lama').value   || '';
+  var baru   = document.getElementById('profil-pw-baru').value   || '';
+  var sahkan = document.getElementById('profil-pw-sahkan').value || '';
+  if (!lama || !baru || !sahkan) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Sila isi semua medan kata laluan.';
+    return;
+  }
+  if (baru !== sahkan) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Kata laluan baru tidak sepadan.';
+    return;
+  }
+  if (baru.length < 4) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Kata laluan baru mesti sekurang-kurangnya 4 aksara.';
+    return;
+  }
+  var pwResp = await sb.from('users').select('password_hash').eq('email', session.email).single();
+  if (pwResp.error || !pwResp.data) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Ralat mendapatkan maklumat akaun.';
+    return;
+  }
+  var lamaHash = await hashPassword(lama);
+  if (lamaHash !== pwResp.data.password_hash) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Kata laluan lama tidak tepat.';
+    return;
+  }
+  var baruHash = await hashPassword(baru);
+  var updResp = await sb.from('users').update({ password_hash: baruHash }).eq('email', session.email);
+  if (updResp.error) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Ralat: ' + updResp.error.message;
+    return;
+  }
+  msgEl.style.color = 'var(--green)';
+  msgEl.textContent = 'Kata laluan berjaya ditukar.';
+  document.getElementById('profil-pw-lama').value   = '';
+  document.getElementById('profil-pw-baru').value   = '';
+  document.getElementById('profil-pw-sahkan').value = '';
+}
+// ===== END PROFIL SAYA =====
 
 initAuth();

@@ -195,7 +195,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
 
 ## Dashboard (v4.19 — Charts Only)
 
-> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected (use SVI weighted, not SVF; row order swapped to match official form). v4.26: version badge updated to v4.26.
+> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected (use SVI weighted, not SVF; row order swapped to match official form). v4.26: version badge updated to v4.26. v4.27: version badge updated to v4.27.
 
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)
@@ -1017,6 +1017,36 @@ The student detail panel in the Laporan page (accordion expand row) was redesign
 - Called at init: `populateProgramDropdown(document.getElementById('kursus'), true)` pre-populates the main form dropdown
 - Called in `openAddPelajarModal()` and `openEditPelajarModal()` to ensure dropdowns are always current
 - All hardcoded program `<option>` elements removed from `kursus`, `adp-kursus`, `edp-kursus` selects in index.html
+
+## Profil Saya Page (v4.27 — All Roles)
+- Accessible via "👤 Profil Saya" sidebar nav item (`profil-nav-item`), shown for **ALL roles** (PENSYARAH, AJK_LI, ADMIN)
+- Located in `#sidebar-nav-default`, placed after Dashboard nav item and before the Pengurusan section divider (`admin-sep`)
+- Page ID: `#page-profil`; tab name: `profil`; topbar title: "Profil Saya"
+- `profil-nav-item` is NOT in `applyRoleRestrictions()` hide lists — visible by default for all roles
+
+### Section 1 — Maklumat Profil
+- Fields: `profil-nama` (Nama Penuh, required), `profil-nostaf` (No Staf), `profil-jabatan` (Jabatan), `profil-email` (Email, disabled read-only)
+- Button: "Simpan Maklumat" → `saveProfilMaklumat()`
+- Message div: `#profil-maklumat-msg`
+
+### Section 2 — Tukar Kata Laluan
+- Fields: `profil-pw-lama` (Kata Laluan Lama), `profil-pw-baru` (Kata Laluan Baru, min 4), `profil-pw-sahkan` (Sahkan Kata Laluan Baru)
+- Button: "Tukar Kata Laluan" → `saveProfilPassword()`
+- Message div: `#profil-pw-msg`
+
+### Key Functions (app.js)
+- `loadProfil()` — async; reads `li_session` from localStorage; fetches `full_name, no_staf, jabatan, email` from `public.users`; populates all 4 fields; clears both message divs
+- `saveProfilMaklumat()` — async; validates `profil-nama` not empty; updates `public.users`; on success: updates `li_session.displayName` in localStorage and `#sidebar-user-name` text; shows green success message
+- `saveProfilPassword()` — async; validates all 3 fields not empty; validates baru === sahkan; validates baru.length >= 4; fetches `password_hash` from DB; hashes lama with `hashPassword()` and compares; on match: hashes baru, updates `public.users`; clears all 3 password fields; shows green success message
+
+## Upload Pensyarah Column Format (v4.27)
+- Accepted columns: `Nama Penuh`, `No Staf`, `Jabatan`, `Email`
+- After `normalizeRow()` these become lowercase keys: `nama penuh`, `no staf`, `jabatan`, `email`
+- Field mapping in `handleUploadPensyarah()`:
+  - `full_name` ← `n['nama penuh']`
+  - `no_staf` ← `n['no staf']` (fallback: `n['nostaf']`)
+  - `jabatan` ← `n['jabatan']`
+  - `email` ← `n['email']` (lowercased)
 
 ## SQL: programs table migration
 Run this in Supabase Dashboard → SQL Editor:
