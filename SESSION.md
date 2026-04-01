@@ -1,5 +1,20 @@
 # Session Log
 
+## Session 2026-04-01 (3) — Export Senarai Pelajar Excel button
+
+### What was done
+- Added "⬇ Export Excel" button to Urus Pelajar page (before "Muat Semula" button) in the Senarai Pelajar section-title bar
+- Added `exportSenaraiPelajar()` function in js/app.js (after `// ===== END URUS PELAJAR =====`)
+- Export reads from `_pelajarStudentsCache`; builds single-sheet XLSX with columns: Bil, Nama Pelajar, No Matrik, Program, Status Kelulusan (no SVF column)
+- Status Kelulusan: "Diluluskan" if `approval_status === 'approved'`, else "Draf"
+- Column widths set via `ws['!cols']`; filename format: `Senarai_Pelajar_YYYY-MM-DD.xlsx`
+- Updated CLAUDE.md Urus Pelajar section to document the new Export Excel button
+
+### Files changed
+- index.html — added "⬇ Export Excel" button before "Muat Semula" in Senarai Pelajar section-title
+- js/app.js — added `exportSenaraiPelajar()` function after END URUS PELAJAR marker
+- CLAUDE.md — documented Export Excel button under Urus Pelajar section
+
 ## Session 2026-04-01 (2) — Laporan expand panel redesign (v4.25)
 
 ### What was done

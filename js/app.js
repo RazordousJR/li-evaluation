@@ -1248,6 +1248,28 @@ async function saveEditPelajar() {
 }
 // ===== END URUS PELAJAR =====
 
+function exportSenaraiPelajar() {
+  if (typeof XLSX === 'undefined') {
+    alert('XLSX library tidak dimuatkan.');
+    return;
+  }
+  var aoa = [['Bil', 'Nama Pelajar', 'No Matrik', 'Program', 'Status Kelulusan']];
+  _pelajarStudentsCache.forEach(function(s, i) {
+    aoa.push([
+      i + 1,
+      s.name,
+      s.matric_no,
+      s.kursus,
+      s.approval_status === 'approved' ? 'Diluluskan' : 'Draf'
+    ]);
+  });
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:6},{wch:45},{wch:16},{wch:10},{wch:16}];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Senarai Pelajar');
+  XLSX.writeFile(wb, 'Senarai_Pelajar_' + new Date().toISOString().slice(0,10) + '.xlsx');
+}
+
 // ===== URUS PENSYARAH =====
 var _allPensyarahRows = [];
 
