@@ -1,5 +1,22 @@
 # Session Log
 
+## Session 2026-04-01 (2) — Laporan expand panel redesign (v4.25)
+
+### What was done
+- Redesigned Laporan student detail panel (accordion expand row) to use 4-column tables (Penilaian | Komponen | Markah | Jumlah) with rowspan matching official form layout
+- Updated printLaporanStudent() to mirror the new panel layout exactly
+- Fixed 3 data bugs in both screen and print: TR1 LI Report row showed wrong value (full tr1 instead of tr1_lapa+tr1_lapb), Presentation PF/PI rows showed raw scores (0–100) instead of weighted (÷10) values
+- Fixed print border inconsistency: all th/td now use border:1px solid #333
+
+### Files changed
+- js/app.js — renderLaporanExpandedRow() rewritten; printLaporanStudent() fixed
+- css/style.css — added .laporan-penilaian-cell, .laporan-jumlah-cell, .laporan-markah-cell; updated th/td borders
+- CLAUDE.md — added v4.25 section
+
+### Notes
+- Laporan expand panel 3-column layout (Info | BITU3926 | BITU3946) was already correct; only table interiors changed
+- printLaporanStudent() continues using window.open() approach (not #print-area) to avoid conflict with 7-page evaluation PDF
+
 ## Session 2026-04-01 — Laporan & Status Pensyarah pages
 
 ### What was done
