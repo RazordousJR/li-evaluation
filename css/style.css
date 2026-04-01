@@ -333,6 +333,10 @@ textarea{resize:vertical;min-height:70px}
   body > * { display: none !important; }
   #print-area { display: block !important; }
 
+  /* Laporan page print mode — show laporan print area instead */
+  body.laporan-print-mode #print-area { display: none !important; }
+  body.laporan-print-mode #laporan-print-area { display: block !important; }
+
   /* Page setup */
   @page {
     size: A4 portrait;
@@ -343,6 +347,9 @@ textarea{resize:vertical;min-height:70px}
   .print-page { page-break-after: always; }
   .print-page.last-page { page-break-after: auto; }
 }
+
+/* Laporan print area — hidden on screen */
+#laporan-print-area { display: none; }
 
 /* Print area — hidden on screen */
 #print-area {

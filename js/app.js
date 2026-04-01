@@ -3161,18 +3161,206 @@ function renderLaporanExpandedRow(idx) {
     '</div>' + printBtn;
 }
 
-async function printLaporanStudent(idx) {
+function printLaporanStudent(idx) {
   var s = _laporanStudents[idx];
   if (!s) return;
-  try {
-    await loadStudentForEval(s);
-    showTab('summary');
-    await new Promise(function(r) { setTimeout(r, 150); });
-    generatePDF(s);
-  } catch (err) {
-    console.error('printLaporanStudent error:', err);
-    alert('Ralat memuatkan data pelajar untuk cetakan.');
+  var o = s._obe || {};
+
+  var svfName = s.svf_name || _laporanPensyarahMap[s.svf_email] || s.svf_email || '—';
+  var sviName = s.svi_name || '—';
+
+  function fv(v) { return (v !== undefined && v !== null && v !== '') ? String(v) : '—'; }
+  function fn(v) { return (parseFloat(v) || 0).toFixed(2); }
+
+  var now = new Date();
+  var dd = String(now.getDate()).padStart(2,'0');
+  var mm = String(now.getMonth()+1).padStart(2,'0');
+  var yyyy = now.getFullYear();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mi = String(now.getMinutes()).padStart(2,'0');
+  var dateStr = dd + '/' + mm + '/' + yyyy + ' ' + hh + ':' + mi;
+  var status = (s.approval_status === 'approved') ? 'Selesai' : 'Pending';
+
+  // BITU3926 group subtotals
+  var prjPI   = fn(parseFloat(o.prj1||0) + parseFloat(o.prj2||0));
+  var prjPF   = fn(parseFloat(o.prj3||0) + parseFloat(o.prj4||0) + parseFloat(o.lr1||0));
+  var prjPres = fn(parseFloat(o.pr11||0));
+
+  // BITU3946 group subtotals
+  var tr1Sub   = fn(parseFloat(o.tr1||0));
+  var presSub  = fn(parseFloat(o.pr11_pbt||0));
+  var skillSub = fn(parseFloat(o.pr12||0));
+
+  var cellL = 'padding:5px 8px;border:1px solid #ccc;';
+  var cellH = cellL + 'background:#f0f4ff;font-weight:600;width:35%';
+  var cellG = cellL + 'vertical-align:middle;font-weight:600;background:#f8f8f8';
+  var cellN = cellL + 'text-align:right';
+  var cellJ = cellN + ';vertical-align:middle;font-weight:600';
+  var cellF = 'padding:6px 8px;border:1px solid #0f2560';
+
+  var html =
+    '<div style="font-family:Arial,sans-serif;font-size:12px;color:#000;max-width:720px;margin:0 auto">' +
+
+    // Header
+    '<div style="text-align:center;margin-bottom:14px;border-bottom:2px solid #1e3a8a;padding-bottom:10px">' +
+      '<div style="font-size:15px;font-weight:700;color:#1e3a8a">Universiti Teknikal Malaysia Melaka (UTeM)</div>' +
+      '<div style="font-size:13px;font-weight:600;margin-top:3px">Fakulti Teknologi Maklumat Dan Komunikasi</div>' +
+      '<div style="font-size:14px;font-weight:700;margin-top:8px;text-transform:uppercase;letter-spacing:0.04em">Laporan Markah Latihan Industri</div>' +
+    '</div>' +
+
+    // Student info
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px">' +
+      '<tr><td style="' + cellH + '">Nama Pelajar</td><td style="' + cellL + '">' + fv(s.name) + '</td></tr>' +
+      '<tr><td style="' + cellH + '">No. Matrik</td><td style="' + cellL + '">' + fv(s.matric_no) + '</td></tr>' +
+      '<tr><td style="' + cellH + '">Kursus</td><td style="' + cellL + '">' + fv(s.kursus) + '</td></tr>' +
+      '<tr><td style="' + cellH + '">Semester</td><td style="' + cellL + '">' + fv(s.semester) + '</td></tr>' +
+      '<tr><td style="' + cellH + '">Sesi</td><td style="' + cellL + '">' + fv(s.sesi) + '</td></tr>' +
+      '<tr><td style="' + cellH + '">Penyelia Fakulti (SVF)</td><td style="' + cellL + '">' + fv(svfName) + '</td></tr>' +
+      '<tr><td style="' + cellH + '">Organisasi</td><td style="' + cellL + '">' + fv(s.organisasi) + '</td></tr>' +
+      '<tr><td style="' + cellH + '">Penyelia Industri (SVI)</td><td style="' + cellL + '">' + fv(sviName) + '</td></tr>' +
+    '</table>' +
+
+    // BITU3926
+    '<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:5px;border-left:4px solid #1e3a8a;padding-left:8px">BITU3926 &mdash; Latihan Industri</div>' +
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px">' +
+      '<thead><tr style="background:#1e3a8a;color:#fff">' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:left;width:28%">Penilaian</th>' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:left">Komponen</th>' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:right;width:13%">Markah</th>' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:right;width:13%">Jumlah</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+        '<tr>' +
+          '<td rowspan="2" style="' + cellG + '">Penyelia Industri<br/><span style="font-weight:400;font-size:11px">(30%)</span></td>' +
+          '<td style="' + cellL + '">PRJ-1 (PI 15%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.prj1) + '</td>' +
+          '<td rowspan="2" style="' + cellJ + '">' + prjPI + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">PRJ-2 (PI 15%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.prj2) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td rowspan="3" style="' + cellG + '">Penyelia Fakulti<br/><span style="font-weight:400;font-size:11px">(50%)</span></td>' +
+          '<td style="' + cellL + '">PRJ-3 (PF 15%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.prj3) + '</td>' +
+          '<td rowspan="3" style="' + cellJ + '">' + prjPF + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">PRJ-4 (PF 15%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.prj4) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">LR1 &mdash; Log Report (20%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.lr1) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td rowspan="2" style="' + cellG + '">Pembentangan<br/><span style="font-weight:400;font-size:11px">(20%)</span></td>' +
+          '<td style="' + cellL + '">PR1-1 Presentation PI (10%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.pr11_svib) + '</td>' +
+          '<td rowspan="2" style="' + cellJ + '">' + prjPres + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">PR1-1 Presentation PF (10%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.pr11_svfb) + '</td>' +
+        '</tr>' +
+      '</tbody>' +
+      '<tfoot>' +
+        '<tr style="background:#0f2560;color:#fff;font-weight:700">' +
+          '<td colspan="3" style="' + cellF + '">Jumlah Keseluruhan BITU3926</td>' +
+          '<td style="' + cellF + ';text-align:right">' + fn(o.b3926) + '</td>' +
+        '</tr>' +
+        '<tr style="background:#0f2560;color:#fff;font-weight:700">' +
+          '<td colspan="3" style="' + cellF + '">Gred BITU3926</td>' +
+          '<td style="' + cellF + ';text-align:right">' + fv(o.g3926) + '</td>' +
+        '</tr>' +
+      '</tfoot>' +
+    '</table>' +
+
+    // BITU3946
+    '<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:5px;border-left:4px solid #1e3a8a;padding-left:8px">BITU3946 &mdash; Laporan Latihan Industri</div>' +
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px">' +
+      '<thead><tr style="background:#1e3a8a;color:#fff">' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:left;width:28%">Penilaian</th>' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:left">Komponen</th>' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:right;width:13%">Markah</th>' +
+        '<th style="padding:6px 8px;border:1px solid #1e3a8a;text-align:right;width:13%">Jumlah</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+        '<tr>' +
+          '<td rowspan="4" style="' + cellG + '">Laporan<br/><span style="font-weight:400;font-size:11px">(70%)</span></td>' +
+          '<td style="' + cellL + '">TR1 &mdash; LI Report</td>' +
+          '<td style="' + cellN + '">' + fn(o.tr1_lapa) + '</td>' +
+          '<td rowspan="4" style="' + cellJ + '">' + tr1Sub + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">Laporan B (Bahasa &amp; Format)</td>' +
+          '<td style="' + cellN + '">' + fn(o.tr1_lapb) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">Buku Log (10%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.tr1_logc) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">Komitmen SVF (10%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.tr1_svfc) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td rowspan="2" style="' + cellG + '">Pembentangan<br/><span style="font-weight:400;font-size:11px">(20%)</span></td>' +
+          '<td style="' + cellL + '">Presentation PF (10%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.psvfT) + '</td>' +
+          '<td rowspan="2" style="' + cellJ + '">' + presSub + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellL + '">Presentation PI (10%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.psviT) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="' + cellG + '">Soft Skills<br/><span style="font-weight:400;font-size:11px">(10%)</span></td>' +
+          '<td style="' + cellL + '">Soft Skills (10%)</td>' +
+          '<td style="' + cellN + '">' + fn(o.pr12) + '</td>' +
+          '<td style="' + cellJ + '">' + skillSub + '</td>' +
+        '</tr>' +
+      '</tbody>' +
+      '<tfoot>' +
+        '<tr style="background:#0f2560;color:#fff;font-weight:700">' +
+          '<td colspan="3" style="' + cellF + '">Jumlah Keseluruhan BITU3946</td>' +
+          '<td style="' + cellF + ';text-align:right">' + fn(o.b3946) + '</td>' +
+        '</tr>' +
+        '<tr style="background:#0f2560;color:#fff;font-weight:700">' +
+          '<td colspan="3" style="' + cellF + '">Gred BITU3946</td>' +
+          '<td style="' + cellF + ';text-align:right">' + fv(o.g3946) + '</td>' +
+        '</tr>' +
+      '</tfoot>' +
+    '</table>' +
+
+    // Footer
+    '<div style="border-top:1px solid #ccc;padding-top:8px;font-size:11px;color:#555;display:flex;justify-content:space-between">' +
+      '<span>Status: <strong>' + status + '</strong> | Dijana pada: ' + dateStr + '</span>' +
+      '<span>Sistem Pengurusan LI &mdash; FTMK UTeM</span>' +
+    '</div>' +
+  '</div>';
+
+  // Get or create dedicated laporan print area
+  var printArea = document.getElementById('laporan-print-area');
+  if (!printArea) {
+    printArea = document.createElement('div');
+    printArea.id = 'laporan-print-area';
+    document.body.appendChild(printArea);
   }
+  printArea.innerHTML = html;
+
+  var cleaned = false;
+  function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
+    document.body.classList.remove('laporan-print-mode');
+    printArea.innerHTML = '';
+  }
+  window.addEventListener('afterprint', cleanup, { once: true });
+  document.body.classList.add('laporan-print-mode');
+  window.print();
+  setTimeout(cleanup, 3000); // fallback if afterprint doesn't fire
 }
 
 function exportLaporanExcel() {
