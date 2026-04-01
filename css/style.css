@@ -664,6 +664,10 @@ textarea{resize:vertical;min-height:70px}
 .laporan-subtotal-row td { background:var(--bg3); font-weight:600; font-size:12px; color:var(--text2); }
 .laporan-total-row td { background:#0f2560; color:#fff; font-weight:700; font-size:12.5px; padding:6px 8px; }
 .laporan-grade-row td { background:#0f2560; color:#fff; padding:4px 8px; }
+.laporan-th-num { text-align:right !important; width:76px; }
+.laporan-td-num { text-align:right !important; font-weight:500; }
+.laporan-group-penilaian { vertical-align:middle; font-weight:600; color:var(--blue-text); background:var(--blue-bg) !important; }
+.laporan-group-jumlah { font-weight:700; vertical-align:middle; background:#dbeafe !important; color:#1e3a8a; }
 @media(max-width:700px){.laporan-expand-info{flex:0 0 100%}.laporan-expand-obe{flex-direction:column}}
 
 /* ===== STATUS PENSYARAH PAGE ===== */

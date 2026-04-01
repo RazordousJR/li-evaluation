@@ -2981,6 +2981,7 @@ function computeOBE(mm) {
 }
 
 async function loadLaporan() {
+  var ca = document.querySelector('.content-area'); if (ca) ca.scrollTop = 0;
   var tbody = document.getElementById('laporan-tbody');
   if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
   try {
@@ -3096,58 +3097,86 @@ function renderLaporanExpandedRow(idx) {
     '<tr><td>Penyelia Industri</td><td>' + escHtml(s.svi_name || '—') + '</td></tr>' +
     '</table></div>';
 
-  // ── BITU3926 Detail ──
+  // ── BITU3926 Detail (4-column rowspan layout) ──
   var grp1Sub = parseFloat(((obe.prj1 || 0) + (obe.prj2 || 0)).toFixed(2));
   var grp2Sub = parseFloat(((obe.prj3 || 0) + (obe.prj4 || 0) + (obe.lr1 || 0)).toFixed(2));
-  var grp3Sub = obe.pr11 || 0;
+  var grp3Sub = parseFloat((obe.pr11 || 0).toFixed(2));
   var obe3926Html =
     '<div class="laporan-obe-detail">' +
     '<div class="laporan-expand-title">BITU3926 &mdash; Detail</div>' +
     '<table class="laporan-detail-table">' +
-    '<thead><tr><th>Komponen</th><th style="text-align:right;width:80px">Markah</th></tr></thead>' +
+    '<thead><tr><th>Penilaian</th><th>Komponen</th><th class="laporan-th-num">Markah</th><th class="laporan-th-num">Jumlah</th></tr></thead>' +
     '<tbody>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Penyelia Industri (30%)</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-1 (PI 15%)</td><td>' + (obe.prj1 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-2 (PI 15%)</td><td>' + (obe.prj2 || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal PI</td><td>' + grp1Sub + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Penyelia Fakulti (50%)</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-3 (PF 15%)</td><td>' + (obe.prj3 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">PRJ-4 (PF 15%)</td><td>' + (obe.prj4 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">LR1 &mdash; Log Report (20%)</td><td>' + (obe.lr1 || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal PF</td><td>' + grp2Sub + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Pembentangan (20%)</td></tr>' +
-    '<tr><td style="padding-left:16px">PR1-1 Presentation PI (10%)</td><td>' + (obe.pr11_svib || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">PR1-1 Presentation PF (10%)</td><td>' + (obe.pr11_svfb || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Pembentangan</td><td>' + grp3Sub + '</td></tr>' +
+    // Group 1: Penyelia Industri (30%) — 2 sub-rows
+    '<tr class="laporan-group-hdr">' +
+      '<td class="laporan-group-penilaian" rowspan="2">Penyelia Industri (30%)</td>' +
+      '<td>PRJ-1 (15%)</td>' +
+      '<td class="laporan-td-num">' + (obe.prj1 || 0) + '</td>' +
+      '<td class="laporan-group-jumlah laporan-td-num" rowspan="2">' + grp1Sub + '</td>' +
+    '</tr>' +
+    '<tr class="laporan-group-hdr"><td>PRJ-2 (15%)</td><td class="laporan-td-num">' + (obe.prj2 || 0) + '</td></tr>' +
+    // Group 2: Penyelia Fakulti (50%) — 3 sub-rows
+    '<tr class="laporan-group-hdr">' +
+      '<td class="laporan-group-penilaian" rowspan="3">Penyelia Fakulti (50%)</td>' +
+      '<td>PRJ-3 (15%)</td>' +
+      '<td class="laporan-td-num">' + (obe.prj3 || 0) + '</td>' +
+      '<td class="laporan-group-jumlah laporan-td-num" rowspan="3">' + grp2Sub + '</td>' +
+    '</tr>' +
+    '<tr class="laporan-group-hdr"><td>PRJ-4 (15%)</td><td class="laporan-td-num">' + (obe.prj4 || 0) + '</td></tr>' +
+    '<tr class="laporan-group-hdr"><td>LR1 (20%)</td><td class="laporan-td-num">' + (obe.lr1 || 0) + '</td></tr>' +
+    // Group 3: Pembentangan (20%) — 2 sub-rows
+    '<tr class="laporan-group-hdr">' +
+      '<td class="laporan-group-penilaian" rowspan="2">Pembentangan (20%)</td>' +
+      '<td>PR1-1 SVI Bah. B (10%)</td>' +
+      '<td class="laporan-td-num">' + (obe.pr11_svib || 0) + '</td>' +
+      '<td class="laporan-group-jumlah laporan-td-num" rowspan="2">' + grp3Sub + '</td>' +
+    '</tr>' +
+    '<tr class="laporan-group-hdr"><td>PR1-1 SVF Bah. B (10%)</td><td class="laporan-td-num">' + (obe.pr11_svfb || 0) + '</td></tr>' +
     '</tbody>' +
     '<tfoot>' +
-    '<tr class="laporan-total-row"><td>Jumlah Keseluruhan</td><td>' + (obe.b3926 || 0) + ' / 100</td></tr>' +
-    '<tr class="laporan-grade-row"><td>Gred</td><td><span class="grade-pill ' + g3926.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3926.g + '</span></td></tr>' +
+    '<tr class="laporan-total-row"><td colspan="3">Jumlah Keseluruhan BITU3926</td><td class="laporan-td-num">' + (obe.b3926 || 0) + ' / 100</td></tr>' +
+    '<tr class="laporan-grade-row"><td colspan="3">Gred</td><td class="laporan-td-num"><span class="grade-pill ' + g3926.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3926.g + '</span></td></tr>' +
     '</tfoot></table></div>';
 
-  // ── BITU3946 Detail ──
+  // ── BITU3946 Detail (4-column rowspan layout) ──
+  var grpLapSub = parseFloat((obe.tr1 || 0).toFixed(2));
+  var grpPbtSub = parseFloat((obe.pr11_pbt || 0).toFixed(2));
+  var grpSsSub  = parseFloat((obe.pr12 || 0).toFixed(2));
   var obe3946Html =
     '<div class="laporan-obe-detail">' +
     '<div class="laporan-expand-title">BITU3946 &mdash; Detail</div>' +
     '<table class="laporan-detail-table">' +
-    '<thead><tr><th>Komponen</th><th style="text-align:right;width:80px">Markah</th></tr></thead>' +
+    '<thead><tr><th>Penilaian</th><th>Komponen</th><th class="laporan-th-num">Markah</th><th class="laporan-th-num">Jumlah</th></tr></thead>' +
     '<tbody>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Laporan (70%)</td></tr>' +
-    '<tr><td style="padding-left:16px">TR1 &mdash; LI Report (70%)</td><td>' + (obe.tr1 || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">Buku Log (10%)</td><td>' + (obe.tr1_logc || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">Komitmen (10%)</td><td>' + (obe.tr1_svfc || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Laporan</td><td>' + (obe.tr1 || 0) + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Pembentangan (20%)</td></tr>' +
-    '<tr><td style="padding-left:16px">Presentation PF (10%)</td><td>' + (obe.psvfT || 0) + '</td></tr>' +
-    '<tr><td style="padding-left:16px">Presentation PI (10%)</td><td>' + (obe.psviT || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Pembentangan</td><td>' + (obe.pr11_pbt || 0) + '</td></tr>' +
-    '<tr class="laporan-group-hdr"><td colspan="2">Soft Skills (10%)</td></tr>' +
-    '<tr><td style="padding-left:16px">Soft Skills (10%)</td><td>' + (obe.pr12 || 0) + '</td></tr>' +
-    '<tr class="laporan-subtotal-row"><td>Subtotal Soft Skills</td><td>' + (obe.pr12 || 0) + '</td></tr>' +
+    // Group 1: TR1 Laporan LI (70%) — 4 sub-rows
+    '<tr class="laporan-group-hdr">' +
+      '<td class="laporan-group-penilaian" rowspan="4">TR1 Laporan LI (70%)</td>' +
+      '<td>Laporan A (max 40)</td>' +
+      '<td class="laporan-td-num">' + (obe.tr1_lapa || 0) + '</td>' +
+      '<td class="laporan-group-jumlah laporan-td-num" rowspan="4">' + grpLapSub + '</td>' +
+    '</tr>' +
+    '<tr class="laporan-group-hdr"><td>Laporan B (max 10)</td><td class="laporan-td-num">' + (obe.tr1_lapb || 0) + '</td></tr>' +
+    '<tr class="laporan-group-hdr"><td>SVF Komitmen (max 10)</td><td class="laporan-td-num">' + (obe.tr1_svfc || 0) + '</td></tr>' +
+    '<tr class="laporan-group-hdr"><td>Log Penghantaran (max 10)</td><td class="laporan-td-num">' + (obe.tr1_logc || 0) + '</td></tr>' +
+    // Group 2: PR1-1 Pembentangan (20%) — 2 sub-rows
+    '<tr class="laporan-group-hdr">' +
+      '<td class="laporan-group-penilaian" rowspan="2">PR1-1 Pembentangan (20%)</td>' +
+      '<td>Pembentangan SVF</td>' +
+      '<td class="laporan-td-num">' + (obe.psvfT || 0) + '</td>' +
+      '<td class="laporan-group-jumlah laporan-td-num" rowspan="2">' + grpPbtSub + '</td>' +
+    '</tr>' +
+    '<tr class="laporan-group-hdr"><td>Pembentangan SVI</td><td class="laporan-td-num">' + (obe.psviT || 0) + '</td></tr>' +
+    // Group 3: PR1-2 Soft Skills (10%) — 1 sub-row
+    '<tr class="laporan-group-hdr">' +
+      '<td class="laporan-group-penilaian">PR1-2 Soft Skills (10%)</td>' +
+      '<td>Soft Skills SVI</td>' +
+      '<td class="laporan-td-num">' + (obe.pr12 || 0) + '</td>' +
+      '<td class="laporan-group-jumlah laporan-td-num">' + grpSsSub + '</td>' +
+    '</tr>' +
     '</tbody>' +
     '<tfoot>' +
-    '<tr class="laporan-total-row"><td>Jumlah Keseluruhan</td><td>' + (obe.b3946 || 0) + ' / 100</td></tr>' +
-    '<tr class="laporan-grade-row"><td>Gred</td><td><span class="grade-pill ' + g3946.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3946.g + '</span></td></tr>' +
+    '<tr class="laporan-total-row"><td colspan="3">Jumlah Keseluruhan BITU3946</td><td class="laporan-td-num">' + (obe.b3946 || 0) + ' / 100</td></tr>' +
+    '<tr class="laporan-grade-row"><td colspan="3">Gred</td><td class="laporan-td-num"><span class="grade-pill ' + g3946.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3946.g + '</span></td></tr>' +
     '</tfoot></table></div>';
 
   var printBtn =
@@ -3161,18 +3190,136 @@ function renderLaporanExpandedRow(idx) {
     '</div>' + printBtn;
 }
 
-async function printLaporanStudent(idx) {
+function buildLaporanPrintHtml(s) {
+  var obe = s._obe || {};
+  var svfName = s.svf_name || (_laporanPensyarahMap[s.svf_email] || s.svf_email || '—');
+  var g3926 = getGrade(obe.b3926 || 0);
+  var g3946 = getGrade(obe.b3946 || 0);
+  var now = new Date();
+  var dateStr = now.getDate() + '/' + (now.getMonth()+1) + '/' + now.getFullYear();
+  var statusStr = s.approval_status === 'approved' ? 'Selesai' : 'Pending';
+
+  function r(v) { return parseFloat((v||0).toFixed(2)); }
+
+  var grp1Sub = r((obe.prj1||0)+(obe.prj2||0));
+  var grp2Sub = r((obe.prj3||0)+(obe.prj4||0)+(obe.lr1||0));
+  var grp3Sub = r(obe.pr11||0);
+  var grpLapSub = r(obe.tr1||0);
+  var grpPbtSub = r(obe.pr11_pbt||0);
+  var grpSsSub  = r(obe.pr12||0);
+
+  var t3926 =
+    '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">' +
+    '<thead><tr style="background:#1e3a8a;color:#fff">' +
+      '<th style="padding:5px 8px;text-align:left;border:1px solid #ccc">Penilaian</th>' +
+      '<th style="padding:5px 8px;text-align:left;border:1px solid #ccc">Komponen</th>' +
+      '<th style="padding:5px 8px;text-align:right;width:70px;border:1px solid #ccc">Markah</th>' +
+      '<th style="padding:5px 8px;text-align:right;width:70px;border:1px solid #ccc">Jumlah</th>' +
+    '</tr></thead><tbody>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe;font-weight:600;color:#1e3a8a" rowspan="2">Penyelia Industri (30%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">PRJ-1 (15%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.prj1) + '</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:700;background:#dbeafe" rowspan="2">' + grp1Sub + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">PRJ-2 (15%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.prj2) + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe;font-weight:600;color:#1e3a8a" rowspan="3">Penyelia Fakulti (50%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">PRJ-3 (15%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.prj3) + '</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:700;background:#dbeafe" rowspan="3">' + grp2Sub + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">PRJ-4 (15%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.prj4) + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">LR1 (20%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.lr1) + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe;font-weight:600;color:#1e3a8a" rowspan="2">Pembentangan (20%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">PR1-1 SVI Bah. B (10%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.pr11_svib) + '</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:700;background:#dbeafe" rowspan="2">' + grp3Sub + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">PR1-1 SVF Bah. B (10%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.pr11_svfb) + '</td></tr>' +
+    '</tbody><tfoot>' +
+    '<tr style="background:#0f2560;color:#fff;font-weight:700"><td colspan="3" style="border:1px solid #ccc;padding:5px 8px">Jumlah Keseluruhan BITU3926</td>' +
+      '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right">' + r(obe.b3926) + ' / 100</td></tr>' +
+    '<tr style="background:#0f2560;color:#fff;font-weight:700"><td colspan="3" style="border:1px solid #ccc;padding:5px 8px">Gred</td>' +
+      '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right">' + g3926.g + '</td></tr>' +
+    '</tfoot></table>';
+
+  var t3946 =
+    '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">' +
+    '<thead><tr style="background:#1e3a8a;color:#fff">' +
+      '<th style="padding:5px 8px;text-align:left;border:1px solid #ccc">Penilaian</th>' +
+      '<th style="padding:5px 8px;text-align:left;border:1px solid #ccc">Komponen</th>' +
+      '<th style="padding:5px 8px;text-align:right;width:70px;border:1px solid #ccc">Markah</th>' +
+      '<th style="padding:5px 8px;text-align:right;width:70px;border:1px solid #ccc">Jumlah</th>' +
+    '</tr></thead><tbody>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe;font-weight:600;color:#1e3a8a" rowspan="4">TR1 Laporan LI (70%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">Laporan A (max 40)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.tr1_lapa) + '</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:700;background:#dbeafe" rowspan="4">' + grpLapSub + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">Laporan B (max 10)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.tr1_lapb) + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">SVF Komitmen (max 10)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.tr1_svfc) + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">Log Penghantaran (max 10)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.tr1_logc) + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe;font-weight:600;color:#1e3a8a" rowspan="2">PR1-1 Pembentangan (20%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">Pembentangan SVF</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.psvfT) + '</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:700;background:#dbeafe" rowspan="2">' + grpPbtSub + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">Pembentangan SVI</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.psviT) + '</td></tr>' +
+    '<tr><td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe;font-weight:600;color:#1e3a8a">PR1-2 Soft Skills (10%)</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;background:#e8f0fe">Soft Skills SVI</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;background:#e8f0fe">' + r(obe.pr12) + '</td>' +
+      '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:700;background:#dbeafe">' + grpSsSub + '</td></tr>' +
+    '</tbody><tfoot>' +
+    '<tr style="background:#0f2560;color:#fff;font-weight:700"><td colspan="3" style="border:1px solid #ccc;padding:5px 8px">Jumlah Keseluruhan BITU3946</td>' +
+      '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right">' + r(obe.b3946) + ' / 100</td></tr>' +
+    '<tr style="background:#0f2560;color:#fff;font-weight:700"><td colspan="3" style="border:1px solid #ccc;padding:5px 8px">Gred</td>' +
+      '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right">' + g3946.g + '</td></tr>' +
+    '</tfoot></table>';
+
+  return '<div style="font-family:Arial,sans-serif;padding:24px 32px;color:#111">' +
+    '<div style="text-align:center;margin-bottom:16px">' +
+      '<div style="font-size:14px;font-weight:700;color:#1e3a8a">UNIVERSITI TEKNIKAL MALAYSIA MELAKA (UTeM)</div>' +
+      '<div style="font-size:12px;color:#444">Fakulti Teknologi Maklumat dan Komunikasi (FTMK)</div>' +
+      '<div style="font-size:13px;font-weight:600;margin-top:6px">Laporan Penilaian Latihan Industri</div>' +
+    '</div>' +
+    '<table style="width:100%;font-size:12px;margin-bottom:16px;border-collapse:collapse">' +
+      '<tr><td style="padding:3px 8px;width:130px;color:#555">Nama Pelajar</td><td style="padding:3px 8px;font-weight:600">: ' + escHtml(s.name || '—') + '</td>' +
+          '<td style="padding:3px 8px;width:130px;color:#555">No. Matrik</td><td style="padding:3px 8px;font-weight:600">: ' + escHtml(s.matric_no || '—') + '</td></tr>' +
+      '<tr><td style="padding:3px 8px;color:#555">Program</td><td style="padding:3px 8px;font-weight:600">: ' + escHtml(s.kursus || '—') + '</td>' +
+          '<td style="padding:3px 8px;color:#555">Semester/Sesi</td><td style="padding:3px 8px;font-weight:600">: ' + escHtml((s.semester||'—') + ' / ' + (s.sesi||'—')) + '</td></tr>' +
+      '<tr><td style="padding:3px 8px;color:#555">Penyelia Fakulti</td><td style="padding:3px 8px;font-weight:600">: ' + escHtml(svfName) + '</td>' +
+          '<td style="padding:3px 8px;color:#555">Penyelia Industri</td><td style="padding:3px 8px;font-weight:600">: ' + escHtml(s.svi_name || '—') + '</td></tr>' +
+      '<tr><td style="padding:3px 8px;color:#555">Organisasi</td><td colspan="3" style="padding:3px 8px;font-weight:600">: ' + escHtml(s.organisasi || '—') + '</td></tr>' +
+    '</table>' +
+    '<div style="font-size:12px;font-weight:700;color:#1e3a8a;margin:12px 0 6px">A. BITU3926 — Latihan Industri</div>' +
+    t3926 +
+    '<div style="font-size:12px;font-weight:700;color:#1e3a8a;margin:12px 0 6px">B. BITU3946 — Laporan Latihan Industri</div>' +
+    t3946 +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:11px;color:#555;border-top:1px solid #ccc;padding-top:8px">' +
+      '<span>Status: <strong style="color:' + (s.approval_status==='approved'?'#065f46':'#92400e') + '">' + statusStr + '</strong></span>' +
+      '<span>Dijana: ' + dateStr + '</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function printLaporanStudent(idx) {
   var s = _laporanStudents[idx];
   if (!s) return;
-  try {
-    await loadStudentForEval(s);
-    showTab('summary');
-    await new Promise(function(r) { setTimeout(r, 150); });
-    generatePDF(s);
-  } catch (err) {
-    console.error('printLaporanStudent error:', err);
-    alert('Ralat memuatkan data pelajar untuk cetakan.');
+  var printArea = document.getElementById('print-area');
+  if (!printArea) { alert('Print area tidak dijumpai.'); return; }
+
+  // Save existing content and inject laporan-specific HTML
+  var savedHTML = printArea.innerHTML;
+  printArea.innerHTML = buildLaporanPrintHtml(s);
+
+  function restore() {
+    printArea.innerHTML = savedHTML;
+    window.removeEventListener('afterprint', restore);
   }
+  window.addEventListener('afterprint', restore);
+  window.print();
 }
 
 function exportLaporanExcel() {
