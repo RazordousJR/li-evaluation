@@ -164,9 +164,19 @@ Columns: `id` (uuid PK), `student_id` (FK → students), `evaluator_email`, `sec
     - On confirm: deletes from `public.marks` (by student_id), then from `public.students`
     - `deleteStudent(matricNo, name)` handles this flow
   - `_pelajarStudentsCache[]` — module-level array storing current students for modal reference
+  - `_pelajarFiltered[]` — module-level array storing currently filtered subset (used for table render)
+  - `_pelajarPensyarahMap{}` — module-level map `{email: full_name}` for SVF badge display
+- **Filter controls** (above Senarai Pelajar section-title, v4.28):
+  - `filter-pelajar-program` — dropdown populated dynamically from `_programsCache` via `populateProgramDropdown()`; first option "Semua Program"
+  - `filter-pelajar-svf` — static dropdown: "Semua Status SVF" / "Belum Assign" (`belum`) / "Dah Assign" (`assign`)
+  - "Set Semula" button → `resetFilterPelajar()`
+  - `filter-pelajar-count` span — shows "X pelajar" count after filtering
+  - `applyFilterPelajar()` — reads both filter values, filters `_pelajarStudentsCache` into `_pelajarFiltered`, updates count span, resets select-all checkbox, calls `renderPelajarTable(_pelajarFiltered)`
+  - `resetFilterPelajar()` — resets both dropdowns to `''`, calls `applyFilterPelajar()`
+  - `renderPelajarTable(studentsArr)` — renders rows from the given array; uses `_pelajarStudentsCache.indexOf(s)` as `cacheIdx` for `openEditPelajarModal()` so Edit button works correctly on filtered subsets; shows "Tiada pelajar sepadan dengan tapisan." if filtered result is empty but cache has students
 - **Bulk assign**: checkboxes per row + "Assign SVF Terpilih" button + bulk SVF dropdown
-  - `toggleAllStudents()` selects/deselects all via header checkbox
-  - `bulkAssignSVF()` updates all selected students' `svf_email` in parallel
+  - `toggleAllStudents()` selects/deselects all rendered checkboxes (works on filtered results)
+  - `bulkAssignSVF()` reads `cb.value` (matric_no) from checked checkboxes — works correctly on filtered subsets
 - **Export Excel** button ("⬇ Export Excel") — calls `exportSenaraiPelajar()`; placed before "Muat Semula" button in the Senarai Pelajar section-title bar
   - Exports `_pelajarStudentsCache` as a single-sheet XLSX ("Senarai Pelajar")
   - Columns: Bil, Nama Pelajar, No Matrik, Program, Status Kelulusan (no SVF column)
@@ -195,7 +205,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
 
 ## Dashboard (v4.19 — Charts Only)
 
-> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected (use SVI weighted, not SVF; row order swapped to match official form). v4.26: version badge updated to v4.26. v4.27: version badge updated to v4.27.
+> v4.19.1: `senarai-filter-program` options now populated dynamically from DB data; version badge updated to v4.19. v4.24: version badge updated to v4.24. v4.24.1: PR1-2 Soft Skills formula corrected (use SVI weighted, not SVF; row order swapped to match official form). v4.26: version badge updated to v4.26. v4.27: version badge updated to v4.27. v4.28: Urus Pelajar filter controls added (Program + SVF Status); version badge updated to v4.28.
 
 ### ADMIN Dashboard
 - Page: `#page-dashboard` → `#dash-admin` + `#dash-ajkli` sections (both shown for ADMIN)

@@ -1,5 +1,24 @@
 # Session Log
 
+## Session 2026-04-01 (6) — Urus Pelajar filter controls (v4.28)
+
+### What was done
+- **Part 1 — Filter row added to index.html**: Added filter row div ABOVE the Senarai Pelajar section-title bar inside `#page-uruspelajar`; contains label "Tapis:", `filter-pelajar-program` select (populated dynamically), `filter-pelajar-svf` select (Semua/Belum Assign/Dah Assign), "Set Semula" button, and `filter-pelajar-count` span showing "X pelajar"
+- **Part 2 — Filter logic added to app.js**:
+  - Added module-level `_pelajarFiltered = []` and `_pelajarPensyarahMap = {}` vars
+  - `loadUruspelajar()` now stores pensyarahMap in `_pelajarPensyarahMap` (module-level), sets `_pelajarStudentsCache`, calls `populateProgramDropdown(filter-pelajar-program, true)`, then calls `applyFilterPelajar()` — removed inline row rendering
+  - Added `applyFilterPelajar()` — filters by program and svf status, stores result in `_pelajarFiltered`, updates count span, resets select-all, calls `renderPelajarTable(_pelajarFiltered)`
+  - Added `resetFilterPelajar()` — resets both filter dropdowns to `''`, calls `applyFilterPelajar()`
+- **Part 3 — `renderPelajarTable(studentsArr)` extracted**: moved all row-rendering logic from `loadUruspelajar()` into new function; uses `_pelajarStudentsCache.indexOf(s)` as `cacheIdx` for Edit button so it works correctly on filtered subsets; shows "Tiada pelajar sepadan dengan tapisan." when filtered result is empty but cache has students
+- **Part 4 — bulkAssignSVF verified**: already uses `cb.value` (matric_no) from checkboxes — no changes needed; `toggleAllStudents()` operates on DOM checkboxes, works correctly with filtered results
+- **Part 5 — Version bump**: index.html v4.27 → v4.28; CLAUDE.md Urus Pelajar section updated; SESSION.md updated
+- Fixed incidental bug: `loadUruspelajar()` loading indicator had `colspan="7"` instead of `colspan="8"` (table has 8 columns)
+
+### Files changed
+- index.html — added filter row div in `#page-uruspelajar` Senarai Pelajar section; updated version badge to v4.28
+- js/app.js — added `_pelajarFiltered`, `_pelajarPensyarahMap` vars; refactored `loadUruspelajar()` to call `applyFilterPelajar()`; added `applyFilterPelajar()`, `resetFilterPelajar()`, `renderPelajarTable(studentsArr)`
+- CLAUDE.md — updated Urus Pelajar section with filter controls documentation; updated version note to v4.28
+
 ## Session 2026-04-01 (5) — Profil Saya page & Upload Pensyarah mapping verification (v4.27)
 
 ### What was done
