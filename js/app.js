@@ -163,19 +163,19 @@ function showApp(user) {
 function applyRoleRestrictions(roles) {
   var eff = getEffectiveRole(roles);
   // Always reset management sidebar items to hidden first
-  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item'].forEach(function(id) {
+  ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item', 'laporan-nav-item', 'statuspensyarah-nav-item'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   if (eff === 'ADMIN') {
-    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'admin-nav-item', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item', 'laporan-nav-item', 'statuspensyarah-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
     return;
   }
   if (eff === 'AJK_LI') {
-    ['admin-sep', 'admin-label', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item'].forEach(function(id) {
+    ['admin-sep', 'admin-label', 'uruspelajar-nav-item', 'uruspensyarah-nav-item', 'senarai-nav-item', 'laporan-nav-item', 'statuspensyarah-nav-item'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'block';
     });
@@ -233,7 +233,9 @@ var TAB_TITLES = {
   usermgmt: 'Pengurusan Pengguna',
   uruspelajar: 'Urus Pelajar',
   uruspensyarah: 'Urus Pensyarah',
-  senarai: 'Senarai Pelajar'
+  senarai: 'Senarai Pelajar',
+  laporan: 'Laporan',
+  statuspensyarah: 'Status Pensyarah'
 };
 
 function showTab(t) {
@@ -250,6 +252,8 @@ function showTab(t) {
   if (t === 'uruspensyarah') loadUruspensyarah();
   if (t === 'dashboard') loadDashboard();
   if (t === 'senarai') loadSenarai();
+  if (t === 'laporan') loadLaporan();
+  if (t === 'statuspensyarah') loadStatusPensyarah();
 
   // Show eval student bar and SVI/Org indicator only in eval tabs when a student is selected
   var evalTabs = ['info', 'svi', 'svf', 'logbook', 'presentation', 'report', 'summary'];
@@ -2909,5 +2913,480 @@ function populatePDFPages() {
 }
 
 // ===== END PDF GENERATION =====
+
+// ===== LAPORAN =====
+var _laporanStudents = [];
+var _laporanFiltered = [];
+var _laporanPensyarahMap = {};
+var _laporanMarksCache = {};
+var _laporanOpenIdx = -1;
+
+function computeOBE(mm) {
+  mm = mm || {};
+  var svi  = mm.svi          || {};
+  var svf  = mm.svf          || {};
+  var log  = mm.logbook      || {};
+  var pres = mm.presentation || {};
+  var rep  = mm.report       || {};
+  function gi(o, k) { return Math.max(0, parseInt(o[k]) || 0); }
+
+  var sviA1  = gi(svi,'a1') + gi(svi,'a2');
+  var sviA23 = gi(svi,'a3') + gi(svi,'a4');
+  var sviB   = gi(svi,'b1') + gi(svi,'b2') + gi(svi,'b3') + gi(svi,'b4') + gi(svi,'b5') +
+               gi(svi,'b6') + gi(svi,'b7') + gi(svi,'b8') + gi(svi,'b9') + gi(svi,'b10');
+  var svfA1  = gi(svf,'a1_admin') + gi(svf,'a1_tech');
+  var svfA23 = gi(svf,'a2_admin') + gi(svf,'a2_tech') + gi(svf,'a3');
+  var logT   = gi(log,'a1') + gi(log,'b1') + gi(log,'c1');
+  var psvfT  = gi(pres,'psvf_a') + gi(pres,'psvf_b1') + gi(pres,'psvf_b2') + gi(pres,'psvf_b3') +
+               gi(pres,'psvf_b4') + gi(pres,'psvf_b5') + gi(pres,'psvf_c1') + gi(pres,'psvf_c2') +
+               gi(pres,'psvf_c3') + gi(pres,'psvf_d1') + gi(pres,'psvf_d2') + gi(pres,'psvf_d3') + gi(pres,'psvf_d4');
+  var psviT  = gi(pres,'psvi_a') + gi(pres,'psvi_b1') + gi(pres,'psvi_b2') + gi(pres,'psvi_b3') +
+               gi(pres,'psvi_b4') + gi(pres,'psvi_b5') + gi(pres,'psvi_c1') + gi(pres,'psvi_c2') +
+               gi(pres,'psvi_c3') + gi(pres,'psvi_d1') + gi(pres,'psvi_d2') + gi(pres,'psvi_d3') + gi(pres,'psvi_d4');
+  var pil    = parseInt(rep.pilihan) || 1;
+  var repA4  = pil === 1 ? (gi(rep,'a4_tech_p1') + gi(rep,'a4_admin_p1')) : (gi(rep,'a4_tech_p2') + gi(rep,'a4_admin_p2'));
+  var repA   = gi(rep,'a1') + gi(rep,'a2') + gi(rep,'a3') + repA4 + gi(rep,'a5') + gi(rep,'a6') + gi(rep,'a7');
+  var repB   = gi(rep,'b1') + gi(rep,'b2') + gi(rep,'b3') + gi(rep,'b4');
+
+  var prj1      = fmt(sviA1  / 30  * 15);
+  var prj2      = fmt(sviA23 / 20  * 15);
+  var prj3      = fmt(svfA1  / 30  * 15);
+  var prj4      = fmt(svfA23 / 60  * 15);
+  var lr1       = fmt(logT   / 70  * 20);
+  var pr11_svfb = gi(svf, 'b1');
+  var pr11_svib = fmt(sviB / 5);
+  var pr11      = fmt(pr11_svfb + pr11_svib);
+  var b3926     = fmt(prj1 + prj2 + prj3 + prj4 + lr1 + pr11);
+  var g3926     = getGrade(b3926);
+
+  var tr1_lapa = fmt(repA / 2);
+  var tr1_lapb = fmt(repB / 40 * 10);
+  var tr1_svfc = gi(svf, 'c1');
+  var tr1_logc = gi(log, 'c1');
+  var tr1      = fmt(tr1_lapa + tr1_lapb + tr1_svfc + tr1_logc);
+  var pr11_pbt = fmt((psvfT + psviT) / 200 * 20);
+  var pr12sum  = parseFloat((prj1 + prj2 + pr11_svib).toFixed(2));
+  var pr12     = fmt(pr12sum / 40 * 10);
+  var b3946    = fmt(tr1 + pr11_pbt + pr12);
+  var g3946    = getGrade(b3946);
+
+  return {
+    prj1: prj1, prj2: prj2, prj3: prj3, prj4: prj4,
+    lr1: lr1, pr11_svfb: pr11_svfb, pr11_svib: pr11_svib, pr11: pr11,
+    b3926: b3926, g3926: g3926.g, g3926cls: g3926.cls,
+    tr1: tr1, tr1_lapa: tr1_lapa, tr1_lapb: tr1_lapb, tr1_svfc: tr1_svfc, tr1_logc: tr1_logc,
+    psvfT: psvfT, psviT: psviT, pr11_pbt: pr11_pbt, pr12: pr12,
+    b3946: b3946, g3946: g3946.g, g3946cls: g3946.cls
+  };
+}
+
+async function loadLaporan() {
+  var tbody = document.getElementById('laporan-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</td></tr>';
+  try {
+    var results = await Promise.all([
+      sb.from('students').select('id, matric_no, name, kursus, semester, sesi, svf_email, svf_name, svi_name, organisasi, approval_status').order('name'),
+      sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
+      sb.from('marks').select('student_id, evaluator_email, section, data')
+    ]);
+    var students     = results[0].data || [];
+    var pensyarahList = results[1].data || [];
+    var mrData       = results[2].data || [];
+
+    _laporanPensyarahMap = {};
+    pensyarahList.forEach(function(p) { _laporanPensyarahMap[p.email] = p.full_name; });
+
+    var svfByStudentId = {};
+    students.forEach(function(s) { svfByStudentId[s.id] = s.svf_email || null; });
+
+    _laporanMarksCache = {};
+    mrData.forEach(function(m) {
+      var svfEmail = svfByStudentId[m.student_id];
+      if (svfEmail && m.evaluator_email && m.evaluator_email !== svfEmail) return;
+      if (!_laporanMarksCache[m.student_id]) _laporanMarksCache[m.student_id] = {};
+      _laporanMarksCache[m.student_id][m.section] = m.data;
+    });
+
+    students.forEach(function(s) {
+      s._obe = computeOBE(_laporanMarksCache[s.id] || {});
+    });
+
+    _laporanStudents = students;
+    _laporanOpenIdx  = -1;
+    filterLaporan();
+  } catch (err) {
+    console.error('loadLaporan error:', err);
+    var tbody2 = document.getElementById('laporan-tbody');
+    if (tbody2) tbody2.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:red">Ralat memuatkan data. Sila muat semula halaman.</td></tr>';
+  }
+}
+
+function filterLaporan() {
+  var kFilter = (document.getElementById('laporan-filter-kursus') || {}).value || '';
+  var sFilter = (document.getElementById('laporan-filter-status') || {}).value || '';
+  _laporanFiltered = _laporanStudents.filter(function(s) {
+    if (kFilter && (s.kursus || '').indexOf(kFilter) === -1) return false;
+    var isSelesai = (s.approval_status === 'approved');
+    if (sFilter === 'selesai' && !isSelesai) return false;
+    if (sFilter === 'pending' && isSelesai) return false;
+    return true;
+  });
+  _laporanOpenIdx = -1;
+  var sumEl = document.getElementById('laporan-summary');
+  if (sumEl) sumEl.textContent = 'Menunjukkan ' + _laporanFiltered.length + ' daripada ' + _laporanStudents.length + ' pelajar';
+  renderLaporanTable();
+}
+
+function renderLaporanTable() {
+  var tbody = document.getElementById('laporan-tbody');
+  if (!tbody) return;
+  if (!_laporanFiltered.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pelajar.</td></tr>';
+    return;
+  }
+  var html = '';
+  _laporanFiltered.forEach(function(s, i) {
+    var isSelesai  = (s.approval_status === 'approved');
+    var statusBadge = isSelesai
+      ? '<span class="status-badge status-active">Selesai</span>'
+      : '<span class="status-badge status-inactive">Pending</span>';
+    var obe        = s._obe || {};
+    var globalIdx  = _laporanStudents.indexOf(s);
+    var isOpen     = (_laporanOpenIdx === globalIdx);
+    html += '<tr class="laporan-row dash-row-clickable' + (isOpen ? ' laporan-row-open' : '') + '" onclick="toggleLaporanRow(' + globalIdx + ')">' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + escHtml(s.name || '') + '</td>' +
+      '<td>' + escHtml(s.matric_no || '') + '</td>' +
+      '<td>' + escHtml(s.kursus || '') + '</td>' +
+      '<td style="font-weight:600">' + (obe.b3926 || '0') + '</td>' +
+      '<td><span class="grade-pill ' + (obe.g3926cls || 'grade-E') + '" style="font-size:12px;padding:2px 8px;min-width:unset;display:inline-block">' + (obe.g3926 || '—') + '</span></td>' +
+      '<td style="font-weight:600">' + (obe.b3946 || '0') + '</td>' +
+      '<td><span class="grade-pill ' + (obe.g3946cls || 'grade-E') + '" style="font-size:12px;padding:2px 8px;min-width:unset;display:inline-block">' + (obe.g3946 || '—') + '</span></td>' +
+      '<td>' + statusBadge + '</td>' +
+      '</tr>';
+    if (isOpen) {
+      html += '<tr class="laporan-expand-row"><td colspan="9">' + renderLaporanExpandedRow(globalIdx) + '</td></tr>';
+    }
+  });
+  tbody.innerHTML = html;
+}
+
+function toggleLaporanRow(idx) {
+  _laporanOpenIdx = (_laporanOpenIdx === idx) ? -1 : idx;
+  renderLaporanTable();
+}
+
+function renderLaporanExpandedRow(idx) {
+  var s = _laporanStudents[idx];
+  if (!s) return '';
+  var obe     = s._obe || {};
+  var svfName = s.svf_name || (s.svf_email ? (_laporanPensyarahMap[s.svf_email] || s.svf_email) : '—');
+  var g3926   = getGrade(obe.b3926 || 0);
+  var g3946   = getGrade(obe.b3946 || 0);
+
+  // ── Info Pelajar ──
+  var infoHtml =
+    '<div class="laporan-expand-info">' +
+    '<div class="laporan-expand-title">Info Pelajar</div>' +
+    '<table class="laporan-info-table">' +
+    '<tr><td>Semester</td><td>' + escHtml(String(s.semester || '—')) + '</td></tr>' +
+    '<tr><td>Sesi</td><td>' + escHtml(s.sesi || '—') + '</td></tr>' +
+    '<tr><td>Penyelia Fakulti</td><td>' + escHtml(svfName) + '</td></tr>' +
+    '<tr><td>Organisasi</td><td>' + escHtml(s.organisasi || '—') + '</td></tr>' +
+    '<tr><td>Penyelia Industri</td><td>' + escHtml(s.svi_name || '—') + '</td></tr>' +
+    '</table></div>';
+
+  // ── BITU3926 Detail ──
+  var grp1Sub = parseFloat(((obe.prj1 || 0) + (obe.prj2 || 0)).toFixed(2));
+  var grp2Sub = parseFloat(((obe.prj3 || 0) + (obe.prj4 || 0) + (obe.lr1 || 0)).toFixed(2));
+  var grp3Sub = obe.pr11 || 0;
+  var obe3926Html =
+    '<div class="laporan-obe-detail">' +
+    '<div class="laporan-expand-title">BITU3926 &mdash; Detail</div>' +
+    '<table class="laporan-detail-table">' +
+    '<thead><tr><th>Komponen</th><th style="text-align:right;width:80px">Markah</th></tr></thead>' +
+    '<tbody>' +
+    '<tr class="laporan-group-hdr"><td colspan="2">Penyelia Industri (30%)</td></tr>' +
+    '<tr><td style="padding-left:16px">PRJ-1 (PI 15%)</td><td>' + (obe.prj1 || 0) + '</td></tr>' +
+    '<tr><td style="padding-left:16px">PRJ-2 (PI 15%)</td><td>' + (obe.prj2 || 0) + '</td></tr>' +
+    '<tr class="laporan-subtotal-row"><td>Subtotal PI</td><td>' + grp1Sub + '</td></tr>' +
+    '<tr class="laporan-group-hdr"><td colspan="2">Penyelia Fakulti (50%)</td></tr>' +
+    '<tr><td style="padding-left:16px">PRJ-3 (PF 15%)</td><td>' + (obe.prj3 || 0) + '</td></tr>' +
+    '<tr><td style="padding-left:16px">PRJ-4 (PF 15%)</td><td>' + (obe.prj4 || 0) + '</td></tr>' +
+    '<tr><td style="padding-left:16px">LR1 &mdash; Log Report (20%)</td><td>' + (obe.lr1 || 0) + '</td></tr>' +
+    '<tr class="laporan-subtotal-row"><td>Subtotal PF</td><td>' + grp2Sub + '</td></tr>' +
+    '<tr class="laporan-group-hdr"><td colspan="2">Pembentangan (20%)</td></tr>' +
+    '<tr><td style="padding-left:16px">PR1-1 Presentation PI (10%)</td><td>' + (obe.pr11_svib || 0) + '</td></tr>' +
+    '<tr><td style="padding-left:16px">PR1-1 Presentation PF (10%)</td><td>' + (obe.pr11_svfb || 0) + '</td></tr>' +
+    '<tr class="laporan-subtotal-row"><td>Subtotal Pembentangan</td><td>' + grp3Sub + '</td></tr>' +
+    '</tbody>' +
+    '<tfoot>' +
+    '<tr class="laporan-total-row"><td>Jumlah Keseluruhan</td><td>' + (obe.b3926 || 0) + ' / 100</td></tr>' +
+    '<tr class="laporan-grade-row"><td>Gred</td><td><span class="grade-pill ' + g3926.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3926.g + '</span></td></tr>' +
+    '</tfoot></table></div>';
+
+  // ── BITU3946 Detail ──
+  var obe3946Html =
+    '<div class="laporan-obe-detail">' +
+    '<div class="laporan-expand-title">BITU3946 &mdash; Detail</div>' +
+    '<table class="laporan-detail-table">' +
+    '<thead><tr><th>Komponen</th><th style="text-align:right;width:80px">Markah</th></tr></thead>' +
+    '<tbody>' +
+    '<tr class="laporan-group-hdr"><td colspan="2">Laporan (70%)</td></tr>' +
+    '<tr><td style="padding-left:16px">TR1 &mdash; LI Report (70%)</td><td>' + (obe.tr1 || 0) + '</td></tr>' +
+    '<tr><td style="padding-left:16px">Buku Log (10%)</td><td>' + (obe.tr1_logc || 0) + '</td></tr>' +
+    '<tr><td style="padding-left:16px">Komitmen (10%)</td><td>' + (obe.tr1_svfc || 0) + '</td></tr>' +
+    '<tr class="laporan-subtotal-row"><td>Subtotal Laporan</td><td>' + (obe.tr1 || 0) + '</td></tr>' +
+    '<tr class="laporan-group-hdr"><td colspan="2">Pembentangan (20%)</td></tr>' +
+    '<tr><td style="padding-left:16px">Presentation PF (10%)</td><td>' + (obe.psvfT || 0) + '</td></tr>' +
+    '<tr><td style="padding-left:16px">Presentation PI (10%)</td><td>' + (obe.psviT || 0) + '</td></tr>' +
+    '<tr class="laporan-subtotal-row"><td>Subtotal Pembentangan</td><td>' + (obe.pr11_pbt || 0) + '</td></tr>' +
+    '<tr class="laporan-group-hdr"><td colspan="2">Soft Skills (10%)</td></tr>' +
+    '<tr><td style="padding-left:16px">Soft Skills (10%)</td><td>' + (obe.pr12 || 0) + '</td></tr>' +
+    '<tr class="laporan-subtotal-row"><td>Subtotal Soft Skills</td><td>' + (obe.pr12 || 0) + '</td></tr>' +
+    '</tbody>' +
+    '<tfoot>' +
+    '<tr class="laporan-total-row"><td>Jumlah Keseluruhan</td><td>' + (obe.b3946 || 0) + ' / 100</td></tr>' +
+    '<tr class="laporan-grade-row"><td>Gred</td><td><span class="grade-pill ' + g3946.cls + '" style="font-size:13px;padding:2px 8px;min-width:unset;display:inline-block">' + g3946.g + '</span></td></tr>' +
+    '</tfoot></table></div>';
+
+  var printBtn =
+    '<div style="display:flex;justify-content:flex-end;margin-top:12px">' +
+    '<button class="btn-primary" onclick="event.stopPropagation();printLaporanStudent(' + idx + ')">&#128438; Cetak Laporan</button>' +
+    '</div>';
+
+  return '<div class="laporan-expand-panel">' +
+    infoHtml +
+    '<div class="laporan-expand-obe">' + obe3926Html + obe3946Html + '</div>' +
+    '</div>' + printBtn;
+}
+
+async function printLaporanStudent(idx) {
+  var s = _laporanStudents[idx];
+  if (!s) return;
+  try {
+    await loadStudentForEval(s);
+    showTab('summary');
+    await new Promise(function(r) { setTimeout(r, 150); });
+    generatePDF(s);
+  } catch (err) {
+    console.error('printLaporanStudent error:', err);
+    alert('Ralat memuatkan data pelajar untuk cetakan.');
+  }
+}
+
+function exportLaporanExcel() {
+  if (!_laporanFiltered.length) { alert('Tiada data untuk dieksport.'); return; }
+  if (typeof XLSX === 'undefined') { alert('XLSX library tidak dimuatkan.'); return; }
+
+  function svfN(s) { return s.svf_name || (_laporanPensyarahMap[s.svf_email] || s.svf_email || '—'); }
+
+  // Sheet 1: Ringkasan
+  var s1 = [['Bil','Nama','No. Matrik','Kursus','Sem','Sesi','SVF','BITU3926','Gred 3926','BITU3946','Gred 3946','Status']];
+  _laporanFiltered.forEach(function(s, i) {
+    var o = s._obe || {};
+    s1.push([i + 1, s.name || '', s.matric_no || '', s.kursus || '', s.semester || '', s.sesi || '',
+      svfN(s), o.b3926 || 0, o.g3926 || '—', o.b3946 || 0, o.g3946 || '—',
+      s.approval_status === 'approved' ? 'Selesai' : 'Pending']);
+  });
+
+  // Sheet 2: Markah Terperinci
+  var s2 = [['Bil','Nama','No. Matrik','Kursus','Sem','Sesi','SVF',
+    'PRJ1','PRJ2','PRJ3','PRJ4','LR1','PR1_PI','PR1_PF','Jumlah_3926','Gred_3926',
+    'TR1','Buku Log','Komitmen','Presentation_PF','Presentation_PI','Soft Skills','Jumlah_3946','Gred_3946']];
+  _laporanFiltered.forEach(function(s, i) {
+    var o = s._obe || {};
+    s2.push([i + 1, s.name || '', s.matric_no || '', s.kursus || '', s.semester || '', s.sesi || '', svfN(s),
+      o.prj1 || 0, o.prj2 || 0, o.prj3 || 0, o.prj4 || 0, o.lr1 || 0,
+      o.pr11_svib || 0, o.pr11_svfb || 0, o.b3926 || 0, o.g3926 || '—',
+      o.tr1 || 0, o.tr1_logc || 0, o.tr1_svfc || 0, o.psvfT || 0, o.psviT || 0,
+      o.pr12 || 0, o.b3946 || 0, o.g3946 || '—']);
+  });
+
+  // Sheet 3: BITU3926
+  var s3 = [['Bil','Nama','No. Matrik','Kursus','SVF',
+    'PRJ-1 (15%)','PRJ-2 (15%)','PRJ-3 (15%)','PRJ-4 (15%)','LR-1 (20%)','Presentation (20%)','Jumlah','Gred']];
+  _laporanFiltered.forEach(function(s, i) {
+    var o = s._obe || {};
+    s3.push([i + 1, s.name || '', s.matric_no || '', s.kursus || '', svfN(s),
+      o.prj1 || 0, o.prj2 || 0, o.prj3 || 0, o.prj4 || 0, o.lr1 || 0, o.pr11 || 0,
+      o.b3926 || 0, o.g3926 || '—']);
+  });
+
+  // Sheet 4: BITU3946
+  var s4 = [['Bil','Nama','No. Matrik','Kursus','SVF',
+    'TR-1 (70%)','PR1-1 (20%)','PR1-2 (10%)','Jumlah','Gred']];
+  _laporanFiltered.forEach(function(s, i) {
+    var o = s._obe || {};
+    s4.push([i + 1, s.name || '', s.matric_no || '', s.kursus || '', svfN(s),
+      o.tr1 || 0, o.pr11_pbt || 0, o.pr12 || 0, o.b3946 || 0, o.g3946 || '—']);
+  });
+
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s1), 'Ringkasan');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s2), 'Markah Terperinci');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s3), 'BITU3926');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s4), 'BITU3946');
+  var dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, 'Laporan_LI_' + dateStr + '.xlsx');
+}
+// ===== END LAPORAN =====
+
+// ===== STATUS PENSYARAH =====
+var _spPensyarahList = [];
+var _spStudentsMap   = {};
+var _spOpenIdx       = -1;
+
+async function loadStatusPensyarah() {
+  var listEl = document.getElementById('sp-list');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text3)">Memuatkan...</div>';
+  try {
+    var results = await Promise.all([
+      sb.from('users').select('full_name, email').contains('roles', ['PENSYARAH']).order('full_name'),
+      sb.from('students').select('id, matric_no, name, kursus, semester, sesi, svf_email, approval_status').order('name')
+    ]);
+    var pensyarahList = results[0].data || [];
+    var students      = results[1].data || [];
+
+    students.forEach(function(s) {
+      s._selesai = (s.approval_status === 'approved');
+    });
+
+    _spStudentsMap = {};
+    students.forEach(function(s) {
+      var email = s.svf_email || '';
+      if (!_spStudentsMap[email]) _spStudentsMap[email] = [];
+      _spStudentsMap[email].push(s);
+    });
+
+    _spPensyarahList = pensyarahList;
+    _spOpenIdx       = -1;
+    renderStatusPensyarah();
+  } catch (err) {
+    console.error('loadStatusPensyarah error:', err);
+    var listEl2 = document.getElementById('sp-list');
+    if (listEl2) listEl2.innerHTML = '<div style="text-align:center;padding:1.5rem;color:red">Ralat memuatkan data. Sila muat semula halaman.</div>';
+  }
+}
+
+function renderStatusPensyarah() {
+  var listEl = document.getElementById('sp-list');
+  if (!listEl) return;
+  if (!_spPensyarahList.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text3)">Tiada pensyarah dalam sistem.</div>';
+    return;
+  }
+  var html = '';
+  _spPensyarahList.forEach(function(p, idx) {
+    var students  = _spStudentsMap[p.email] || [];
+    var total     = students.length;
+    var selesai   = students.filter(function(s) { return s._selesai; }).length;
+    var pct       = total > 0 ? Math.round(selesai / total * 100) : 0;
+    var allSelesai = (total > 0 && selesai === total);
+    var badge     = allSelesai
+      ? '<span class="sp-badge sp-badge-selesai">&#10003; Selesai</span>'
+      : '<span class="sp-badge sp-badge-pending">&#9203; Ada Pending</span>';
+    var isOpen    = (_spOpenIdx === idx);
+    var safeEmail = escHtml(p.email);
+
+    html +=
+      '<div class="sp-group' + (isOpen ? ' sp-group-open' : '') + '">' +
+        '<div class="sp-group-header" onclick="toggleSPGroup(' + idx + ')">' +
+          '<div class="sp-group-info">' +
+            '<div class="sp-group-name">' + escHtml(p.full_name) + '</div>' +
+            '<div class="sp-group-count">' + selesai + '/' + total + ' selesai</div>' +
+          '</div>' +
+          '<div class="sp-group-right">' +
+            '<div class="sp-progress-wrap">' +
+              '<div class="sp-progress-bar"><div class="sp-progress-fill" style="width:' + pct + '%"></div></div>' +
+              '<span class="sp-pct-label">' + pct + '%</span>' +
+            '</div>' +
+            badge +
+            '<button class="btn-secondary sp-copy-btn" onclick="event.stopPropagation();copySPEmail(\'' + safeEmail + '\', this)">&#128203; Copy Email</button>' +
+            '<span class="sp-chevron">' + (isOpen ? '&#9650;' : '&#9660;') + '</span>' +
+          '</div>' +
+        '</div>';
+
+    if (isOpen) {
+      var pending = students.filter(function(s) { return !s._selesai; });
+      var done    = students.filter(function(s) { return s._selesai; });
+      html += '<div class="sp-group-body">';
+      if (pending.length > 0) {
+        html += '<div class="sp-group-section-label sp-label-pending">&#9203; PENDING (' + pending.length + ')</div>';
+        html += renderSPStudentRows(pending);
+      }
+      if (done.length > 0) {
+        html += '<div class="sp-group-section-label sp-label-selesai">&#9745; SELESAI (' + done.length + ')</div>';
+        html += renderSPStudentRows(done);
+      }
+      if (total === 0) {
+        html += '<div style="padding:1rem 1.25rem;color:var(--text3);text-align:center">Tiada pelajar ditugaskan.</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  listEl.innerHTML = html;
+}
+
+function renderSPStudentRows(students) {
+  var html =
+    '<div class="table-wrap" style="margin:0;border-radius:0">' +
+    '<table class="data-table" style="border-radius:0">' +
+    '<thead><tr><th>#</th><th>Nama</th><th>No. Matrik</th><th>Kursus</th><th>Sem / Sesi</th><th>Status</th></tr></thead>' +
+    '<tbody>';
+  students.forEach(function(s, i) {
+    var badge = s._selesai
+      ? '<span class="status-badge status-active">Selesai</span>'
+      : '<span class="status-badge status-inactive">Pending</span>';
+    html += '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + escHtml(s.name || '') + '</td>' +
+      '<td>' + escHtml(s.matric_no || '') + '</td>' +
+      '<td>' + escHtml(s.kursus || '') + '</td>' +
+      '<td>' + escHtml((s.semester ? String(s.semester) : '—') + ' / ' + (s.sesi || '—')) + '</td>' +
+      '<td>' + badge + '</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function toggleSPGroup(idx) {
+  _spOpenIdx = (_spOpenIdx === idx) ? -1 : idx;
+  renderStatusPensyarah();
+}
+
+function copySPEmail(email, btnEl) {
+  var origText = btnEl.innerHTML;
+  function showCopied() {
+    btnEl.innerHTML = '&#10003; Copied!';
+    btnEl.classList.add('sp-copy-btn-success');
+    setTimeout(function() {
+      btnEl.innerHTML = origText;
+      btnEl.classList.remove('sp-copy-btn-success');
+    }, 1500);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(email).then(showCopied).catch(function() {
+      fallbackCopy(email);
+      showCopied();
+    });
+  } else {
+    fallbackCopy(email);
+    showCopied();
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+// ===== END STATUS PENSYARAH =====
 
 initAuth();
