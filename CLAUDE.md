@@ -177,7 +177,7 @@ Both upload flows perform duplicate checking against Supabase before showing the
 ## Navigation
 - `showTab(t)` in app.js handles page switching, updates sidebar nav active state and topbar title
 - `openSidebar()` / `closeSidebar()` handle mobile sidebar toggle
-- Tab names: `dashboard`, `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`, `senarai`
+- Tab names: `dashboard`, `info`, `svi`, `svf`, `logbook`, `presentation`, `report`, `summary`, `usermgmt`, `uruspelajar`, `uruspensyarah`, `senarai`, `laporan`, `statuspensyarah`
 - **Dashboard** is the new landing page for all roles (replaces `info` as default)
 - `loadDashboard()` detects role and calls role-specific render function
 
@@ -227,6 +227,71 @@ Both upload flows perform duplicate checking against Supabase before showing the
   - `renderSenaraiPagination()` — renders prev/next controls into `#senarai-pagination`
   - `resetSenaraiFilters()` — resets all 4 dropdowns to `''`; calls `filterSenarai()`
 - **CSS**: `.senarai-filter-row`, `.senarai-summary-row`, `.senarai-pagination`, `.table-wrap`, `.data-table`
+
+## Laporan Page (ADMIN + AJK_LI)
+- Accessible via "📊 Laporan" sidebar nav item (`laporan-nav-item`), shown for ADMIN and AJK_LI only
+- Page ID: `#page-laporan`; tab name: `laporan`; topbar title: "Laporan"
+- **Selesai definition** (shared with Status Pensyarah): a student is "Selesai" when `approval_status = 'approved'`; anything else is "Pending"
+- **Filters** (2 dropdowns, client-side):
+  - `laporan-filter-kursus` — filter by kursus: `BITE` / `BITM` (static options)
+  - `laporan-filter-status` — filter by completion: `selesai` / `pending`
+  - Filtering always resets `_laporanOpenIdx = -1` (closes any open accordion row)
+- **Summary row** (`#laporan-summary`): "Menunjukkan X daripada Y pelajar"
+- **Table** (`#laporan-tbody`): 9 columns — #, Nama, No. Matrik, Kursus, BITU3926, Gred 3926, BITU3946, Gred 3946, Status
+  - Grade displayed using existing `.grade-pill` classes with inline size overrides
+  - Status badge: green "Selesai" or red "Pending" using `.status-badge` classes
+  - Row click calls `toggleLaporanRow(globalIdx)` — one open row at a time
+  - Open row gets `.laporan-row-open` (blue-bg highlight)
+- **Accordion expand row** (`.laporan-expand-row`, `.laporan-expand-panel`):
+  - **Left panel** — Info Pelajar (`.laporan-expand-info`): Semester, Sesi, Penyelia Fakulti, Organisasi, Penyelia Industri
+  - **Right panel** (`.laporan-expand-obe`): two side-by-side `.laporan-obe-detail` tables
+    - **BITU3926 Detail** (`.laporan-detail-table`): 3 groups with blue group headers (`.laporan-group-hdr`) and subtotals (`.laporan-subtotal-row`):
+      - Penyelia Industri (30%): PRJ-1, PRJ-2 → subtotal
+      - Penyelia Fakulti (50%): PRJ-3, PRJ-4, LR1 → subtotal
+      - Pembentangan (20%): PR1-1 PI, PR1-1 PF → subtotal
+      - Navy total row (`.laporan-total-row`) + grade row (`.laporan-grade-row`)
+    - **BITU3946 Detail**: 3 groups: Laporan (70%), Pembentangan (20%), Soft Skills (10%)
+  - **"Cetak Laporan"** button (bottom-right of expanded row): calls `printLaporanStudent(idx)` with `event.stopPropagation()`
+- **Export Excel** button (top-right of section): calls `exportLaporanExcel()`; uses SheetJS CDN
+  - 4 sheets: "Ringkasan", "Markah Terperinci", "BITU3926", "BITU3946" (columns per spec)
+  - Exports currently filtered data (`_laporanFiltered`)
+- **Module-level globals**: `_laporanStudents[]`, `_laporanFiltered[]`, `_laporanPensyarahMap{}`, `_laporanMarksCache{}`, `_laporanOpenIdx` (index into `_laporanStudents`, -1 = none open)
+- **Key functions**:
+  - `computeOBE(marksMap)` — pure data function; replicates `calcSummary()` OBE logic without touching DOM; accepts a `{svi, svf, logbook, presentation, report}` marks map; returns `{prj1, prj2, prj3, prj4, lr1, pr11_svfb, pr11_svib, pr11, b3926, g3926, g3926cls, tr1, tr1_lapa, tr1_lapb, tr1_svfc, tr1_logc, psvfT, psviT, pr11_pbt, pr12, b3946, g3946, g3946cls}`
+  - `loadLaporan()` — async; fetches students + users (PENSYARAH) + marks in parallel; builds SVF-filtered marks map (same logic as `loadAjkliDashboard`); calls `computeOBE()` per student and stores result in `s._obe`; calls `filterLaporan()`
+  - `filterLaporan()` — client-side filter; rebuilds `_laporanFiltered`; resets open index; calls `renderLaporanTable()`
+  - `renderLaporanTable()` — renders table rows including inline expanded row HTML when `_laporanOpenIdx` matches
+  - `toggleLaporanRow(idx)` — toggles `_laporanOpenIdx`; calls `renderLaporanTable()`
+  - `renderLaporanExpandedRow(idx)` — returns full HTML string for the expand panel; reads from `_laporanStudents[idx]._obe`
+  - `printLaporanStudent(idx)` — async; calls `loadStudentForEval(s)`, then `showTab('summary')` (which runs `calcSummary()`), waits 150ms for DOM, then calls `generatePDF(s)`
+  - `exportLaporanExcel()` — builds 4 AOA arrays from `_laporanFiltered._obe` values; creates workbook via `XLSX.utils.book_new()` and `XLSX.utils.aoa_to_sheet()`; saves as `Laporan_LI_YYYY-MM-DD.xlsx`
+- **CSS classes**: `.laporan-filter-row`, `.laporan-row`, `.laporan-row-open`, `.laporan-expand-row`, `.laporan-expand-panel`, `.laporan-expand-info`, `.laporan-expand-obe`, `.laporan-obe-detail`, `.laporan-expand-title`, `.laporan-info-table`, `.laporan-detail-table`, `.laporan-group-hdr`, `.laporan-subtotal-row`, `.laporan-total-row`, `.laporan-grade-row`
+
+## Status Pensyarah Page (ADMIN + AJK_LI)
+- Accessible via "👥 Status Pensyarah" sidebar nav item (`statuspensyarah-nav-item`), shown for ADMIN and AJK_LI only
+- Page ID: `#page-statuspensyarah`; tab name: `statuspensyarah`; topbar title: "Status Pensyarah"
+- **Selesai definition**: same as Laporan page — `approval_status = 'approved'`
+- **Grouping logic**: fetches all users with `roles @> ['PENSYARAH']`; for each pensyarah, finds students in `_spStudentsMap[pensyarah.email]` (matched via `students.svf_email`); ALL pensyarah shown even if 0 students assigned
+- **Per-group row** (`.sp-group`, `.sp-group-header`):
+  - Pensyarah full name + "X/Y selesai" count
+  - Progress bar (`.sp-progress-bar` / `.sp-progress-fill`) — green fill, width = `selesai/total * 100%`
+  - Badge: green "✓ Selesai" (`.sp-badge-selesai`) when all complete; amber "⏳ Ada Pending" (`.sp-badge-pending`) otherwise
+  - **"Copy Email"** button (`.sp-copy-btn`): calls `copySPEmail(email, btnEl)` with `event.stopPropagation()`; shows "✓ Copied!" feedback for 1.5s; uses Clipboard API with `fallbackCopy()` textarea fallback
+  - Chevron indicator (▲/▼) toggles with accordion open state
+- **Accordion expand** (`.sp-group-body`): student list inside collapsed div
+  - **Section labels** (`.sp-group-section-label`): amber "⏳ PENDING (N)" header, then green "☑ SELESAI (N)" header
+  - Students sorted: pending first, then selesai (each sub-group rendered by `renderSPStudentRows()`)
+  - Inner table (reuses `.data-table`): #, Nama, No. Matrik, Kursus, Sem / Sesi, Status badge
+  - Empty group: "Tiada pelajar ditugaskan." message
+- **Module-level globals**: `_spPensyarahList[]`, `_spStudentsMap{}` (keyed by svf_email), `_spOpenIdx` (-1 = none open)
+- **Key functions**:
+  - `loadStatusPensyarah()` — async; fetches users (PENSYARAH) + students in parallel (no marks needed — status derived from `approval_status`); builds `_spStudentsMap`; marks `s._selesai = (approval_status === 'approved')`; calls `renderStatusPensyarah()`
+  - `renderStatusPensyarah()` — builds full accordion HTML from `_spPensyarahList`; injects into `#sp-list`
+  - `renderSPStudentRows(students)` — returns inner table HTML for a pending or selesai sub-group
+  - `toggleSPGroup(idx)` — toggles `_spOpenIdx`; calls `renderStatusPensyarah()`
+  - `copySPEmail(email, btnEl)` — clipboard copy; calls `fallbackCopy(text)` for older browsers
+  - `fallbackCopy(text)` — textarea-based `document.execCommand('copy')` fallback
+- **CSS classes**: `.sp-group`, `.sp-group-open`, `.sp-group-header`, `.sp-group-info`, `.sp-group-name`, `.sp-group-count`, `.sp-group-right`, `.sp-progress-wrap`, `.sp-progress-bar`, `.sp-progress-fill`, `.sp-pct-label`, `.sp-badge`, `.sp-badge-selesai`, `.sp-badge-pending`, `.sp-copy-btn`, `.sp-copy-btn-success`, `.sp-chevron`, `.sp-group-body`, `.sp-group-section-label`, `.sp-label-pending`, `.sp-label-selesai`
 
 ## Student Profile Setup (v4.2)
 - `openStudentEval(student)` — entry point for selecting a student from any dashboard
@@ -888,6 +953,11 @@ Track of planned improvements. Tick when done.
 - [x] Export PDF terus dari sistem — Pages 1–7 complete (v4.21); cover + 6 marks detail pages
 - [ ] Generate borang penilaian akhir auto (surat rasmi)
 - [x] OBE report yang boleh print cantik
+- [x] Export Excel semua pelajar — 4-sheet XLSX (Ringkasan, Markah Terperinci, BITU3926, BITU3946) via Laporan page
+
+### Reporting & Oversight
+- [x] Laporan page — batch OBE view with accordion detail + Excel export (ADMIN + AJK_LI)
+- [x] Status Pensyarah page — completion tracking per pensyarah with progress bar and Copy Email (ADMIN + AJK_LI)
 
 ### Notifikasi
 - [ ] Email reminder kat pensyarah yang belum confirm markah
