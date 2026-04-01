@@ -1110,3 +1110,8 @@ Track of planned improvements. Tick when done.
 - Never combine back into single file
 - Always maintain separate html/css/js structure
 - After every task, update this CLAUDE.md to reflect new changes
+
+## Documentation Files
+- CLAUDE.md — persistent project memory: architecture, features, rules, gotchas
+- SESSION.md — log of what was done each Claude Code session
+- LOG.md — bugs encountered, fixes applied, errors and how they were resolved
